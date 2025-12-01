@@ -130,7 +130,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             Create professional voiceovers in seconds with our AI technology.
           </p>
           <Link
-            href="https://app.aitextspeak.com/auth/signup"
+            href="/auth/signup"
             className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3 font-semibold text-white hover:from-amber-400 hover:to-orange-500 transition-all"
           >
             Get Started Free

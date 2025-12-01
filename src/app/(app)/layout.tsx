@@ -18,7 +18,7 @@ export default function AppLayout({
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link 
-              href="https://aitextspeak.com" 
+              href="/" 
               className="flex items-center gap-2 text-xl font-bold"
             >
               <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
@@ -48,19 +48,19 @@ export default function AppLayout({
             </p>
             <div className="flex items-center gap-6">
               <Link 
-                href="https://aitextspeak.com/privacy-policy" 
+                href="/privacy-policy" 
                 className="text-sm text-slate-500 hover:text-white transition-colors"
               >
                 Privacy
               </Link>
               <Link 
-                href="https://aitextspeak.com/terms-of-service" 
+                href="/terms-of-service" 
                 className="text-sm text-slate-500 hover:text-white transition-colors"
               >
                 Terms
               </Link>
               <Link 
-                href="https://aitextspeak.com/contact" 
+                href="/contact" 
                 className="text-sm text-slate-500 hover:text-white transition-colors"
               >
                 Help

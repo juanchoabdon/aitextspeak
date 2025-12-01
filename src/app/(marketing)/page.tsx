@@ -43,7 +43,7 @@ export default function HomePage() {
             
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="https://app.aitextspeak.com/auth/signup"
+                href="/auth/signup"
                 className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-orange-500/30 hover:from-amber-400 hover:to-orange-500 transition-all hover:scale-105"
               >
                 Start Creating Free
@@ -197,7 +197,7 @@ export default function HomePage() {
           </p>
           <div className="mt-10">
             <Link
-              href="https://app.aitextspeak.com/auth/signup"
+              href="/auth/signup"
               className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-10 py-4 text-lg font-semibold text-white shadow-xl shadow-orange-500/30 hover:from-amber-400 hover:to-orange-500 transition-all hover:scale-105"
             >
               Get Started Free

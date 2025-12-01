@@ -68,11 +68,11 @@ export default function SignUpPage() {
         {/* Terms */}
         <p className="mt-6 text-center text-xs text-slate-500">
           By signing up, you agree to our{' '}
-          <Link href="https://aitextspeak.com/terms-of-service" className="text-amber-500 hover:text-amber-400">
+          <Link href="/terms-of-service" className="text-amber-500 hover:text-amber-400">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="https://aitextspeak.com/privacy-policy" className="text-amber-500 hover:text-amber-400">
+          <Link href="/privacy-policy" className="text-amber-500 hover:text-amber-400">
             Privacy Policy
           </Link>
         </p>

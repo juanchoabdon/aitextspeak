@@ -25,7 +25,7 @@ const plans = [
       'Community support',
     ],
     cta: 'Get Started',
-    href: 'https://app.aitextspeak.com/auth/signup',
+    href: '/auth/signup',
     popular: false,
   },
   {
@@ -43,7 +43,7 @@ const plans = [
       'Custom voice settings',
     ],
     cta: 'Start Pro Trial',
-    href: 'https://app.aitextspeak.com/auth/signup?plan=pro',
+    href: '/auth/signup?plan=pro',
     popular: true,
   },
   {

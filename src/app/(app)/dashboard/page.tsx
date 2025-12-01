@@ -34,11 +34,6 @@ export default async function DashboardPage() {
             <p className="mt-2 text-slate-400">
               {user.email}
             </p>
-            {profile?.is_legacy_user && (
-              <span className="mt-2 inline-flex items-center rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-500">
-                Legacy Account Migrated ✓
-              </span>
-            )}
           </div>
           <SignOutButton />
         </div>
@@ -118,7 +113,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-slate-400">Plan</p>
             <p className="mt-1 text-3xl font-bold text-white">Free</p>
             <Link 
-              href="https://aitextspeak.com/pricing"
+              href="/pricing"
               className="mt-2 inline-block text-sm text-amber-500 hover:text-amber-400"
             >
               Upgrade →

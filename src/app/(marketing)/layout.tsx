@@ -57,13 +57,13 @@ export default function MarketingLayout({
             {/* Auth Buttons */}
             <div className="flex items-center gap-4">
               <Link
-                href="https://app.aitextspeak.com/auth/signin"
+                href="/auth/signin"
                 className="text-sm text-slate-300 hover:text-white transition-colors"
               >
                 Sign In
               </Link>
               <Link
-                href="https://app.aitextspeak.com/auth/signup"
+                href="/auth/signup"
                 className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/25 hover:from-amber-400 hover:to-orange-500 transition-all"
               >
                 Get Started
