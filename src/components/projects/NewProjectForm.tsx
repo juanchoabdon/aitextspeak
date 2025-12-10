@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProject, type ProjectType } from '@/lib/projects/actions';
+import { trackProjectCreated, trackError } from '@/lib/analytics/events';
 
 const PROJECT_TYPES: { value: ProjectType; label: string; icon: string; description: string }[] = [
   {
@@ -50,12 +51,15 @@ export function NewProjectForm() {
       });
 
       if (result.success && result.projectId) {
+        trackProjectCreated(result.projectId, projectType);
         router.push(`/dashboard/projects/${result.projectId}`);
       } else {
         setError(result.error || 'Failed to create project');
+        trackError('project_creation', result.error || 'Unknown error');
       }
     } catch {
       setError('An unexpected error occurred');
+      trackError('project_creation', 'Unexpected error');
     } finally {
       setIsLoading(false);
     }

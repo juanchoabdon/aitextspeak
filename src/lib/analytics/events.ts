@@ -147,10 +147,166 @@ export function trackProjectCreated(projectId: string, projectType?: string) {
   });
 }
 
-export function trackAudioAdded(projectId: string, characterCount: number) {
-  trackEvent('Audio Added', {
+export function trackProjectViewed(projectId: string, projectType?: string) {
+  trackEvent('Project Viewed', {
     project_id: projectId,
-    character_count: characterCount,
+    project_type: projectType,
+  });
+}
+
+export function trackProjectDeleted(projectId: string) {
+  trackEvent('Project Deleted', {
+    project_id: projectId,
+  });
+}
+
+export function trackAudioAdded(properties: {
+  projectId: string;
+  characterCount: number;
+  voiceId: string;
+  voiceName: string;
+  provider: string;
+  language: string;
+}) {
+  trackEvent('Audio Added', {
+    project_id: properties.projectId,
+    character_count: properties.characterCount,
+    voice_id: properties.voiceId,
+    voice_name: properties.voiceName,
+    provider: properties.provider,
+    language: properties.language,
+  });
+}
+
+export function trackAudioDeleted(projectId: string, audioId: string) {
+  trackEvent('Audio Deleted', {
+    project_id: projectId,
+    audio_id: audioId,
+  });
+}
+
+// ==========================================
+// VOICE EVENTS
+// ==========================================
+
+export function trackVoiceSelectorOpened(languageCode: string) {
+  trackEvent('Voice Selector Opened', {
+    language_code: languageCode,
+  });
+}
+
+export function trackVoicePreviewed(properties: {
+  voiceId: string;
+  voiceName: string;
+  provider: string;
+  gender: string;
+  language: string;
+}) {
+  trackEvent('Voice Previewed', {
+    voice_id: properties.voiceId,
+    voice_name: properties.voiceName,
+    provider: properties.provider,
+    gender: properties.gender,
+    language: properties.language,
+  });
+}
+
+export function trackVoiceSelected(properties: {
+  voiceId: string;
+  voiceName: string;
+  provider: string;
+  gender: string;
+  language: string;
+}) {
+  trackEvent('Voice Selected', {
+    voice_id: properties.voiceId,
+    voice_name: properties.voiceName,
+    provider: properties.provider,
+    gender: properties.gender,
+    language: properties.language,
+  });
+}
+
+// ==========================================
+// PREVIEW/GENERATION EVENTS
+// ==========================================
+
+export function trackPreviewGenerated(properties: {
+  voiceId: string;
+  voiceName: string;
+  characterCount: number;
+  provider: string;
+  language: string;
+}) {
+  trackEvent('Preview Generated', {
+    voice_id: properties.voiceId,
+    voice_name: properties.voiceName,
+    character_count: properties.characterCount,
+    provider: properties.provider,
+    language: properties.language,
+  });
+}
+
+export function trackGenerationFailed(properties: {
+  errorMessage: string;
+  voiceId?: string;
+  provider?: string;
+  characterCount?: number;
+  type: 'preview' | 'full';
+}) {
+  trackEvent('Generation Failed', {
+    error_message: properties.errorMessage,
+    voice_id: properties.voiceId,
+    provider: properties.provider,
+    character_count: properties.characterCount,
+    generation_type: properties.type,
+  });
+}
+
+// ==========================================
+// USAGE & LIMIT EVENTS
+// ==========================================
+
+export function trackUsageLimitReached(properties: {
+  currentPlan: string;
+  charactersUsed: number;
+  charactersLimit: number;
+}) {
+  trackEvent('Usage Limit Reached', {
+    plan: properties.currentPlan,
+    characters_used: properties.charactersUsed,
+    characters_limit: properties.charactersLimit,
+  });
+}
+
+export function trackUsageLimitWarning(properties: {
+  currentPlan: string;
+  percentUsed: number;
+  charactersRemaining: number;
+}) {
+  trackEvent('Usage Limit Warning', {
+    plan: properties.currentPlan,
+    percent_used: properties.percentUsed,
+    characters_remaining: properties.charactersRemaining,
+  });
+}
+
+export function trackUpgradeModalShown(properties: {
+  trigger: string;  // 'usage_limit' | 'language_locked' | 'approaching_limit' | 'manual'
+  currentPlan: string;
+  message?: string;
+}) {
+  trackEvent('Upgrade Modal Shown', {
+    trigger: properties.trigger,
+    current_plan: properties.currentPlan,
+    message: properties.message,
+  });
+}
+
+export function trackLanguageBlocked(languageCode: string, currentPlan: string) {
+  trackEvent('Language Blocked', {
+    language_code: languageCode,
+    current_plan: currentPlan,
   });
 }
 

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Voice } from '@/lib/tts/types';
+import { trackVoicePreviewed } from '@/lib/analytics/events';
 
 interface VoiceSelectorModalProps {
   isOpen: boolean;
@@ -139,7 +140,7 @@ export function VoiceSelectorModal({
 
     // Check if we already have a preview URL
     if (previewUrls[voice.voice_id]) {
-      playAudio(voice.voice_id, previewUrls[voice.voice_id]);
+      playAudio(voice.voice_id, previewUrls[voice.voice_id], voice);
       return;
     }
 
@@ -162,7 +163,7 @@ export function VoiceSelectorModal({
       
       if (data.success && data.audioUrl) {
         setPreviewUrls(prev => ({ ...prev, [voice.voice_id]: data.audioUrl }));
-        playAudio(voice.voice_id, data.audioUrl);
+        playAudio(voice.voice_id, data.audioUrl, voice);
       }
     } catch (error) {
       console.error('Failed to generate sample:', error);
@@ -171,11 +172,20 @@ export function VoiceSelectorModal({
     }
   }
 
-  function playAudio(voiceId: string, url: string) {
+  function playAudio(voiceId: string, url: string, voice?: Voice) {
     if (audioRef.current) {
       audioRef.current.src = url;
       audioRef.current.play();
       setPlayingVoiceId(voiceId);
+      if (voice) {
+        trackVoicePreviewed({
+          voiceId: voice.voice_id,
+          voiceName: voice.name,
+          provider: voice.provider,
+          gender: voice.gender || 'Unknown',
+          language: voice.language_code,
+        });
+      }
     }
   }
 

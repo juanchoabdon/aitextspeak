@@ -9,6 +9,15 @@ import { VoiceSelectorModal } from '@/components/tts/VoiceSelectorModal';
 import { AudioPlayButton } from '@/components/ui/AudioPlayButton';
 import { UpgradeModal } from '@/components/billing/UpgradeModal';
 import { useUsage } from '@/hooks/useUsage';
+import {
+  trackAudioAdded,
+  trackPreviewGenerated,
+  trackGenerationFailed,
+  trackUpgradeModalShown,
+  trackVoiceSelectorOpened,
+  trackVoiceSelected,
+  trackLanguageBlocked,
+} from '@/lib/analytics/events';
 
 interface AddAudioFormProps {
   projectId: string;
@@ -63,6 +72,13 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
   function handleVoiceSelect(voice: Voice) {
     setVoiceId(voice.voice_id);
     setPreviewAudioUrl(null);
+    trackVoiceSelected({
+      voiceId: voice.voice_id,
+      voiceName: voice.name,
+      provider: voice.provider,
+      gender: voice.gender || 'Unknown',
+      language: voice.language_code,
+    });
   }
 
   // Check usage limits before generating
@@ -72,6 +88,11 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
     if (!result.allowed) {
       setUpgradeMessage(result.reason || 'You have reached your usage limit.');
       setShowUpgradeModal(true);
+      trackUpgradeModalShown({
+        trigger: 'usage_limit',
+        currentPlan: usage?.planName || 'Free',
+        message: result.reason,
+      });
       return false;
     }
     
@@ -106,10 +127,24 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
 
       if (result.success && result.audioUrl) {
         setPreviewAudioUrl(result.audioUrl);
+        trackPreviewGenerated({
+          voiceId: voiceId,
+          voiceName: selectedVoice?.name || voiceId,
+          characterCount: Math.min(text.length, 200),
+          provider: selectedVoice?.provider || 'azure',
+          language: languageCode,
+        });
         // Refetch usage after preview
         refetchUsage();
       } else {
         setError(result.error || 'Failed to generate preview');
+        trackGenerationFailed({
+          errorMessage: result.error || 'Unknown error',
+          voiceId: voiceId,
+          provider: selectedVoice?.provider,
+          characterCount: Math.min(text.length, 200),
+          type: 'preview',
+        });
       }
     } catch {
       setError('An unexpected error occurred');
@@ -150,6 +185,14 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
       });
 
       if (result.success) {
+        trackAudioAdded({
+          projectId: projectId,
+          characterCount: text.length,
+          voiceId: voiceId,
+          voiceName: selectedVoice?.name || voiceId,
+          provider: selectedVoice?.provider || 'azure',
+          language: languageCode,
+        });
         // Refetch usage after saving
         refetchUsage();
         // Clear form
@@ -160,6 +203,13 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
         router.refresh();
       } else {
         setError(result.error || 'Failed to create audio');
+        trackGenerationFailed({
+          errorMessage: result.error || 'Unknown error',
+          voiceId: voiceId,
+          provider: selectedVoice?.provider,
+          characterCount: text.length,
+          type: 'full',
+        });
       }
     } catch {
       setError('An unexpected error occurred');
@@ -318,6 +368,12 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
                       langPrefix === allowed.toLowerCase().split('-')[0]
                     );
                     if (!isAllowed) {
+                      trackLanguageBlocked(newLang, usage?.planName || 'Free');
+                      trackUpgradeModalShown({
+                        trigger: 'language_locked',
+                        currentPlan: usage?.planName || 'Free',
+                        message: 'Language not available on current plan',
+                      });
                       setUpgradeMessage('This language is only available on paid plans. Upgrade to access 50+ languages!');
                       setShowUpgradeModal(true);
                       return;
@@ -351,9 +407,12 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
                 Voice
               </label>
               
-              <button
-                type="button"
-                onClick={() => setIsVoiceSelectorOpen(true)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsVoiceSelectorOpen(true);
+                    trackVoiceSelectorOpened(languageCode);
+                  }}
                 className={`w-full rounded-xl border px-3 py-3 text-left transition-all ${
                   selectedVoice
                     ? 'border-amber-500/50 bg-amber-500/5'
