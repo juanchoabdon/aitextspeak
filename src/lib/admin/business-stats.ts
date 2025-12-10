@@ -19,6 +19,8 @@ export interface MRRStats {
   activeSubscriptions: number;
   monthlySubscriptions: number;
   lifetimeSubscriptions: number;
+  churnRate: number; // Percentage of subscriptions cancelled in last 30 days
+  cancelledLast30Days: number;
 }
 
 function getDateRange(period: DatePeriod, customStart?: string, customEnd?: string): { start: Date; end: Date } {
@@ -132,13 +134,28 @@ const PLAN_PRICES: Record<string, number> = {
 export async function getMRRStats(): Promise<MRRStats> {
   const supabase = createAdminClient();
 
-  // Get all active subscriptions with their price
-  const { data: subscriptions } = await supabase
-    .from('subscriptions')
-    .select('plan_name, price_amount, plan_id')
-    .eq('status', 'active');
+  // Calculate date 30 days ago for churn calculation
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const subs = subscriptions || [];
+  // Run queries in parallel
+  const [activeSubsResult, cancelledSubsResult] = await Promise.all([
+    // Get all active subscriptions with their price
+    supabase
+      .from('subscriptions')
+      .select('plan_name, price_amount, plan_id')
+      .eq('status', 'active'),
+    
+    // Get subscriptions canceled in last 30 days
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'canceled')
+      .gte('updated_at', thirtyDaysAgo.toISOString()),
+  ]);
+
+  const subs = activeSubsResult.data || [];
+  const cancelledLast30Days = cancelledSubsResult.count || 0;
   
   // Calculate MRR - only from recurring subscriptions (monthly plans)
   // Lifetime plans don't contribute to MRR
@@ -168,10 +185,19 @@ export async function getMRRStats(): Promise<MRRStats> {
     }
   }
 
+  // Calculate churn rate: cancelled / (active + cancelled) * 100
+  // This gives us the % of customers who cancelled out of total customers we had
+  const totalCustomersInPeriod = subs.length + cancelledLast30Days;
+  const churnRate = totalCustomersInPeriod > 0 
+    ? (cancelledLast30Days / totalCustomersInPeriod) * 100 
+    : 0;
+
   return {
     mrr,
     activeSubscriptions: subs.length,
     monthlySubscriptions: monthlyCount,
     lifetimeSubscriptions: lifetimeCount,
+    churnRate,
+    cancelledLast30Days,
   };
 }

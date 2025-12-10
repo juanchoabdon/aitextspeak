@@ -126,6 +126,28 @@ export function BusinessPerformance() {
             <p className="text-xs text-slate-400">Lifetime</p>
           </div>
         </div>
+
+        {/* Churn Rate */}
+        <div className="mt-4 pt-4 border-t border-amber-500/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+              </svg>
+              <span className="text-sm text-slate-400">Churn Rate (30 days)</span>
+            </div>
+            {mrrLoading ? (
+              <div className="h-6 w-16 animate-pulse rounded bg-slate-800" />
+            ) : (
+              <div className="text-right">
+                <span className={`text-xl font-semibold ${(mrrStats?.churnRate ?? 0) > 5 ? 'text-red-400' : (mrrStats?.churnRate ?? 0) > 2 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {mrrStats?.churnRate.toFixed(1) ?? '0.0'}%
+                </span>
+                <p className="text-xs text-slate-500">{mrrStats?.cancelledLast30Days ?? 0} cancelled</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Period-Based Stats */}
