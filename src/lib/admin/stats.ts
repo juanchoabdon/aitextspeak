@@ -6,10 +6,9 @@ export interface AdminStats {
   totalUsers: number;
   legacyUsersMigrated: number;
   newUsers: number;
+  freeUsers: number;
   activeSubscribersLegacy: number;
   activeSubscribersNew: number;
-  totalLegacyUsers: number;
-  pendingMigration: number;
   totalProjects: number;
   totalAudioGenerated: number;
 }
@@ -21,7 +20,6 @@ export async function getAdminStats(): Promise<AdminStats> {
   const [
     totalUsersResult,
     legacyMigratedResult,
-    totalLegacyResult,
     newUsersResult,
     activeSubsLegacyResult,
     activeSubsNewResult,
@@ -33,9 +31,6 @@ export async function getAdminStats(): Promise<AdminStats> {
 
     // Legacy users that have been migrated
     supabase.from('legacy_users').select('legacy_id', { count: 'exact', head: true }).eq('migrated', true),
-
-    // Total legacy users in the table
-    supabase.from('legacy_users').select('legacy_id', { count: 'exact', head: true }),
 
     // New users (not legacy)
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_legacy_user', false),
@@ -62,23 +57,18 @@ export async function getAdminStats(): Promise<AdminStats> {
   ]);
 
   const totalUsers = totalUsersResult.count || 0;
-  const legacyUsersMigrated = legacyMigratedResult.count || 0;
-  const totalLegacyUsers = totalLegacyResult.count || 0;
-  const newUsers = newUsersResult.count || 0;
   const activeSubscribersLegacy = activeSubsLegacyResult.count || 0;
   const activeSubscribersNew = activeSubsNewResult.count || 0;
-  const totalProjects = totalProjectsResult.count || 0;
-  const totalAudioGenerated = totalAudioResult.count || 0;
+  const totalPaidUsers = activeSubscribersLegacy + activeSubscribersNew;
 
   return {
     totalUsers,
-    legacyUsersMigrated,
-    newUsers,
+    legacyUsersMigrated: legacyMigratedResult.count || 0,
+    newUsers: newUsersResult.count || 0,
+    freeUsers: totalUsers - totalPaidUsers,
     activeSubscribersLegacy,
     activeSubscribersNew,
-    totalLegacyUsers,
-    pendingMigration: totalLegacyUsers - legacyUsersMigrated,
-    totalProjects,
-    totalAudioGenerated,
+    totalProjects: totalProjectsResult.count || 0,
+    totalAudioGenerated: totalAudioResult.count || 0,
   };
 }

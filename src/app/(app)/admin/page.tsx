@@ -88,6 +88,12 @@ export default async function AdminDashboardPage() {
                 color="blue"
               />
               <StatCard 
+                label="Free Users" 
+                value={stats.freeUsers}
+                subValue="No active subscription"
+                color="slate"
+              />
+              <StatCard 
                 label="New Users (Post-Legacy)" 
                 value={stats.newUsers}
                 subValue="Signed up on new platform"
@@ -96,14 +102,8 @@ export default async function AdminDashboardPage() {
               <StatCard 
                 label="Legacy Users Migrated" 
                 value={stats.legacyUsersMigrated}
-                subValue={`of ${stats.totalLegacyUsers} total legacy`}
+                subValue="From old system"
                 color="amber"
-              />
-              <StatCard 
-                label="Pending Migration" 
-                value={stats.pendingMigration}
-                subValue="Legacy users not yet migrated"
-                color="slate"
               />
             </div>
           </div>
