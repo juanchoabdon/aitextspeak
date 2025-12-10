@@ -24,10 +24,21 @@ export async function signIn(credentials: LoginCredentials): Promise<AuthResult>
   });
   
   if (data?.user) {
+    // Fetch user profile to get role
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (supabase as any)
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+    
+    const role = profile?.role || 'user';
+    
     return {
       success: true,
-      user: { id: data.user.id, email: data.user.email! },
+      user: { id: data.user.id, email: data.user.email!, role },
       isLegacyMigration: false,
+      redirectTo: role === 'admin' ? '/admin' : '/dashboard',
     };
   }
   
@@ -52,10 +63,21 @@ export async function signIn(credentials: LoginCredentials): Promise<AuthResult>
           });
           
           if (newAuthData?.user) {
+            // Fetch user profile to get role
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: profile } = await (supabase as any)
+              .from('profiles')
+              .select('role')
+              .eq('id', newAuthData.user.id)
+              .single();
+            
+            const role = profile?.role || 'user';
+            
             return {
               success: true,
-              user: { id: newAuthData.user.id, email: newAuthData.user.email! },
+              user: { id: newAuthData.user.id, email: newAuthData.user.email!, role },
               isLegacyMigration: true,
+              redirectTo: role === 'admin' ? '/admin' : '/dashboard',
             };
           }
           

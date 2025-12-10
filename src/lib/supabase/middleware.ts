@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+interface Profile {
+  id: string;
+  role: 'user' | 'admin';
+}
+
 /**
  * Updates the Supabase session in middleware
  * This refreshes the session cookie on every request
@@ -38,6 +43,16 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return { supabaseResponse, user };
-}
+  // Fetch profile if user exists (for role-based redirects)
+  let profile: Profile | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .single();
+    profile = data as Profile | null;
+  }
 
+  return { supabaseResponse, user, profile };
+}

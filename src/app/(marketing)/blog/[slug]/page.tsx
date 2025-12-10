@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getBlogPost, getBlogPosts } from '@/lib/blog';
+import Image from 'next/image';
+import { getBlogPost } from '@/lib/blog';
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -9,12 +10,8 @@ interface BlogPostPageProps {
   }>;
 }
 
-export async function generateStaticParams() {
-  const posts = await getBlogPosts();
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
-}
+// Dynamic page - fetches from database on each request
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -36,11 +33,13 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       type: 'article',
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
+      images: post.image ? [{ url: post.image }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.description,
+      images: post.image ? [post.image] : undefined,
     },
   };
 }
@@ -105,6 +104,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               })}
             </time>
           </div>
+
+          {/* Featured Image */}
+          {post.image && (
+            <div className="mt-8 relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-800">
+              <Image
+                src={post.image}
+                alt={post.title}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          )}
         </header>
 
         {/* Content */}
@@ -140,4 +152,3 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     </article>
   );
 }
-

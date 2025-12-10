@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { PricingCard } from '@/components/pricing/PricingCard';
+import { getUserActiveSubscription } from '@/lib/payments/subscription';
+import type { PlanId } from '@/lib/payments/plans';
 
 export const metadata: Metadata = {
   title: 'Pricing - AI TextSpeak',
-  description: 'Choose the perfect plan for your text-to-speech needs. Start free and upgrade as you grow.',
+  description: 'Choose the perfect plan for your text-to-speech needs. Free plan available, or upgrade for more features.',
   openGraph: {
     title: 'Pricing - AI TextSpeak',
     description: 'Choose the perfect plan for your text-to-speech needs.',
@@ -11,63 +14,87 @@ export const metadata: Metadata = {
   },
 };
 
-const plans = [
+const plans: {
+  name: string;
+  subtitle: string;
+  price: string;
+  period: string;
+  features: string[];
+  planId: PlanId;
+  popular?: boolean;
+}[] = [
   {
-    name: 'Free',
-    description: 'Perfect for trying out AI TextSpeak',
-    price: '$0',
-    period: 'forever',
+    name: 'FREE PLAN',
+    subtitle: 'One-Time Payment',
+    price: '$0.00',
+    period: '',
     features: [
-      '5,000 characters/month',
-      '10 voice options',
-      'Standard quality audio',
-      'MP3 downloads',
-      'Community support',
+      'Get it When You Sign Up',
+      '500 Character Limit',
+      'Standard Voice and A.I Voices',
     ],
-    cta: 'Get Started',
-    href: '/auth/signup',
+    planId: 'free',
     popular: false,
   },
   {
-    name: 'Pro',
-    description: 'For content creators and professionals',
-    price: '$19',
-    period: '/month',
+    name: 'MONTHLY PLAN',
+    subtitle: 'Recurring every 1 month',
+    price: '$10',
+    period: '/ mo',
     features: [
-      '100,000 characters/month',
-      '50+ voice options',
-      'HD quality audio',
-      'MP3 & WAV downloads',
-      'Priority support',
-      'Commercial license',
-      'Custom voice settings',
+      'Pay Monthly',
+      '1 Million Character',
+      'Standard & Neural Voices Included',
+      'Cancel Anytime',
     ],
-    cta: 'Start Pro Trial',
-    href: '/auth/signup?plan=pro',
+    planId: 'monthly',
+    popular: false,
+  },
+  {
+    name: 'MONTHLY PRO PLAN',
+    subtitle: 'Recurring every 6 month',
+    price: '$30',
+    period: '/ mo',
+    features: [
+      'Standard & A.I Voices',
+      'Unlimited Characters',
+      'Unlimited Storage',
+      'Commercial Usage',
+      'Cancel Anytime',
+    ],
+    planId: 'monthly_pro',
     popular: true,
   },
   {
-    name: 'Business',
-    description: 'For teams and high-volume users',
-    price: '$79',
-    period: '/month',
+    name: 'LIFETIME PACKAGE',
+    subtitle: 'One-Time Payment',
+    price: '$99',
+    period: '/ Lifetime',
     features: [
-      'Unlimited characters',
-      'All 100+ voices',
-      'Ultra HD quality audio',
-      'All audio formats',
-      'Dedicated support',
-      'API access',
-      'Team management',
-      'Custom voice cloning',
+      'Pay once, Use lifetime',
+      'Include All Standard Voices',
+      'Unlimited Characters',
+      'Unlimited Storage',
+      'Commercial Rights',
+      '30 Day Money Back Guarantee',
     ],
-    cta: 'Contact Sales',
-    href: '/contact',
+    planId: 'lifetime',
     popular: false,
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+  
+  // Get user's current plan (only if logged in)
+  let currentPlanId: PlanId | null = null;
+  if (user) {
+    const subscription = await getUserActiveSubscription(user.id);
+    currentPlanId = subscription.planId;
+  }
+
   return (
     <div className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -77,73 +104,35 @@ export default function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="mt-4 text-lg text-slate-400 max-w-2xl mx-auto">
-            Choose the plan that fits your needs. All plans include our core features.
-            Upgrade or downgrade anytime.
+            Choose the plan that fits your needs. Start free and upgrade as you grow.
           </p>
+          
+          {/* Current Plan Badge */}
+          {isLoggedIn && currentPlanId && (
+            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700">
+              <span className="text-slate-400">Your current plan:</span>
+              <span className="font-semibold text-amber-400 capitalize">
+                {currentPlanId === 'monthly_pro' ? 'Monthly Pro' : currentPlanId}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Pricing Cards */}
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+        <div className="mt-16 grid gap-8 lg:grid-cols-4 md:grid-cols-2">
           {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl border ${
-                plan.popular
-                  ? 'border-amber-500 bg-gradient-to-b from-amber-500/10 to-transparent'
-                  : 'border-slate-800 bg-slate-900/50'
-              } p-8`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-1 text-sm font-medium text-white">
-                    Most Popular
-                  </span>
-                </div>
-              )}
-
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
-                <p className="mt-2 text-sm text-slate-400">{plan.description}</p>
-                <div className="mt-6">
-                  <span className="text-5xl font-bold text-white">{plan.price}</span>
-                  <span className="text-slate-400">{plan.period}</span>
-                </div>
-              </div>
-
-              <ul className="mt-8 space-y-4">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <svg
-                      className="h-5 w-5 text-amber-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span className="text-slate-300">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8">
-                <Link
-                  href={plan.href}
-                  className={`block w-full rounded-xl py-3 text-center font-semibold transition-all ${
-                    plan.popular
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500'
-                      : 'border border-slate-700 bg-slate-800/50 text-white hover:bg-slate-800'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
-              </div>
-            </div>
+            <PricingCard
+              key={plan.planId}
+              name={plan.name}
+              subtitle={plan.subtitle}
+              price={plan.price}
+              period={plan.period}
+              features={plan.features}
+              planId={plan.planId}
+              popular={plan.popular}
+              isLoggedIn={isLoggedIn}
+              isCurrentPlan={isLoggedIn && plan.planId === currentPlanId}
+            />
           ))}
         </div>
 
@@ -162,19 +151,19 @@ export default function PricingPage() {
             <div>
               <h3 className="text-lg font-semibold text-white">What payment methods do you accept?</h3>
               <p className="mt-2 text-slate-400">
-                We accept all major credit cards, debit cards, and PayPal. All payments are processed securely.
+                We accept all major credit cards and PayPal. All payments are processed securely.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Is there a free trial?</h3>
+              <h3 className="text-lg font-semibold text-white">What&apos;s included in the Lifetime Package?</h3>
               <p className="mt-2 text-slate-400">
-                Yes! Our Free plan gives you 5,000 characters per month to try out the service. Pro plans also come with a 7-day free trial.
+                The Lifetime Package is a one-time payment that gives you unlimited access forever. It includes all standard voices, unlimited characters, and commercial rights.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Can I use the audio commercially?</h3>
+              <h3 className="text-lg font-semibold text-white">Do you offer refunds?</h3>
               <p className="mt-2 text-slate-400">
-                Pro and Business plans include a full commercial license. You can use the generated audio for YouTube, podcasts, courses, and more.
+                The Lifetime Package comes with a 30-day money back guarantee. Monthly subscriptions can be canceled anytime but are not refundable.
               </p>
             </div>
           </div>
@@ -183,4 +172,3 @@ export default function PricingPage() {
     </div>
   );
 }
-

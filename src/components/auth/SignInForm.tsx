@@ -20,8 +20,8 @@ export function SignInForm() {
       const result = await signIn({ email, password });
 
       if (result.success) {
-        // Redirect to dashboard on success
-        router.push('/dashboard');
+        // Redirect based on user role
+        router.push(result.redirectTo || '/dashboard');
         router.refresh();
       } else {
         setError(result.error || 'Failed to sign in');

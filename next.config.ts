@@ -7,14 +7,22 @@ const nextConfig: NextConfig = {
   // ===========================================
   async redirects() {
     return [
-      // Example: Redirect old blog URLs to new ones
-      // {
-      //   source: '/old-blog-post',
-      //   destination: '/blog/new-blog-post',
-      //   permanent: true, // 301 redirect
-      // },
+      // ===========================================
+      // LEGACY BLOG URL REDIRECTS (SEO)
+      // Old URLs without /blog/ prefix → new URLs with /blog/ prefix
+      // ===========================================
+      {
+        source: '/best-ai-voice-generator-for-youtube',
+        destination: '/blog/best-ai-voice-generator-for-youtube',
+        permanent: true, // 301 redirect - preserves SEO
+      },
+      {
+        source: '/ai-text-to-speech-audiobooks',
+        destination: '/blog/ai-text-to-speech-audiobooks',
+        permanent: true, // 301 redirect - preserves SEO
+      },
       
-      // Redirect /login to /auth/signin
+      // Auth redirects
       {
         source: '/login',
         destination: '/auth/signin',
@@ -120,7 +128,6 @@ const nextConfig: NextConfig = {
   env: {
     // These will be available at build time
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com',
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://app.aitextspeak.com',
   },
 
   // ===========================================

@@ -14,8 +14,10 @@ export interface AuthResult {
   user?: {
     id: string;
     email: string;
+    role?: string;
   };
   isLegacyMigration?: boolean;
+  redirectTo?: string;
 }
 
 export interface LoginCredentials {
