@@ -37,7 +37,7 @@ interface WebsiteJsonLdProps {
 export function WebsiteJsonLd({
   name = 'AI TextSpeak',
   url = 'https://aitextspeak.com',
-  description = 'Professional AI Text to Speech Generator',
+  description = 'AI Voice Generator for YouTubers, Podcasters & Audiobook Creators',
 }: WebsiteJsonLdProps) {
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -76,8 +76,8 @@ interface SoftwareApplicationJsonLdProps {
 }
 
 export function SoftwareApplicationJsonLd({
-  name = 'AI TextSpeak',
-  description = 'Transform text into natural, human-like speech with AI',
+  name = 'AI TextSpeak - Voice Generator for Creators',
+  description = 'AI voice generator for YouTubers, podcasters, and audiobook authors. Create professional voiceovers for videos, podcasts, and audiobooks instantly.',
   applicationCategory = 'MultimediaApplication',
   operatingSystem = 'Web',
   offers = { price: '0', priceCurrency: 'USD' },

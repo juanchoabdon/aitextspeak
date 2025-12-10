@@ -13,19 +13,33 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com'),
   title: {
-    default: "AI TextSpeak - Professional AI Text to Speech Generator",
+    default: "AI TextSpeak - AI Voice Generator for YouTubers & Content Creators",
     template: "%s | AI TextSpeak",
   },
-  description: "Transform your text into natural, human-like speech with AI TextSpeak. Create professional voiceovers for YouTube, audiobooks, podcasts, and more.",
+  description: "The #1 AI voice generator for content creators. Create professional voiceovers for YouTube videos, audiobooks, podcasts, TikTok & more. Used by 50,000+ creators worldwide.",
   keywords: [
+    // Creator-focused keywords
+    "AI voice generator for YouTube",
+    "YouTube voiceover generator",
+    "text to speech for YouTubers",
+    "AI narrator for audiobooks",
+    "podcast voice generator",
+    "TikTok voiceover AI",
+    "content creator voice tools",
+    "faceless YouTube channel voice",
+    // Audiobook keywords
+    "audiobook narrator AI",
+    "AI audiobook creator",
+    "self publish audiobook voice",
+    "audiobook voice generator",
+    // Podcast keywords  
+    "podcast intro voice",
+    "AI podcast narrator",
+    // General TTS
     "AI text to speech",
-    "voice generator",
-    "text to speech",
-    "AI voiceover",
-    "YouTube voiceover",
-    "audiobook narrator",
-    "podcast voice",
-    "TTS",
+    "realistic AI voices",
+    "natural voice generator",
+    "text to audio converter",
   ],
   authors: [{ name: "AI TextSpeak" }],
   creator: "AI TextSpeak",

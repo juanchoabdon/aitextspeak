@@ -7,21 +7,36 @@ import { OrganizationJsonLd, WebsiteJsonLd, SoftwareApplicationJsonLd, FAQJsonLd
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 export const metadata: Metadata = {
-  title: 'AI TextSpeak - #1 AI Text to Speech Generator | Free Online TTS',
-  description: 'Transform your text into natural, human-like speech with AI TextSpeak. Create professional voiceovers for YouTube, audiobooks, podcasts & more. 500+ AI voices, 50+ languages. Try free!',
+  title: 'AI TextSpeak - #1 AI Voice Generator for YouTubers & Creators | Free TTS',
+  description: 'Create professional voiceovers for YouTube videos, audiobooks & podcasts with AI. Trusted by 50,000+ content creators. 500+ natural AI voices, 50+ languages. Start free today!',
   keywords: [
-    'AI text to speech',
-    'text to speech online',
-    'free TTS',
-    'voice generator',
-    'AI voiceover',
+    // YouTube Creator Keywords
+    'AI voice generator for YouTube',
     'YouTube voiceover generator',
-    'audiobook narrator AI',
+    'text to speech for YouTube videos',
+    'faceless YouTube channel voice',
+    'YouTube narration AI',
+    'best voice for YouTube videos',
+    // Audiobook Creator Keywords
+    'AI audiobook narrator',
+    'audiobook voice generator',
+    'self publish audiobook AI',
+    'AI narrator for Audible',
+    'create audiobook with AI',
+    // Podcast Creator Keywords
     'podcast voice generator',
-    'text to audio converter',
-    'natural voice synthesis',
+    'AI podcast intro',
+    'podcast narration AI',
+    // Content Creator Keywords
+    'AI voiceover for creators',
+    'content creator voice tools',
+    'TikTok voiceover generator',
+    'Reels voice generator',
+    'documentary narrator AI',
+    // General TTS
+    'text to speech online free',
     'realistic AI voices',
-    'online voice generator',
+    'natural voice synthesis',
   ],
   alternates: {
     canonical: SITE_URL,
@@ -52,19 +67,27 @@ export const metadata: Metadata = {
 const homeFAQs = [
   {
     question: 'What is AI TextSpeak?',
-    answer: 'AI TextSpeak is a professional text-to-speech platform that converts text into natural, human-like speech using advanced AI technology. Perfect for creating voiceovers for YouTube videos, audiobooks, podcasts, and more.',
+    answer: 'AI TextSpeak is the leading AI voice generator for content creators. YouTubers, podcasters, and audiobook authors use our platform to create professional voiceovers in seconds. No recording studio needed.',
   },
   {
-    question: 'Is AI TextSpeak free to use?',
-    answer: 'Yes! AI TextSpeak offers a free plan with 5,000 characters per month. You can upgrade to our paid plans for more characters and premium features.',
+    question: 'Can I use AI TextSpeak for my YouTube channel?',
+    answer: 'Absolutely! Thousands of YouTubers use AI TextSpeak for tutorials, documentaries, faceless channels, and more. Our AI voices are YouTube-friendly and work great for monetized content.',
   },
   {
-    question: 'How many voices and languages are available?',
-    answer: 'AI TextSpeak offers over 500 AI voices in 50+ languages, including English, Spanish, French, German, Japanese, and many more.',
+    question: 'Is AI TextSpeak good for creating audiobooks?',
+    answer: 'Yes! Authors and publishers use AI TextSpeak to create professional audiobooks. Our neural voices provide natural narration perfect for fiction, non-fiction, and self-published books on Audible, ACX, and other platforms.',
   },
   {
-    question: 'Can I use the generated audio commercially?',
-    answer: 'Yes, all audio generated with AI TextSpeak can be used for commercial purposes, including YouTube videos, podcasts, audiobooks, and marketing materials.',
+    question: 'Can I monetize content made with AI TextSpeak?',
+    answer: 'Yes, 100%! All audio generated with AI TextSpeak includes full commercial rights. Use it for monetized YouTube videos, podcasts on Spotify, audiobooks on Audible, TikTok, Reels, and any other platform.',
+  },
+  {
+    question: 'How do podcasters use AI TextSpeak?',
+    answer: 'Podcasters use AI TextSpeak for intros, outros, sponsor reads, and even full episode narration. Perfect for solo creators who want consistent, professional audio without expensive voice actors.',
+  },
+  {
+    question: 'Is AI TextSpeak free to try?',
+    answer: 'Yes! Start with our free plan - no credit card required. Get 5,000 characters per month to test our 500+ AI voices before upgrading to unlimited plans.',
   },
 ];
 

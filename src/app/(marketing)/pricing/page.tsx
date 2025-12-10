@@ -7,14 +7,19 @@ import type { PlanId } from '@/lib/payments/plans';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 export const metadata: Metadata = {
-  title: 'Pricing & Plans - AI TextSpeak | Free TTS & Premium Options',
-  description: 'Choose the perfect AI text-to-speech plan. Start free with 5,000 chars/month or upgrade for unlimited voices, 50+ languages & priority support. Plans from $10/mo.',
+  title: 'Pricing for Creators | AI Voice Generator Plans | AI TextSpeak',
+  description: 'Affordable AI voice plans for YouTubers, podcasters & audiobook creators. Start free, upgrade for unlimited voiceovers. Used by 50,000+ content creators. Plans from $10/mo.',
   keywords: [
-    'text to speech pricing',
-    'TTS subscription',
-    'AI voice generator cost',
-    'free text to speech',
-    'voiceover pricing',
+    // Creator-focused pricing keywords
+    'AI voice generator pricing',
+    'YouTube voiceover cost',
+    'audiobook narrator pricing',
+    'podcast voice subscription',
+    'cheap AI voiceover',
+    'affordable text to speech',
+    'TTS for content creators',
+    'voice generator subscription',
+    'AI narrator monthly plan',
   ],
   alternates: {
     canonical: `${SITE_URL}/pricing`,

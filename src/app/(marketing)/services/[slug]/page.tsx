@@ -21,19 +21,28 @@ const SERVICE_DEMO_TEXTS: Record<string, string> = {
   'ivr-phone-systems': "Thank you for calling. Press 1 for sales, press 2 for support.",
 };
 
-// Service-specific FAQs
+// Service-specific FAQs - Creator focused
 const SERVICE_FAQS: Record<string, { question: string; answer: string }[]> = {
   'youtube-videos': [
-    { question: 'Can I use AI voices for YouTube videos?', answer: 'Yes! Our AI voices are perfect for YouTube content. Many creators use our voices for tutorials, explainer videos, documentaries, and more.' },
-    { question: 'Will YouTube monetization work with AI voices?', answer: 'Yes, YouTube allows monetization of videos with AI-generated voices as long as the content follows their guidelines.' },
+    { question: 'Can I monetize YouTube videos with AI voices?', answer: 'Yes! YouTube allows full monetization of videos with AI-generated voices. Thousands of creators use AI TextSpeak for monetized content including tutorials, documentaries, and faceless channels.' },
+    { question: 'What type of YouTube videos work best with AI voices?', answer: 'AI voices are perfect for tutorials, explainer videos, documentaries, top 10 lists, Reddit stories, news channels, educational content, and faceless channels. Many creators earn full-time income with AI-voiced content.' },
+    { question: 'How do successful YouTubers use AI TextSpeak?', answer: 'Top creators use our voices for consistent narration across videos, saving hours of recording time. Faceless channel creators especially love our natural-sounding voices for storytelling content.' },
+    { question: 'Is there a best AI voice for YouTube?', answer: 'It depends on your niche! We offer 500+ voices - deep voices for documentaries, friendly voices for tutorials, dramatic voices for storytelling. Try our demo to find your perfect match.' },
   ],
   'podcasts': [
-    { question: 'Can I create a full podcast with AI voices?', answer: 'Absolutely! Our AI voices are designed for long-form content. Create consistent, professional podcast narration with our natural-sounding voices.' },
-    { question: 'How do I make AI podcast voices sound natural?', answer: 'Our neural voices use advanced AI to create natural speech patterns. You can also adjust pacing and add pauses for a more conversational feel.' },
+    { question: 'Can I publish AI-voiced podcasts on Spotify?', answer: 'Yes! Podcasts created with AI TextSpeak can be published on Spotify, Apple Podcasts, and all major platforms. Many creators use our voices for intros, outros, and full episodes.' },
+    { question: 'How do podcasters use AI TextSpeak?', answer: 'Podcasters use our AI for consistent intros/outros, sponsor reads, solo episodes, and backup narration. Perfect for creators who want professional audio without expensive equipment.' },
+    { question: 'Can AI voices sound natural enough for podcasts?', answer: 'Absolutely! Our neural voices use advanced AI to create natural speech patterns with proper pacing, emotion, and intonation. Many listeners can not tell the difference from human voices.' },
   ],
   'audiobooks': [
-    { question: 'Are AI voices good enough for audiobooks?', answer: 'Yes! Our premium neural voices provide natural, engaging narration perfect for audiobooks. Choose from different voice styles to match your book genre.' },
-    { question: 'How long does it take to create an audiobook?', answer: 'With AI TextSpeak, you can convert your entire book to audio in minutes, not weeks. Simply paste your text and select a voice.' },
+    { question: 'Can I sell AI-narrated audiobooks on Audible?', answer: 'Yes! You can sell audiobooks created with AI TextSpeak on ACX/Audible, Google Play Books, Apple Books, and other platforms. Many indie authors use our voices for self-published audiobooks.' },
+    { question: 'How much does it cost to create an audiobook with AI?', answer: 'With AI TextSpeak, you can create a full audiobook for a fraction of the cost of hiring a voice actor. Our unlimited plans let you generate hours of audio for one flat monthly fee.' },
+    { question: 'What genres work best with AI audiobook narration?', answer: 'AI voices work great for non-fiction, self-help, business books, and educational content. For fiction, our expressive neural voices handle dialogue and emotion surprisingly well.' },
+    { question: 'How long does it take to create an audiobook?', answer: 'Convert your entire manuscript to audio in hours, not weeks. A 50,000-word book can be generated in under a day compared to months with traditional voice actors.' },
+  ],
+  'e-learning': [
+    { question: 'Can I use AI voices for online courses?', answer: 'Yes! Course creators on Udemy, Skillshare, and Teachable use AI TextSpeak for professional narration. Consistent voice quality across all lessons improves the learning experience.' },
+    { question: 'Do students respond well to AI narration?', answer: 'Studies show students retain information equally well with quality AI narration. Our natural-sounding voices keep learners engaged throughout courses.' },
   ],
 };
 

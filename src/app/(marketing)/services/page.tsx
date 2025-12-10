@@ -9,16 +9,28 @@ export const dynamic = 'force-dynamic';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 export const metadata: Metadata = {
-  title: 'AI Text to Speech Services | YouTube, Podcast, Audiobook Voiceovers',
-  description: 'Professional AI voice generation services for YouTube videos, podcasts, audiobooks, e-learning & more. 500+ realistic AI voices, 50+ languages. Create studio-quality voiceovers instantly.',
+  title: 'AI Voice Services for Creators | YouTube, Audiobooks, Podcasts',
+  description: 'Professional AI voiceover services built for content creators. Create YouTube videos, audiobooks, podcasts & more with 500+ natural AI voices. Trusted by 50,000+ creators.',
   keywords: [
-    'AI voiceover services',
-    'YouTube voice generator',
-    'podcast voiceover',
-    'audiobook narrator',
-    'e-learning voice',
-    'text to speech services',
-    'professional voiceover',
+    // YouTube Creator Keywords
+    'AI voice for YouTube',
+    'YouTube voiceover service',
+    'faceless channel voice generator',
+    'YouTube tutorial narrator',
+    // Audiobook Keywords
+    'AI audiobook narrator service',
+    'audiobook voice generator',
+    'ACX audiobook AI',
+    'Audible narrator AI',
+    // Podcast Keywords
+    'podcast voice service',
+    'AI podcast narrator',
+    'podcast intro generator',
+    // Other Creator Keywords
+    'e-learning voice generator',
+    'documentary narrator AI',
+    'explainer video voice',
+    'TikTok AI voice',
   ],
   alternates: {
     canonical: `${SITE_URL}/services`,
