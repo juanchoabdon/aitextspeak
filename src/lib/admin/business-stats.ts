@@ -115,6 +115,16 @@ export async function getBusinessStats(
   };
 }
 
+// Plan prices for MRR calculation (in case price_amount is not set)
+const PLAN_PRICES: Record<string, number> = {
+  'monthly': 9.99,
+  'basic': 9.99,
+  'basic plan': 9.99,
+  'monthly_pro': 29.99,
+  'monthly pro': 29.99,
+  'pro': 29.99,
+};
+
 /**
  * Get MRR (Monthly Recurring Revenue) stats
  * This is independent of the period filter - it's always current
@@ -125,7 +135,7 @@ export async function getMRRStats(): Promise<MRRStats> {
   // Get all active subscriptions with their price
   const { data: subscriptions } = await supabase
     .from('subscriptions')
-    .select('plan_name, price_amount')
+    .select('plan_name, price_amount, plan_id')
     .eq('status', 'active');
 
   const subs = subscriptions || [];
@@ -138,15 +148,23 @@ export async function getMRRStats(): Promise<MRRStats> {
 
   for (const sub of subs) {
     const planName = (sub.plan_name || '').toLowerCase();
-    const price = sub.price_amount || 0;
+    const planId = (sub.plan_id || '').toLowerCase();
     
     // Check if it's a lifetime plan (doesn't count towards MRR)
-    if (planName.includes('lifetime') || planName.includes('one_time') || planName.includes('one-time')) {
+    if (planName.includes('lifetime') || planId.includes('lifetime') || 
+        planName.includes('one_time') || planName.includes('one-time')) {
       lifetimeCount++;
-    } else if (price > 0) {
-      // Monthly recurring subscription
-      mrr += price;
+    } else {
+      // It's a monthly/recurring subscription
       monthlyCount++;
+      
+      // Get price - use price_amount if set, otherwise look up from plan name/id
+      let price = sub.price_amount || 0;
+      if (price === 0) {
+        // Try to get price from plan name or plan_id
+        price = PLAN_PRICES[planName] || PLAN_PRICES[planId] || 0;
+      }
+      mrr += price;
     }
   }
 
