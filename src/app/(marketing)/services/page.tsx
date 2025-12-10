@@ -1,17 +1,38 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getPublishedServices } from '@/lib/services/db';
+import { BreadcrumbJsonLd } from '@/components/seo/JsonLd';
 
 // Force SSR - no static generation
 export const dynamic = 'force-dynamic';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
+
 export const metadata: Metadata = {
-  title: 'AI Voice Services - AI TextSpeak',
-  description: 'Explore our AI voice generation services for YouTube videos, podcasts, audiobooks, e-learning, and more. Professional voiceovers powered by AI.',
+  title: 'AI Text to Speech Services | YouTube, Podcast, Audiobook Voiceovers',
+  description: 'Professional AI voice generation services for YouTube videos, podcasts, audiobooks, e-learning & more. 500+ realistic AI voices, 50+ languages. Create studio-quality voiceovers instantly.',
+  keywords: [
+    'AI voiceover services',
+    'YouTube voice generator',
+    'podcast voiceover',
+    'audiobook narrator',
+    'e-learning voice',
+    'text to speech services',
+    'professional voiceover',
+  ],
+  alternates: {
+    canonical: `${SITE_URL}/services`,
+  },
   openGraph: {
+    title: 'AI Voice Services - Professional Voiceovers for Any Content',
+    description: 'Create professional voiceovers for YouTube, podcasts, audiobooks & more with AI.',
+    url: `${SITE_URL}/services`,
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
     title: 'AI Voice Services - AI TextSpeak',
-    description: 'Professional AI voiceover services for all your content needs.',
-    url: 'https://aitextspeak.com/services',
+    description: 'Professional AI voiceovers for YouTube, podcasts, audiobooks & more.',
   },
 };
 
@@ -19,6 +40,12 @@ export default async function ServicesPage() {
   const services = await getPublishedServices();
 
   return (
+    <>
+      <BreadcrumbJsonLd items={[
+        { name: 'Home', url: SITE_URL },
+        { name: 'Services', url: `${SITE_URL}/services` },
+      ]} />
+      
     <div className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -108,5 +135,6 @@ export default async function ServicesPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

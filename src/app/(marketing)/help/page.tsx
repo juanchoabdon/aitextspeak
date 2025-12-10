@@ -1,13 +1,26 @@
 import type { Metadata } from 'next';
 import { HelpTicketForm } from '@/components/help/HelpTicketForm';
+import { FAQJsonLd } from '@/components/seo/JsonLd';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 export const metadata: Metadata = {
-  title: 'Help & Support - AI TextSpeak',
-  description: 'Get help with AI TextSpeak. Submit a support ticket and our team will assist you.',
+  title: 'Help Center & Support | AI TextSpeak FAQ',
+  description: 'Get help with AI TextSpeak. Find answers to common questions about text-to-speech, voices, pricing, and more. Contact our support team for assistance.',
+  keywords: ['AI TextSpeak support', 'text to speech help', 'TTS FAQ', 'voice generator help'],
+  alternates: {
+    canonical: `${SITE_URL}/help`,
+  },
   openGraph: {
     title: 'Help & Support - AI TextSpeak',
-    description: 'Get help with AI TextSpeak. Submit a support ticket.',
-    url: 'https://aitextspeak.com/help',
+    description: 'Get help with AI TextSpeak. FAQ and support tickets.',
+    url: `${SITE_URL}/help`,
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Help & Support - AI TextSpeak',
+    description: 'Get help with AI TextSpeak. FAQ and support tickets.',
   },
 };
 
@@ -40,6 +53,9 @@ const FAQ_ITEMS = [
 
 export default function HelpPage() {
   return (
+    <>
+      <FAQJsonLd questions={FAQ_ITEMS} />
+      
     <div className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -142,5 +158,6 @@ export default function HelpPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

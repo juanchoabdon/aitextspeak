@@ -2,27 +2,81 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { HeroTTSDemo } from '@/components/home/HeroTTSDemo';
 import { TrustStats } from '@/components/home/TrustStats';
+import { OrganizationJsonLd, WebsiteJsonLd, SoftwareApplicationJsonLd, FAQJsonLd } from '@/components/seo/JsonLd';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 export const metadata: Metadata = {
-  title: 'AI TextSpeak - Professional AI Text to Speech Generator',
-  description: 'Transform your text into natural, human-like speech with AI TextSpeak. Create professional voiceovers for YouTube, audiobooks, podcasts, and more.',
+  title: 'AI TextSpeak - #1 AI Text to Speech Generator | Free Online TTS',
+  description: 'Transform your text into natural, human-like speech with AI TextSpeak. Create professional voiceovers for YouTube, audiobooks, podcasts & more. 500+ AI voices, 50+ languages. Try free!',
+  keywords: [
+    'AI text to speech',
+    'text to speech online',
+    'free TTS',
+    'voice generator',
+    'AI voiceover',
+    'YouTube voiceover generator',
+    'audiobook narrator AI',
+    'podcast voice generator',
+    'text to audio converter',
+    'natural voice synthesis',
+    'realistic AI voices',
+    'online voice generator',
+  ],
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
-    title: 'AI TextSpeak - Professional AI Text to Speech Generator',
-    description: 'Transform your text into natural, human-like speech with AI TextSpeak.',
-    url: 'https://aitextspeak.com',
+    title: 'AI TextSpeak - #1 AI Text to Speech Generator | Free Online TTS',
+    description: 'Transform your text into natural, human-like speech. 500+ AI voices, 50+ languages. Create professional voiceovers for YouTube, audiobooks & podcasts.',
+    url: SITE_URL,
     siteName: 'AI TextSpeak',
     type: 'website',
+    images: [
+      {
+        url: `${SITE_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: 'AI TextSpeak - Professional AI Text to Speech',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI TextSpeak - Professional AI Text to Speech Generator',
-    description: 'Transform your text into natural, human-like speech with AI TextSpeak.',
+    title: 'AI TextSpeak - #1 AI Text to Speech Generator',
+    description: 'Transform your text into natural, human-like speech. 500+ AI voices, 50+ languages. Try free!',
+    images: [`${SITE_URL}/og-image.png`],
   },
 };
+
+const homeFAQs = [
+  {
+    question: 'What is AI TextSpeak?',
+    answer: 'AI TextSpeak is a professional text-to-speech platform that converts text into natural, human-like speech using advanced AI technology. Perfect for creating voiceovers for YouTube videos, audiobooks, podcasts, and more.',
+  },
+  {
+    question: 'Is AI TextSpeak free to use?',
+    answer: 'Yes! AI TextSpeak offers a free plan with 5,000 characters per month. You can upgrade to our paid plans for more characters and premium features.',
+  },
+  {
+    question: 'How many voices and languages are available?',
+    answer: 'AI TextSpeak offers over 500 AI voices in 50+ languages, including English, Spanish, French, German, Japanese, and many more.',
+  },
+  {
+    question: 'Can I use the generated audio commercially?',
+    answer: 'Yes, all audio generated with AI TextSpeak can be used for commercial purposes, including YouTube videos, podcasts, audiobooks, and marketing materials.',
+  },
+];
 
 export default function HomePage() {
   return (
     <>
+      {/* Structured Data */}
+      <OrganizationJsonLd />
+      <WebsiteJsonLd />
+      <SoftwareApplicationJsonLd />
+      <FAQJsonLd questions={homeFAQs} />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Background Effects */}

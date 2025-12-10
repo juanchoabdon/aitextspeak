@@ -4,13 +4,31 @@ import { PricingCards } from '@/components/pricing/PricingCards';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
 import type { PlanId } from '@/lib/payments/plans';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
+
 export const metadata: Metadata = {
-  title: 'Pricing - AI TextSpeak',
-  description: 'Choose the perfect plan for your text-to-speech needs. Free plan available, or upgrade for more features.',
+  title: 'Pricing & Plans - AI TextSpeak | Free TTS & Premium Options',
+  description: 'Choose the perfect AI text-to-speech plan. Start free with 5,000 chars/month or upgrade for unlimited voices, 50+ languages & priority support. Plans from $10/mo.',
+  keywords: [
+    'text to speech pricing',
+    'TTS subscription',
+    'AI voice generator cost',
+    'free text to speech',
+    'voiceover pricing',
+  ],
+  alternates: {
+    canonical: `${SITE_URL}/pricing`,
+  },
   openGraph: {
-    title: 'Pricing - AI TextSpeak',
-    description: 'Choose the perfect plan for your text-to-speech needs.',
-    url: 'https://aitextspeak.com/pricing',
+    title: 'Pricing & Plans - AI TextSpeak',
+    description: 'Start free or upgrade for unlimited AI text-to-speech. Plans from $10/month.',
+    url: `${SITE_URL}/pricing`,
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI TextSpeak Pricing - Free & Premium Plans',
+    description: 'Start free or upgrade for unlimited AI text-to-speech.',
   },
 };
 

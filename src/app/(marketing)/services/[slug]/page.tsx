@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation';
 import { getServiceBySlug } from '@/lib/services/db';
 import { HeroTTSDemo } from '@/components/home/HeroTTSDemo';
 import { TrustStats } from '@/components/home/TrustStats';
+import { ServiceJsonLd, BreadcrumbJsonLd, FAQJsonLd } from '@/components/seo/JsonLd';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 // Force SSR - no static generation
 export const dynamic = 'force-dynamic';
@@ -16,6 +19,22 @@ const SERVICE_DEMO_TEXTS: Record<string, string> = {
   'e-learning': "In this lesson, we'll explore the key concepts and practical applications.",
   'commercials': "Introducing the future of innovation. Experience excellence like never before.",
   'ivr-phone-systems': "Thank you for calling. Press 1 for sales, press 2 for support.",
+};
+
+// Service-specific FAQs
+const SERVICE_FAQS: Record<string, { question: string; answer: string }[]> = {
+  'youtube-videos': [
+    { question: 'Can I use AI voices for YouTube videos?', answer: 'Yes! Our AI voices are perfect for YouTube content. Many creators use our voices for tutorials, explainer videos, documentaries, and more.' },
+    { question: 'Will YouTube monetization work with AI voices?', answer: 'Yes, YouTube allows monetization of videos with AI-generated voices as long as the content follows their guidelines.' },
+  ],
+  'podcasts': [
+    { question: 'Can I create a full podcast with AI voices?', answer: 'Absolutely! Our AI voices are designed for long-form content. Create consistent, professional podcast narration with our natural-sounding voices.' },
+    { question: 'How do I make AI podcast voices sound natural?', answer: 'Our neural voices use advanced AI to create natural speech patterns. You can also adjust pacing and add pauses for a more conversational feel.' },
+  ],
+  'audiobooks': [
+    { question: 'Are AI voices good enough for audiobooks?', answer: 'Yes! Our premium neural voices provide natural, engaging narration perfect for audiobooks. Choose from different voice styles to match your book genre.' },
+    { question: 'How long does it take to create an audiobook?', answer: 'With AI TextSpeak, you can convert your entire book to audio in minutes, not weeks. Simply paste your text and select a voice.' },
+  ],
 };
 
 interface ServicePageProps {
@@ -33,13 +52,25 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   }
 
   return {
-    title: service.meta_title || `${service.name} - AI TextSpeak`,
+    title: service.meta_title || `${service.name} - AI Text to Speech | AI TextSpeak`,
     description: service.meta_description || service.short_description,
+    alternates: {
+      canonical: `${SITE_URL}/services/${service.slug}`,
+    },
     openGraph: {
       title: service.meta_title || `${service.name} - AI TextSpeak`,
       description: service.meta_description || service.short_description,
-      url: `https://aitextspeak.com/services/${service.slug}`,
-      images: service.hero_image_url ? [service.hero_image_url] : undefined,
+      url: `${SITE_URL}/services/${service.slug}`,
+      type: 'website',
+      images: service.hero_image_url 
+        ? [{ url: service.hero_image_url, width: 1200, height: 630 }]
+        : [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: service.meta_title || service.name,
+      description: service.meta_description || service.short_description,
+      images: service.hero_image_url ? [service.hero_image_url] : [`${SITE_URL}/og-image.png`],
     },
   };
 }
@@ -52,7 +83,22 @@ export default async function ServicePage({ params }: ServicePageProps) {
     notFound();
   }
 
+  const faqs = SERVICE_FAQS[slug] || [];
+
   return (
+    <>
+      <ServiceJsonLd
+        name={service.name}
+        description={service.short_description}
+        url={`${SITE_URL}/services/${service.slug}`}
+      />
+      <BreadcrumbJsonLd items={[
+        { name: 'Home', url: SITE_URL },
+        { name: 'Services', url: `${SITE_URL}/services` },
+        { name: service.name, url: `${SITE_URL}/services/${service.slug}` },
+      ]} />
+      {faqs.length > 0 && <FAQJsonLd questions={faqs} />}
+      
     <div>
       {/* Hero Section */}
       <section className="relative py-24 overflow-hidden">
@@ -278,5 +324,6 @@ export default async function ServicePage({ params }: ServicePageProps) {
         </div>
       </section>
     </div>
+    </>
   );
 }

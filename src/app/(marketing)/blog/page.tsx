@@ -3,13 +3,31 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getBlogPosts } from '@/lib/blog';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
+
 export const metadata: Metadata = {
-  title: 'Resources - AI TextSpeak',
-  description: 'Tips, tutorials, and insights about AI text-to-speech technology, voice generation, and content creation.',
+  title: 'Blog & Resources | AI Text to Speech Tips & Tutorials',
+  description: 'Learn about AI text-to-speech technology, voice generation tips, content creation best practices, and tutorials for creating professional voiceovers.',
+  keywords: [
+    'text to speech tips',
+    'AI voice tutorials',
+    'voiceover guide',
+    'TTS best practices',
+    'voice generation blog',
+  ],
+  alternates: {
+    canonical: `${SITE_URL}/blog`,
+  },
   openGraph: {
-    title: 'Resources - AI TextSpeak',
+    title: 'Blog & Resources - AI TextSpeak',
     description: 'Tips, tutorials, and insights about AI text-to-speech technology.',
-    url: 'https://aitextspeak.com/blog',
+    url: `${SITE_URL}/blog`,
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog & Resources - AI TextSpeak',
+    description: 'Learn about AI text-to-speech technology and voice generation.',
   },
 };
 

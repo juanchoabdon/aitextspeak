@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getBlogPost } from '@/lib/blog';
+import { ArticleJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -24,22 +27,26 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 
   return {
-    title: `${post.title} - AI TextSpeak`,
+    title: post.title,
     description: post.description,
+    alternates: {
+      canonical: `${SITE_URL}/blog/${slug}`,
+    },
     openGraph: {
       title: post.title,
       description: post.description,
-      url: `https://aitextspeak.com/blog/${slug}`,
+      url: `${SITE_URL}/blog/${slug}`,
       type: 'article',
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
-      images: post.image ? [{ url: post.image }] : undefined,
+      images: post.image ? [{ url: post.image, width: 1200, height: 630 }] : [{ url: `${SITE_URL}/og-image.png` }],
+      authors: [post.author || 'AI TextSpeak'],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.description,
-      images: post.image ? [post.image] : undefined,
+      images: post.image ? [post.image] : [`${SITE_URL}/og-image.png`],
     },
   };
 }
@@ -53,6 +60,22 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   return (
+    <>
+      <ArticleJsonLd
+        title={post.title}
+        description={post.description}
+        url={`${SITE_URL}/blog/${slug}`}
+        imageUrl={post.image || `${SITE_URL}/og-image.png`}
+        datePublished={post.publishedAt}
+        dateModified={post.updatedAt || post.publishedAt}
+        authorName={post.author || 'AI TextSpeak'}
+      />
+      <BreadcrumbJsonLd items={[
+        { name: 'Home', url: SITE_URL },
+        { name: 'Blog', url: `${SITE_URL}/blog` },
+        { name: post.title, url: `${SITE_URL}/blog/${slug}` },
+      ]} />
+      
     <article className="py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         {/* Back Link */}
@@ -150,5 +173,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </div>
       </div>
     </article>
+    </>
   );
 }
