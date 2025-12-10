@@ -102,9 +102,10 @@ export function BusinessPerformance() {
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          label="New Users"
-          value={stats?.newUsers ?? 0}
-          color="blue"
+          label="Revenue"
+          value={stats?.revenue ?? 0}
+          prefix="$"
+          color="amber"
           loading={loading}
         />
         <StatCard
@@ -114,10 +115,9 @@ export function BusinessPerformance() {
           loading={loading}
         />
         <StatCard
-          label="Revenue"
-          value={stats?.revenue ?? 0}
-          prefix="$"
-          color="amber"
+          label="New Users"
+          value={stats?.newUsers ?? 0}
+          color="blue"
           loading={loading}
         />
       </div>
