@@ -9,10 +9,23 @@ interface SendEmailParams {
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
+  console.log('[Brevo] Attempting to send email to:', params.to);
+  
   if (!BREVO_API_KEY) {
     console.error('[Brevo] API key not configured');
     return { success: false, error: 'Email service not configured' };
   }
+
+  console.log('[Brevo] API key present, length:', BREVO_API_KEY.length);
+
+  const payload = {
+    sender: params.sender || { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' },
+    to: params.to,
+    subject: params.subject,
+    htmlContent: params.htmlContent,
+  };
+
+  console.log('[Brevo] Sender:', payload.sender);
 
   try {
     const response = await fetch(BREVO_API_URL, {
@@ -22,20 +35,19 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
         'api-key': BREVO_API_KEY,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        sender: params.sender || { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' },
-        to: params.to,
-        subject: params.subject,
-        htmlContent: params.htmlContent,
-      }),
+      body: JSON.stringify(payload),
     });
 
+    const data = await response.json();
+    console.log('[Brevo] Response status:', response.status);
+    console.log('[Brevo] Response data:', JSON.stringify(data));
+
     if (!response.ok) {
-      const data = await response.json();
       console.error('[Brevo] Error:', data);
       return { success: false, error: data.message || 'Failed to send email' };
     }
 
+    console.log('[Brevo] Email sent successfully!');
     return { success: true };
   } catch (error) {
     console.error('[Brevo] Error:', error);
