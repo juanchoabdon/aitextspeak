@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { requestPasswordReset } from '@/lib/auth/password-reset';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -9,26 +9,17 @@ export function ForgotPasswordForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/reset-password`,
-    });
+    const result = await requestPasswordReset(email);
 
     setIsLoading(false);
 
-    if (error) {
-      setError(error.message);
+    if (!result.success && result.error) {
+      setError(result.error);
       return;
     }
 
@@ -45,15 +36,12 @@ export function ForgotPasswordForm() {
         </div>
         <h3 className="text-xl font-semibold text-white mb-2">Check Your Email</h3>
         <p className="text-slate-400 mb-4">
-          We&apos;ve sent a password reset link to <span className="text-white font-medium">{email}</span>
+          If an account exists with <span className="text-white font-medium">{email}</span>, you&apos;ll receive a password reset link.
         </p>
         <p className="text-sm text-slate-500">
-          Didn&apos;t receive it? Check your spam folder or{' '}
+          Didn&apos;t receive it? Check spam or{' '}
           <button
-            onClick={() => {
-              setIsSuccess(false);
-              setEmail('');
-            }}
+            onClick={() => { setIsSuccess(false); setEmail(''); }}
             className="text-amber-500 hover:text-amber-400"
           >
             try again
