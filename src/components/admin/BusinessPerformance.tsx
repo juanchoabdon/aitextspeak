@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getBusinessStats, type BusinessStats, type DatePeriod } from '@/lib/admin/business-stats';
+import { getBusinessStats, getMRRStats, type BusinessStats, type MRRStats, type DatePeriod } from '@/lib/admin/business-stats';
 
 const periodLabels: Record<DatePeriod, string> = {
   today: 'Today',
@@ -51,7 +51,25 @@ function StatCard({
 export function BusinessPerformance() {
   const [period, setPeriod] = useState<DatePeriod>('today');
   const [stats, setStats] = useState<BusinessStats | null>(null);
+  const [mrrStats, setMrrStats] = useState<MRRStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mrrLoading, setMrrLoading] = useState(true);
+
+  // Fetch MRR stats only once (independent of period)
+  useEffect(() => {
+    async function fetchMRR() {
+      setMrrLoading(true);
+      try {
+        const data = await getMRRStats();
+        setMrrStats(data);
+      } catch (error) {
+        console.error('Failed to fetch MRR stats:', error);
+      } finally {
+        setMrrLoading(false);
+      }
+    }
+    fetchMRR();
+  }, []);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -72,9 +90,50 @@ export function BusinessPerformance() {
   const periods: DatePeriod[] = ['today', 'yesterday', 'week', 'month'];
 
   return (
-    <div className="space-y-6">
-      {/* Period Selector */}
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-8">
+      {/* MRR Section - Always Current */}
+      <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Monthly Recurring Revenue
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">Current active recurring subscriptions</p>
+          </div>
+          {mrrLoading ? (
+            <div className="h-10 w-32 animate-pulse rounded bg-slate-800" />
+          ) : (
+            <p className="text-4xl font-bold text-amber-500">
+              ${mrrStats?.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}
+            </p>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-amber-500/20">
+          <div className="text-center">
+            <p className="text-2xl font-semibold text-white">{mrrLoading ? '-' : mrrStats?.activeSubscriptions ?? 0}</p>
+            <p className="text-xs text-slate-400">Active Subs</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-semibold text-green-400">{mrrLoading ? '-' : mrrStats?.monthlySubscriptions ?? 0}</p>
+            <p className="text-xs text-slate-400">Monthly</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-semibold text-purple-400">{mrrLoading ? '-' : mrrStats?.lifetimeSubscriptions ?? 0}</p>
+            <p className="text-xs text-slate-400">Lifetime</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Period-Based Stats */}
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-4">Period Performance</h3>
+        
+        {/* Period Selector */}
+        <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-slate-400 mr-2">Period:</span>
         {periods.map((p) => (
           <button
@@ -93,14 +152,14 @@ export function BusinessPerformance() {
 
       {/* Date Range Display */}
       {stats && (
-        <p className="text-sm text-slate-500">
+        <p className="mt-4 text-sm text-slate-500">
           Showing data from <span className="text-slate-300">{stats.period.start}</span> to{' '}
           <span className="text-slate-300">{stats.period.end}</span>
         </p>
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           label="Revenue"
           value={stats?.revenue ?? 0}
@@ -163,6 +222,7 @@ export function BusinessPerformance() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

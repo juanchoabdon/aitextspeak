@@ -14,6 +14,13 @@ export interface BusinessStats {
   };
 }
 
+export interface MRRStats {
+  mrr: number;
+  activeSubscriptions: number;
+  monthlySubscriptions: number;
+  lifetimeSubscriptions: number;
+}
+
 function getDateRange(period: DatePeriod, customStart?: string, customEnd?: string): { start: Date; end: Date } {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -105,5 +112,48 @@ export async function getBusinessStats(
       start: start.toISOString().split('T')[0],
       end: end.toISOString().split('T')[0],
     },
+  };
+}
+
+/**
+ * Get MRR (Monthly Recurring Revenue) stats
+ * This is independent of the period filter - it's always current
+ */
+export async function getMRRStats(): Promise<MRRStats> {
+  const supabase = createAdminClient();
+
+  // Get all active subscriptions with their price
+  const { data: subscriptions } = await supabase
+    .from('subscriptions')
+    .select('plan_name, price_amount')
+    .eq('status', 'active');
+
+  const subs = subscriptions || [];
+  
+  // Calculate MRR - only from recurring subscriptions (monthly plans)
+  // Lifetime plans don't contribute to MRR
+  let mrr = 0;
+  let monthlyCount = 0;
+  let lifetimeCount = 0;
+
+  for (const sub of subs) {
+    const planName = (sub.plan_name || '').toLowerCase();
+    const price = sub.price_amount || 0;
+    
+    // Check if it's a lifetime plan (doesn't count towards MRR)
+    if (planName.includes('lifetime') || planName.includes('one_time') || planName.includes('one-time')) {
+      lifetimeCount++;
+    } else if (price > 0) {
+      // Monthly recurring subscription
+      mrr += price;
+      monthlyCount++;
+    }
+  }
+
+  return {
+    mrr,
+    activeSubscriptions: subs.length,
+    monthlySubscriptions: monthlyCount,
+    lifetimeSubscriptions: lifetimeCount,
   };
 }
