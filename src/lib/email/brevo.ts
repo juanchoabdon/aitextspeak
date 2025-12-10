@@ -6,6 +6,7 @@ interface SendEmailParams {
   subject: string;
   htmlContent: string;
   sender?: { name: string; email: string };
+  replyTo?: { email: string; name?: string };
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
@@ -18,14 +19,20 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
 
   console.log('[Brevo] API key present, length:', BREVO_API_KEY.length);
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     sender: params.sender || { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' },
     to: params.to,
     subject: params.subject,
     htmlContent: params.htmlContent,
   };
 
+  // Add replyTo if provided
+  if (params.replyTo) {
+    payload.replyTo = params.replyTo;
+  }
+
   console.log('[Brevo] Sender:', payload.sender);
+  if (params.replyTo) console.log('[Brevo] Reply-To:', params.replyTo);
 
   try {
     const response = await fetch(BREVO_API_URL, {

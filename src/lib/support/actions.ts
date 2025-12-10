@@ -131,6 +131,7 @@ async function sendSupportNotificationEmail(ticketId: string, input: TicketInput
     to: [{ email: 'info@aitextspeak.com', name: 'AI TextSpeak Support' }],
     subject: `[${priority.toUpperCase()}] ${input.category}: ${input.subject}`,
     htmlContent,
-    sender: { name: input.name || 'AI TextSpeak User', email: 'noreply@aitextspeak.com' },
+    sender: { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' },
+    replyTo: { email: input.email, name: input.name || undefined },
   });
 }
