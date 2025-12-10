@@ -121,7 +121,7 @@ export default async function MarketingLayout({
       {/* Footer */}
       <footer className="border-t border-slate-800/50 bg-slate-900/50">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
             {/* Product */}
             <div>
               <h3 className="text-sm font-semibold text-white">Product</h3>
@@ -152,6 +152,23 @@ export default async function MarketingLayout({
                   <Link href="/contact" className="text-sm text-slate-400 hover:text-white transition-colors">
                     Contact
                   </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h3 className="text-sm font-semibold text-white">Support</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link href="/help" className="text-sm text-slate-400 hover:text-white transition-colors">
+                    Help Center
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:support@aitextspeak.com" className="text-sm text-slate-400 hover:text-white transition-colors">
+                    Email Support
+                  </a>
                 </li>
               </ul>
             </div>

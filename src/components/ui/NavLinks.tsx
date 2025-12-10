@@ -25,7 +25,7 @@ const navLinks: NavLink[] = [
   { href: '/', label: 'Home' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/blog', label: 'Resources', matchPaths: ['/blog'] },
-  { href: '/affiliates', label: 'Affiliates' },
+  { href: '/help', label: 'Help' },
 ];
 
 export function NavLinks({ featuredServices = [] }: NavLinksProps) {
