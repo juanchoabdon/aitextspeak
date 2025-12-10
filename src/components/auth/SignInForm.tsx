@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { signIn } from '@/lib/auth/actions';
 import { trackLoginStarted, trackLoginCompleted, trackAuthError } from '@/lib/analytics/events';
 
@@ -86,9 +87,9 @@ export function SignInForm() {
           <label htmlFor="password" className="block text-sm font-medium text-slate-300">
             Password
           </label>
-          <a href="#" className="text-sm text-amber-500 hover:text-amber-400">
+          <Link href="/auth/forgot-password" className="text-sm text-amber-500 hover:text-amber-400">
             Forgot password?
-          </a>
+          </Link>
         </div>
         <input
           id="password"
