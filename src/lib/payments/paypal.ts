@@ -1,5 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPlanByPayPalPlan, type PlanId } from './plans';
+import {
+  trackPaymentCompleted,
+  trackSubscriptionActivatedServer,
+  trackSubscriptionCancelledServer,
+  flushAmplitude,
+} from '@/lib/analytics/amplitude-server';
 
 const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'sandbox'
   ? 'https://api-m.sandbox.paypal.com'
@@ -484,6 +490,21 @@ export async function handlePayPalWebhook(
           .from('profiles')
           .update({ role: 'pro' })
           .eq('id', userId);
+
+        // Track analytics
+        trackPaymentCompleted(userId, {
+          planId: plan?.id || 'monthly',
+          amount: plan?.price || 0,
+          provider: 'paypal',
+          isRecurring: true,
+          currency: 'USD',
+          subscriptionId,
+        });
+        trackSubscriptionActivatedServer(userId, {
+          planId: plan?.id || 'monthly',
+          provider: 'paypal',
+          subscriptionId,
+        });
         break;
       }
 
@@ -508,6 +529,20 @@ export async function handlePayPalWebhook(
             .from('profiles')
             .update({ role: 'user' })
             .eq('id', userId);
+
+          // Track subscription cancellation
+          const { data: cancelledSub } = await supabase
+            .from('subscriptions')
+            .select('plan_id')
+            .eq('provider_subscription_id', subscriptionId)
+            .single();
+
+          trackSubscriptionCancelledServer(userId, {
+            planId: cancelledSub?.plan_id || 'unknown',
+            provider: 'paypal',
+            subscriptionId: subscriptionId || 'unknown',
+            reason: event.event_type,
+          });
         }
         break;
       }
@@ -617,11 +652,23 @@ export async function handlePayPalWebhook(
               .from('profiles')
               .update({ role: 'pro' })
               .eq('id', customId);
+
+            // Track analytics for lifetime purchase
+            trackPaymentCompleted(customId, {
+              planId: 'lifetime',
+              amount: amount,
+              provider: 'paypal',
+              isRecurring: false,
+              currency: 'USD',
+            });
           }
         }
         break;
       }
     }
+
+    // Flush analytics events before returning (important for serverless)
+    await flushAmplitude();
 
     return { success: true };
   } catch (error) {

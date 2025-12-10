@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 
 const adminNavItems = [
   { name: 'Users', href: '/admin', icon: 'users' as const },
+  { name: 'Services', href: '/admin/services', icon: 'services' as const },
   { name: 'Resources', href: '/admin/blog', icon: 'blog' as const },
 ];
 

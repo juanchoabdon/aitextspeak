@@ -164,7 +164,7 @@ export function PricingCard({
           <button
             onClick={handleGetStarted}
             disabled={isLoading}
-            className={`block w-full rounded-lg py-3 text-center font-semibold transition-colors disabled:opacity-50 ${
+            className={`block w-full rounded-lg py-3 text-center font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               popular
                 ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500'
                 : 'bg-violet-600 text-white hover:bg-violet-500'
@@ -177,7 +177,7 @@ export function PricingCard({
             <button
               onClick={() => handleCheckout('stripe')}
               disabled={isLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 py-3 text-center font-semibold text-white transition-colors cursor-pointer hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -195,7 +195,7 @@ export function PricingCard({
             <button
               onClick={() => handleCheckout('paypal')}
               disabled={isLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0070ba] py-3 text-center font-semibold text-white transition-colors hover:bg-[#005ea6] disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0070ba] py-3 text-center font-semibold text-white transition-colors cursor-pointer hover:bg-[#005ea6] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -213,7 +213,7 @@ export function PricingCard({
             
             <button
               onClick={() => setShowPaymentOptions(false)}
-              className="w-full text-center text-sm text-slate-400 hover:text-white transition-colors"
+              className="w-full text-center text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               Cancel
             </button>

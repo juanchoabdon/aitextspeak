@@ -101,6 +101,7 @@ export async function signIn(credentials: LoginCredentials): Promise<AuthResult>
 /**
  * Server Action: Sign up a new user
  * This creates a new user in Supabase Auth (not for legacy users)
+ * Also creates a welcome project for new users
  */
 export async function signUp(data: SignupData): Promise<AuthResult> {
   const { email, password, firstName, lastName } = data;
@@ -153,9 +154,31 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
     }).eq('id', authData.user.id);
   }
   
+  // Create a welcome project for the new user
+  let welcomeProjectId: string | undefined;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: project } = await (supabase as any)
+      .from('projects')
+      .insert({
+        user_id: authData.user.id,
+        title: 'My First Project',
+        project_type: 'other',
+        is_legacy: false,
+      })
+      .select('id')
+      .single();
+    
+    welcomeProjectId = project?.id;
+  } catch (projectError) {
+    // Don't fail signup if project creation fails
+    console.error('Failed to create welcome project:', projectError);
+  }
+  
   return {
     success: true,
     user: { id: authData.user.id, email: authData.user.email! },
+    welcomeProjectId,
   };
 }
 

@@ -18,6 +18,7 @@ export interface AuthResult {
   };
   isLegacyMigration?: boolean;
   redirectTo?: string;
+  welcomeProjectId?: string;
 }
 
 export interface LoginCredentials {

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signUp } from '@/lib/auth/actions';
+import { trackSignupStarted, trackSignupCompleted, trackAuthError } from '@/lib/analytics/events';
 
 export function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -13,6 +15,28 @@ export function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [customRedirect, setCustomRedirect] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+  const hasTrackedStart = useRef(false);
+
+  useEffect(() => {
+    const redirect = searchParams.get('redirect');
+    const plan = searchParams.get('plan');
+    
+    if (redirect) {
+      setCustomRedirect(redirect);
+    } else if (plan && plan !== 'free') {
+      // If user came from pricing with a paid plan, redirect to pricing with checkout param
+      setCheckoutPlan(plan);
+    }
+    
+    // Track signup started (only once)
+    if (!hasTrackedStart.current) {
+      const source = searchParams.get('source') || (plan ? 'pricing' : redirect ? 'cta' : 'direct');
+      trackSignupStarted(source);
+      hasTrackedStart.current = true;
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,15 +64,38 @@ export function SignUpForm() {
         lastName: lastName || undefined,
       });
 
-      if (result.success) {
-        // Redirect to dashboard on success
-        router.push('/dashboard');
+      if (result.success && result.user) {
+        // Track signup completed
+        trackSignupCompleted(result.user.id, 'email', result.user.email);
+        
+        // Determine where to redirect
+        let redirectTo: string;
+        
+        if (customRedirect) {
+          // Custom redirect takes priority (e.g., from hero demo)
+          redirectTo = customRedirect;
+        } else if (checkoutPlan) {
+          // Paid plan checkout flow
+          redirectTo = `/pricing?checkout=${checkoutPlan}`;
+        } else if (result.welcomeProjectId) {
+          // New user - go directly to their first project
+          redirectTo = `/dashboard/projects/${result.welcomeProjectId}`;
+        } else {
+          // Fallback to dashboard
+          redirectTo = '/dashboard';
+        }
+        
+        router.push(redirectTo);
         router.refresh();
       } else {
-        setError(result.error || 'Failed to create account');
+        const errorMsg = result.error || 'Failed to create account';
+        setError(errorMsg);
+        trackAuthError('signup', errorMsg, 'email');
       }
     } catch {
-      setError('An unexpected error occurred');
+      const errorMsg = 'An unexpected error occurred';
+      setError(errorMsg);
+      trackAuthError('signup', errorMsg, 'email');
     } finally {
       setIsLoading(false);
     }

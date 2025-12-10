@@ -1,6 +1,13 @@
 import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPlanByStripePrice, PLANS, type PlanId } from './plans';
+import {
+  trackPaymentCompleted,
+  trackSubscriptionActivatedServer,
+  trackSubscriptionCancelledServer,
+  trackPaymentFailedServer,
+  flushAmplitude,
+} from '@/lib/analytics/amplitude-server';
 
 // Initialize Stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -198,6 +205,21 @@ export async function handleStripeWebhook(
             .from('profiles')
             .update({ role: 'pro' })
             .eq('id', userId);
+
+          // Track analytics
+          trackPaymentCompleted(userId, {
+            planId,
+            amount: (session.amount_total || 0) / 100,
+            provider: 'stripe',
+            isRecurring: true,
+            currency: session.currency?.toUpperCase() || 'USD',
+            subscriptionId: subscription.id,
+          });
+          trackSubscriptionActivatedServer(userId, {
+            planId,
+            provider: 'stripe',
+            subscriptionId: subscription.id,
+          });
         } else {
           // Handle one-time payment (lifetime)
           await supabase.from('subscriptions').upsert({
@@ -241,6 +263,15 @@ export async function handleStripeWebhook(
             .from('profiles')
             .update({ role: 'pro' })
             .eq('id', userId);
+
+          // Track analytics for lifetime purchase
+          trackPaymentCompleted(userId, {
+            planId: 'lifetime',
+            amount: session.amount_total! / 100,
+            provider: 'stripe',
+            isRecurring: false,
+            currency: session.currency?.toUpperCase() || 'USD',
+          });
         }
         break;
       }
@@ -297,6 +328,19 @@ export async function handleStripeWebhook(
             .from('profiles')
             .update({ role: 'user' })
             .eq('id', userId);
+
+          // Track subscription cancellation
+          const { data: cancelledSub } = await supabase
+            .from('subscriptions')
+            .select('plan_id')
+            .eq('provider_subscription_id', subData.id)
+            .single();
+
+          trackSubscriptionCancelledServer(userId, {
+            planId: cancelledSub?.plan_id || 'unknown',
+            provider: 'stripe',
+            subscriptionId: subData.id,
+          });
         }
         break;
       }
@@ -389,6 +433,13 @@ export async function handleStripeWebhook(
                 subscription_id: invoiceData.subscription,
               },
             });
+
+            // Track payment failure
+            trackPaymentFailedServer(sub.user_id, {
+              planId: sub.plan_id || 'unknown',
+              provider: 'stripe',
+              errorMessage: 'Invoice payment failed',
+            });
           }
         }
         break;
@@ -447,6 +498,9 @@ export async function handleStripeWebhook(
       }
     }
 
+    // Flush analytics events before returning (important for serverless)
+    await flushAmplitude();
+    
     return { success: true };
   } catch (error) {
     console.error('Webhook handler error:', error);

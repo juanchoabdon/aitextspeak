@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import { TopLoader } from "@/components/ui/TopLoader";
+import { AmplitudeProvider } from "@/components/analytics/AmplitudeProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -90,7 +91,11 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <TopLoader />
         </Suspense>
-        {children}
+        <Suspense fallback={null}>
+          <AmplitudeProvider>
+            {children}
+          </AmplitudeProvider>
+        </Suspense>
       </body>
     </html>
   );

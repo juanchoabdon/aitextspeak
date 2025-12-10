@@ -1,15 +1,33 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from '@/lib/auth/actions';
+import { trackLoginStarted, trackLoginCompleted, trackAuthError } from '@/lib/analytics/events';
 
 export function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const hasTrackedStart = useRef(false);
+
+  useEffect(() => {
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      setRedirectTo(redirect);
+    }
+    
+    // Track login started (only once)
+    if (!hasTrackedStart.current) {
+      const source = searchParams.get('source') || (redirect ? 'redirect' : 'direct');
+      trackLoginStarted(source);
+      hasTrackedStart.current = true;
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,15 +37,22 @@ export function SignInForm() {
     try {
       const result = await signIn({ email, password });
 
-      if (result.success) {
-        // Redirect based on user role
-        router.push(result.redirectTo || '/dashboard');
+      if (result.success && result.user) {
+        // Track login completed
+        trackLoginCompleted(result.user.id, 'email', result.user.email);
+        
+        // Use custom redirect if provided, otherwise use default
+        router.push(redirectTo || result.redirectTo || '/dashboard');
         router.refresh();
       } else {
-        setError(result.error || 'Failed to sign in');
+        const errorMsg = result.error || 'Failed to sign in';
+        setError(errorMsg);
+        trackAuthError('login', errorMsg, 'email');
       }
     } catch {
-      setError('An unexpected error occurred');
+      const errorMsg = 'An unexpected error occurred';
+      setError(errorMsg);
+      trackAuthError('login', errorMsg, 'email');
     } finally {
       setIsLoading(false);
     }

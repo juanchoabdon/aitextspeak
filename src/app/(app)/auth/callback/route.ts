@@ -21,8 +21,11 @@ export async function GET(request: Request) {
           .eq('id', user.id)
           .single();
 
+        let isNewUser = false;
+
         // Create profile if it doesn't exist (for OAuth users)
         if (!profile) {
+          isNewUser = true;
           const userMetadata = user.user_metadata;
           await supabase.from('profiles').insert({
             id: user.id,
@@ -31,7 +34,37 @@ export async function GET(request: Request) {
             last_name: userMetadata?.full_name?.split(' ').slice(1).join(' ') || null,
             avatar_url: userMetadata?.avatar_url || userMetadata?.picture || null,
           });
+          
+          // Create a welcome project for new OAuth users
+          try {
+            const { data: project } = await supabase
+              .from('projects')
+              .insert({
+                user_id: user.id,
+                title: 'My First Project',
+                project_type: 'other',
+                is_legacy: false,
+              })
+              .select('id')
+              .single();
+            
+            // If we created a project and user isn't going to a specific page, redirect to the project
+            if (project && next === '/dashboard') {
+              // Add OAuth tracking params for client-side analytics
+              return NextResponse.redirect(
+                `${origin}/dashboard/projects/${project.id}?oauth=google&new_user=1&user_id=${user.id}`
+              );
+            }
+          } catch (projectError) {
+            // Don't fail auth if project creation fails
+            console.error('Failed to create welcome project for OAuth user:', projectError);
+          }
         }
+
+        // Add OAuth tracking params for client-side analytics
+        const separator = next.includes('?') ? '&' : '?';
+        const trackingParams = `oauth=google${isNewUser ? '&new_user=1' : ''}&user_id=${user.id}`;
+        return NextResponse.redirect(`${origin}${next}${separator}${trackingParams}`);
       }
 
       return NextResponse.redirect(`${origin}${next}`);

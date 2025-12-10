@@ -42,6 +42,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* All interactive elements should have pointer cursor by default */
+button,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+a {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="button"]:disabled {
+  cursor: not-allowed;
+}
+
 /* ===========================================
    SELECTION STYLES
    =========================================== */

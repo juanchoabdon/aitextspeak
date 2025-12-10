@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { HeroTTSDemo } from '@/components/home/HeroTTSDemo';
+import { TrustStats } from '@/components/home/TrustStats';
 
 export const metadata: Metadata = {
   title: 'AI TextSpeak - Professional AI Text to Speech Generator',
@@ -27,37 +29,28 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-transparent to-transparent" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-orange-500/20 to-transparent blur-3xl" />
         
-        <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               <span className="block text-white">Transform Text Into</span>
               <span className="block bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
                 Natural Speech
               </span>
             </h1>
             
-            <p className="mt-6 text-lg text-slate-300 sm:text-xl max-w-2xl mx-auto">
+            <p className="mt-6 text-lg text-slate-300 max-w-2xl mx-auto">
               Create professional voiceovers for YouTube videos, audiobooks, podcasts, 
               and more with our advanced AI text-to-speech technology.
             </p>
-            
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/auth/signup"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-orange-500/30 hover:from-amber-400 hover:to-orange-500 transition-all hover:scale-105"
-              >
-                Start Creating Free
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-800/50 px-8 py-4 text-lg font-semibold text-white hover:bg-slate-800 transition-all"
-              >
-                View Pricing
-              </Link>
-            </div>
+
+            {/* TTS Demo */}
+            <HeroTTSDemo />
           </div>
         </div>
       </section>
+
+      {/* Trust Stats Section */}
+      <TrustStats />
 
       {/* Features Section */}
       <section className="py-24 bg-slate-900/50">
@@ -186,6 +179,160 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section className="py-24 bg-slate-900/50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              What Creators Say
+            </h2>
+            <p className="mt-4 text-lg text-slate-400">
+              Join thousands of satisfied creators worldwide
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {/* Testimonial 1 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 hover:border-amber-500/30 transition-colors">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-slate-300 mb-6">
+                &quot;AI TextSpeak has completely transformed my YouTube workflow. I can now produce videos 3x faster without compromising on quality. The voices are incredibly natural!&quot;
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                  MR
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Marcus Rodriguez</div>
+                  <div className="text-sm text-slate-500">YouTube Creator • 850K subscribers</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 hover:border-amber-500/30 transition-colors">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-slate-300 mb-6">
+                &quot;As an indie author, I couldn&apos;t afford professional narrators. AI TextSpeak let me turn my entire book series into audiobooks. My readers love them!&quot;
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                  ST
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Sarah Thompson</div>
+                  <div className="text-sm text-slate-500">Author • 12 audiobooks published</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 hover:border-amber-500/30 transition-colors">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-slate-300 mb-6">
+                &quot;We use AI TextSpeak for all our e-learning courses. The multi-language support is amazing - we&apos;ve localized our content into 15 languages effortlessly.&quot;
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                  DK
+                </div>
+                <div>
+                  <div className="font-semibold text-white">David Kim</div>
+                  <div className="text-sm text-slate-500">CEO • EduTech Solutions</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 4 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 hover:border-amber-500/30 transition-colors">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-slate-300 mb-6">
+                &quot;The voice quality is indistinguishable from human narrators. My podcast intro sounds professional and my audience had no idea it was AI-generated!&quot;
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                  JL
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Jessica Lee</div>
+                  <div className="text-sm text-slate-500">Podcast Host • Tech Talk Daily</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 5 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 hover:border-amber-500/30 transition-colors">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-slate-300 mb-6">
+                &quot;Saved our marketing team thousands of dollars. We now create professional video ads with voiceovers in-house. The ROI has been incredible.&quot;
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold">
+                  AP
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Alex Patel</div>
+                  <div className="text-sm text-slate-500">Marketing Director • StartupXYZ</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 6 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 hover:border-amber-500/30 transition-colors">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-slate-300 mb-6">
+                &quot;I&apos;ve tried every TTS tool out there. AI TextSpeak is hands down the best - natural voices, easy interface, and the pricing is unbeatable.&quot;
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
+                  EM
+                </div>
+                <div>
+                  <div className="font-semibold text-white">Emma Martinez</div>
+                  <div className="text-sm text-slate-500">Content Creator • 2M+ followers</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-24 bg-gradient-to-t from-amber-500/10 to-transparent">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
@@ -208,4 +355,3 @@ export default function HomePage() {
     </>
   );
 }
-

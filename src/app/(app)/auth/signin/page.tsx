@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { SignInForm } from '@/components/auth/SignInForm';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Logo } from '@/components/ui/Logo';
@@ -12,6 +13,16 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
+
+function SignInFormFallback() {
+  return (
+    <div className="mt-8 space-y-6 animate-pulse">
+      <div className="h-12 bg-slate-800 rounded-xl" />
+      <div className="h-12 bg-slate-800 rounded-xl" />
+      <div className="h-12 bg-slate-800 rounded-xl" />
+    </div>
+  );
+}
 
 export default function SignInPage() {
   return (
@@ -47,7 +58,9 @@ export default function SignInPage() {
           </div>
 
           {/* Sign In Form */}
-          <SignInForm />
+          <Suspense fallback={<SignInFormFallback />}>
+            <SignInForm />
+          </Suspense>
 
           {/* Sign Up Link */}
           <p className="mt-8 text-center text-sm text-slate-400">

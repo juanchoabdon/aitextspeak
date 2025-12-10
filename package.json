@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "^2.32.0",
+    "@amplitude/analytics-node": "^1.5.27",
+    "@amplitude/plugin-session-replay-browser": "^1.25.0",
     "@paypal/paypal-server-sdk": "^2.0.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.86.0",

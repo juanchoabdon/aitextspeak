@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { PricingCard } from '@/components/pricing/PricingCard';
+import { PricingCards } from '@/components/pricing/PricingCards';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
 import type { PlanId } from '@/lib/payments/plans';
 
@@ -119,22 +119,11 @@ export default async function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="mt-16 grid gap-8 lg:grid-cols-4 md:grid-cols-2">
-          {plans.map((plan) => (
-            <PricingCard
-              key={plan.planId}
-              name={plan.name}
-              subtitle={plan.subtitle}
-              price={plan.price}
-              period={plan.period}
-              features={plan.features}
-              planId={plan.planId}
-              popular={plan.popular}
-              isLoggedIn={isLoggedIn}
-              isCurrentPlan={isLoggedIn && plan.planId === currentPlanId}
-            />
-          ))}
-        </div>
+        <PricingCards 
+          plans={plans} 
+          isLoggedIn={isLoggedIn} 
+          currentPlanId={currentPlanId} 
+        />
 
         {/* FAQ Section */}
         <div className="mt-24">

@@ -2,16 +2,23 @@
 
 import { useState } from 'react';
 import { signInWithGoogle } from '@/lib/auth/oauth';
+import { trackEvent } from '@/lib/analytics/amplitude';
+import { trackAuthError } from '@/lib/analytics/events';
 
 export function GoogleSignInButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleClick() {
     setIsLoading(true);
+    
+    // Track Google auth started
+    trackEvent('Google Auth Started');
+    
     try {
       await signInWithGoogle();
     } catch (error) {
       console.error('Failed to sign in with Google:', error);
+      trackAuthError('login', error instanceof Error ? error.message : 'Google auth failed', 'google');
       setIsLoading(false);
     }
   }
