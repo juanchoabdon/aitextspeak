@@ -13,7 +13,12 @@ const CATEGORIES = [
   { value: 'other', label: 'Other' },
 ];
 
-export function HelpTicketForm() {
+interface HelpTicketFormProps {
+  prefillEmail?: string;
+  prefillName?: string;
+}
+
+export function HelpTicketForm({ prefillEmail, prefillName }: HelpTicketFormProps = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +95,7 @@ export function HelpTicketForm() {
             id="name"
             name="name"
             required
+            defaultValue={prefillName || ''}
             className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
             placeholder="Your name"
           />
@@ -103,7 +109,9 @@ export function HelpTicketForm() {
             id="email"
             name="email"
             required
-            className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            defaultValue={prefillEmail || ''}
+            readOnly={!!prefillEmail}
+            className={`mt-2 block w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 ${prefillEmail ? 'opacity-70 cursor-not-allowed' : ''}`}
             placeholder="you@example.com"
           />
         </div>
