@@ -69,7 +69,7 @@ export function trackServerRevenue(
   }
 
   if (properties.eventProperties) {
-    revenue.setEventProperties(properties.eventProperties);
+    revenue.setEventProperties(properties.eventProperties as Record<string, string | number | boolean | string[]>);
   }
 
   amplitude.revenue(revenue, { user_id: userId });

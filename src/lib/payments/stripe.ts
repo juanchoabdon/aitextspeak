@@ -412,7 +412,7 @@ export async function handleStripeWebhook(
           // Log failed payment
           const { data: sub } = await supabase
             .from('subscriptions')
-            .select('user_id, plan_name')
+            .select('user_id, plan_name, plan_id')
             .eq('provider_subscription_id', invoiceData.subscription)
             .single();
 

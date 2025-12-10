@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabaseClient = any;
+
 export interface ServiceFeature {
   title: string;
   description: string;
@@ -57,7 +60,7 @@ export interface Service {
 export async function getPublishedServices(): Promise<Service[]> {
   const supabase = await createClient();
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as AnySupabaseClient)
     .from('services')
     .select('*')
     .eq('is_published', true)
@@ -77,7 +80,7 @@ export async function getPublishedServices(): Promise<Service[]> {
 export async function getFeaturedServices(limit: number = 4): Promise<Service[]> {
   const supabase = await createClient();
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as AnySupabaseClient)
     .from('services')
     .select('*')
     .eq('is_published', true)
@@ -99,7 +102,7 @@ export async function getFeaturedServices(limit: number = 4): Promise<Service[]>
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
   const supabase = await createClient();
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as AnySupabaseClient)
     .from('services')
     .select('*')
     .eq('slug', slug)
@@ -120,7 +123,7 @@ export async function getServiceBySlug(slug: string): Promise<Service | null> {
 export async function getAllServices(): Promise<Service[]> {
   const supabase = await createClient();
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as AnySupabaseClient)
     .from('services')
     .select('*')
     .order('sort_order', { ascending: true });

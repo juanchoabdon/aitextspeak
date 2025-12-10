@@ -531,18 +531,20 @@ export async function handlePayPalWebhook(
             .eq('id', userId);
 
           // Track subscription cancellation
-          const { data: cancelledSub } = await supabase
-            .from('subscriptions')
-            .select('plan_id')
-            .eq('provider_subscription_id', subscriptionId)
-            .single();
+          if (subscriptionId) {
+            const { data: cancelledSub } = await supabase
+              .from('subscriptions')
+              .select('plan_id')
+              .eq('provider_subscription_id', subscriptionId)
+              .single();
 
-          trackSubscriptionCancelledServer(userId, {
-            planId: cancelledSub?.plan_id || 'unknown',
-            provider: 'paypal',
-            subscriptionId: subscriptionId || 'unknown',
-            reason: event.event_type,
-          });
+            trackSubscriptionCancelledServer(userId, {
+              planId: cancelledSub?.plan_id || 'unknown',
+              provider: 'paypal',
+              subscriptionId: subscriptionId,
+              reason: event.event_type,
+            });
+          }
         }
         break;
       }

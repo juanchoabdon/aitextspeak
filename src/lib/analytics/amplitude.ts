@@ -168,7 +168,7 @@ export function trackRevenue(properties: {
   }
   
   if (properties.eventProperties) {
-    revenue.setEventProperties(properties.eventProperties);
+    revenue.setEventProperties(properties.eventProperties as Record<string, string | number | boolean | string[]>);
   }
   
   amplitude.revenue(revenue);

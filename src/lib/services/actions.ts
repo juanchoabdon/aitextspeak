@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Service, ServiceFeature, ServiceStep, ServiceUseCase, ServiceTestimonial } from './db';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabaseClient = any;
+
 export interface CreateServiceInput {
   slug: string;
   name: string;
@@ -56,8 +59,8 @@ export async function createService(input: CreateServiceInput): Promise<ServiceA
     return { success: false, error: 'Not authorized' };
   }
   
-  // Create service
-  const { data, error } = await supabase
+  // Create service (cast to any because services table is not in generated types yet)
+  const { data, error } = await (supabase as AnySupabaseClient)
     .from('services')
     .insert({
       slug: input.slug,
@@ -122,7 +125,7 @@ export async function updateService(
   }
   
   // Update service
-  const { error } = await supabase
+  const { error } = await (supabase as AnySupabaseClient)
     .from('services')
     .update(input)
     .eq('id', serviceId);
@@ -161,7 +164,7 @@ export async function deleteService(serviceId: string): Promise<ServiceActionRes
   }
   
   // Delete service
-  const { error } = await supabase
+  const { error } = await (supabase as AnySupabaseClient)
     .from('services')
     .delete()
     .eq('id', serviceId);
@@ -200,7 +203,7 @@ export async function toggleServicePublished(serviceId: string): Promise<Service
   }
   
   // Get current status
-  const { data: service } = await supabase
+  const { data: service } = await (supabase as AnySupabaseClient)
     .from('services')
     .select('is_published')
     .eq('id', serviceId)
@@ -211,7 +214,7 @@ export async function toggleServicePublished(serviceId: string): Promise<Service
   }
   
   // Toggle status
-  const { error } = await supabase
+  const { error } = await (supabase as AnySupabaseClient)
     .from('services')
     .update({ is_published: !service.is_published })
     .eq('id', serviceId);
