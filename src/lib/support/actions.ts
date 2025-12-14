@@ -1,10 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/brevo';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnySupabaseClient = any;
 
 interface TicketInput {
   name: string;
@@ -21,11 +17,6 @@ interface TicketResult {
 }
 
 export async function submitSupportTicket(input: TicketInput): Promise<TicketResult> {
-  const supabase = await createClient();
-
-  // Get current user if logged in
-  const { data: { user } } = await supabase.auth.getUser();
-
   // Validate input
   if (!input.email || !input.subject || !input.message || !input.category) {
     return { success: false, error: 'Please fill in all required fields' };
@@ -37,31 +28,18 @@ export async function submitSupportTicket(input: TicketInput): Promise<TicketRes
     return { success: false, error: 'Please enter a valid email address' };
   }
 
-  // Create the ticket
-  const { data, error } = await (supabase as AnySupabaseClient)
-    .from('support_tickets')
-    .insert({
-      user_id: user?.id || null,
-      email: input.email,
-      name: input.name || null,
-      subject: input.subject,
-      category: input.category,
-      message: input.message,
-      status: 'open',
-      priority: determinePriority(input.category),
-    })
-    .select('id')
-    .single();
-
-  if (error) {
-    console.error('Error creating support ticket:', error);
-    return { success: false, error: 'Failed to submit ticket. Please try again.' };
-  }
+  // Generate a simple ticket ID for reference (timestamp-based)
+  const ticketId = `TKT-${Date.now().toString(36).toUpperCase()}`;
 
   // Send email notification to support team
-  await sendSupportNotificationEmail(data.id, input);
+  const emailResult = await sendSupportNotificationEmail(ticketId, input);
 
-  return { success: true, ticketId: data.id };
+  if (!emailResult.success) {
+    console.error('Error sending support ticket email:', emailResult.error);
+    return { success: false, error: emailResult.error || 'Failed to send ticket. Please try again.' };
+  }
+
+  return { success: true, ticketId };
 }
 
 function determinePriority(category: string): string {
@@ -77,7 +55,7 @@ function determinePriority(category: string): string {
   }
 }
 
-async function sendSupportNotificationEmail(ticketId: string, input: TicketInput) {
+async function sendSupportNotificationEmail(ticketId: string, input: TicketInput): Promise<{ success: boolean; error?: string }> {
   const priority = determinePriority(input.category);
   const priorityColor = priority === 'high' ? '#ef4444' : priority === 'normal' ? '#f59e0b' : '#22c55e';
   
@@ -99,7 +77,7 @@ async function sendSupportNotificationEmail(ticketId: string, input: TicketInput
 <table width="100%" style="margin-bottom:20px;">
 <tr><td style="padding:8px 0;border-bottom:1px solid #334155;">
 <span style="color:#64748b;font-size:14px;">Ticket ID:</span>
-<span style="color:#ffffff;font-size:14px;float:right;">${ticketId.slice(0, 8)}</span>
+<span style="color:#ffffff;font-size:14px;float:right;">${ticketId}</span>
 </td></tr>
 <tr><td style="padding:8px 0;border-bottom:1px solid #334155;">
 <span style="color:#64748b;font-size:14px;">From:</span>
@@ -116,7 +94,7 @@ async function sendSupportNotificationEmail(ticketId: string, input: TicketInput
 </table>
 <div style="background-color:#0f172a;border-radius:8px;padding:16px;margin-top:20px;">
 <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">Message:</p>
-<p style="margin:0;font-size:14px;color:#e2e8f0;line-height:1.6;white-space:pre-wrap;">${input.message}</p>
+<p style="margin:0;font-size:14px;color:#e2e8f0;line-height:1.6;white-space:pre-wrap;">${input.message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}</p>
 </div>
 <hr style="border:none;border-top:1px solid #334155;margin:24px 0;">
 <p style="margin:0;font-size:13px;color:#64748b;">Reply directly to this email to respond to the customer at <a href="mailto:${input.email}" style="color:#f59e0b;">${input.email}</a></p>
@@ -127,7 +105,7 @@ async function sendSupportNotificationEmail(ticketId: string, input: TicketInput
 </body>
 </html>`;
 
-  await sendEmail({
+  return await sendEmail({
     to: [{ email: 'support@aitextspeak.com', name: 'AI TextSpeak Support' }],
     subject: `[${priority.toUpperCase()}] ${input.category}: ${input.subject}`,
     htmlContent,
