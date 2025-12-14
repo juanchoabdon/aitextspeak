@@ -1,8 +1,15 @@
 // Subscription plans configuration
+// Active plans available for new users
 export type PlanId = 'free' | 'monthly' | 'monthly_pro' | 'lifetime';
 
+// Legacy plans (for existing users only, not shown in pricing)
+export type LegacyPlanId = 'pro_annual' | 'basic_annual';
+
+// All plan IDs
+export type AllPlanId = PlanId | LegacyPlanId;
+
 export interface Plan {
-  id: PlanId;
+  id: AllPlanId;
   name: string;
   description: string;
   price: number;
@@ -14,9 +21,10 @@ export interface Plan {
   paypalPlanId: string | null;
   popular?: boolean;
   allowedLanguages: string[] | 'all'; // Language codes allowed, or 'all' for unlimited
+  isLegacy?: boolean; // Hidden from pricing, only for existing subscribers
 }
 
-export const PLANS: Record<PlanId, Plan> = {
+export const PLANS: Record<AllPlanId, Plan> = {
   free: {
     id: 'free',
     name: 'Free',
@@ -98,10 +106,95 @@ export const PLANS: Record<PlanId, Plan> = {
     paypalPlanId: null, // PayPal doesn't support one-time subscriptions the same way
     allowedLanguages: 'all',
   },
+
+  // ==========================================
+  // LEGACY PLANS - Not shown in pricing page
+  // Only for existing subscribers
+  // ==========================================
+  
+  // Legacy "Pro Annual" is actually a 6-month package
+  pro_annual: {
+    id: 'pro_annual',
+    name: '6 Month Package',
+    description: '6-month pro subscription (Legacy)',
+    price: 29.99,
+    currency: 'USD',
+    interval: 'year', // Keep as 'year' for type compatibility, but it's actually 6 months
+    features: [
+      '30 Million characters over 6 months',
+      'All languages & premium voices',
+      'Priority processing',
+      'Commercial license',
+      'Billed every 6 months',
+    ],
+    charactersPerMonth: 5000000, // 30M / 6 months
+    stripePriceId: null, // Legacy plan
+    paypalPlanId: null,
+    allowedLanguages: 'all',
+    isLegacy: true,
+  },
+  
+  basic_annual: {
+    id: 'basic_annual',
+    name: 'Basic Annual',
+    description: 'Annual basic subscription (Legacy)',
+    price: 59.94, // $9.99 × 6 months with discount
+    currency: 'USD',
+    interval: 'year',
+    features: [
+      '12 Million characters/year',
+      'All languages & voices',
+      'Priority processing',
+      'Commercial license',
+      'Billed annually',
+    ],
+    charactersPerMonth: 1000000,
+    stripePriceId: null, // Legacy plan
+    paypalPlanId: null,
+    allowedLanguages: 'all',
+    isLegacy: true,
+  },
 };
 
-export function getPlan(planId: PlanId): Plan | null {
+export function getPlan(planId: AllPlanId): Plan | null {
   return PLANS[planId] || null;
+}
+
+/**
+ * Get only active plans (not legacy) for pricing page
+ */
+export function getActivePlans(): Plan[] {
+  return Object.values(PLANS).filter(plan => !plan.isLegacy);
+}
+
+/**
+ * Get plan by name (case-insensitive) - useful for legacy data
+ */
+export function getPlanByName(name: string): Plan | null {
+  const normalizedName = name.toLowerCase().trim();
+  
+  // Map common legacy names to plan IDs
+  const nameMap: Record<string, AllPlanId> = {
+    'basic monthly': 'monthly',
+    'basic plan': 'monthly',
+    'pro monthly': 'monthly_pro',
+    'monthly pro': 'monthly_pro',
+    'pro annual': 'pro_annual',
+    'basic annual': 'basic_annual',
+    'lifetime': 'lifetime',
+    'free': 'free',
+  };
+  
+  const planId = nameMap[normalizedName];
+  if (planId) {
+    return PLANS[planId];
+  }
+  
+  // Try direct match
+  return Object.values(PLANS).find(p => 
+    p.name.toLowerCase() === normalizedName ||
+    p.id.toLowerCase() === normalizedName
+  ) || null;
 }
 
 export function getPlanByStripePrice(priceId: string): Plan | null {

@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export interface AdminStats {
   totalUsers: number;
@@ -14,7 +15,12 @@ export interface AdminStats {
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
+  // Ensure Next.js doesn't cache these admin metrics across requests.
+  // Without this, you can see stale values (e.g. 0) after migrations until a restart.
+  noStore();
+
   const supabase = createAdminClient();
+  const now = new Date().toISOString();
 
   // Run all queries in parallel for performance
   const [
@@ -35,19 +41,21 @@ export async function getAdminStats(): Promise<AdminStats> {
     // New users (not legacy)
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_legacy_user', false),
 
-    // Active subscriptions from legacy users
+    // Active subscriptions from legacy users (status=active AND period not ended)
     supabase
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active')
-      .eq('is_legacy', true),
+      .eq('is_legacy', true)
+      .gt('current_period_end', now),
 
-    // Active subscriptions from new users
+    // Active subscriptions from new users (status=active AND period not ended)
     supabase
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active')
-      .eq('is_legacy', false),
+      .eq('is_legacy', false)
+      .gt('current_period_end', now),
 
     // Total projects
     supabase.from('projects').select('id', { count: 'exact', head: true }),
@@ -72,3 +80,9 @@ export async function getAdminStats(): Promise<AdminStats> {
     totalAudioGenerated: totalAudioResult.count || 0,
   };
 }
+
+
+
+
+
+

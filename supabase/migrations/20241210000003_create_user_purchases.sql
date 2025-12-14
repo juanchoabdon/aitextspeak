@@ -65,3 +65,9 @@ CREATE POLICY "Service role can manage user purchases" ON public.user_purchases
 
 COMMENT ON TABLE public.user_purchases IS 'Historical record of user plan purchases and activations';
 
+
+
+
+
+
+

@@ -19,6 +19,8 @@ interface DraftProject {
   languageCode: string;
   voiceId: string;
   sessionKey: string;
+  speed: 0.5 | 1 | 1.5 | 2;
+  volume: 0.5 | 1 | 1.5 | 2;
 }
 
 function generateSessionKey(): string {
@@ -38,6 +40,8 @@ export function GenerateSpeechForm({ voices, languages }: GenerateSpeechFormProp
   const [text, setText] = useState('');
   const [languageCode, setLanguageCode] = useState('en-US');
   const [voiceId, setVoiceId] = useState('');
+  const [speed, setSpeed] = useState<0.5 | 1 | 1.5 | 2>(1);
+  const [volume, setVolume] = useState<0.5 | 1 | 1.5 | 2>(1);
 
   // Voice selector modal
   const [isVoiceSelectorOpen, setIsVoiceSelectorOpen] = useState(false);
@@ -68,6 +72,8 @@ export function GenerateSpeechForm({ voices, languages }: GenerateSpeechFormProp
         setLanguageCode(draft.languageCode || 'en-US');
         setVoiceId(draft.voiceId || '');
         setSessionKey(draft.sessionKey || generateSessionKey());
+        setSpeed(draft.speed || 1);
+        setVolume(draft.volume || 1);
         
         // Try to load existing preview
         if (draft.sessionKey) {
@@ -104,9 +110,11 @@ export function GenerateSpeechForm({ voices, languages }: GenerateSpeechFormProp
       languageCode,
       voiceId,
       sessionKey,
+      speed,
+      volume,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-  }, [title, text, languageCode, voiceId, sessionKey, hasLoadedDraft]);
+  }, [title, text, languageCode, voiceId, sessionKey, speed, volume, hasLoadedDraft]);
 
   useEffect(() => {
     saveDraft();
@@ -138,6 +146,8 @@ export function GenerateSpeechForm({ voices, languages }: GenerateSpeechFormProp
         provider: selectedVoice?.provider || 'azure',
         language_code: languageCode,
         session_key: sessionKey,
+        speed,
+        volume,
       });
 
       if (result.success && result.audioUrl) {
@@ -184,6 +194,8 @@ export function GenerateSpeechForm({ voices, languages }: GenerateSpeechFormProp
         language_code: languageCode,
         voice_name: selectedVoice?.name || voiceId,
         session_key: sessionKey,
+        speed,
+        volume,
       });
 
       if (result.success && result.audioUrl) {
@@ -249,6 +261,57 @@ export function GenerateSpeechForm({ voices, languages }: GenerateSpeechFormProp
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* SSML / Prosody controls */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-white">Advanced</h3>
+            <button
+              type="button"
+              onClick={() => setText((t) => (t ? `${t} <break time=\"1s\"/>` : `<break time=\"1s\"/>`))}
+              className="rounded bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700"
+            >
+              Insert pause
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Speed</label>
+              <select
+                value={speed}
+                onChange={(e) => setSpeed(Number(e.target.value) as 0.5 | 1 | 1.5 | 2)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm"
+              >
+                <option value={0.5}>0.5x</option>
+                <option value={1}>1x</option>
+                <option value={1.5}>1.5x</option>
+                <option value={2}>2x</option>
+              </select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-slate-300">Volume</label>
+                <span className="text-xs text-slate-400">{volume}x</span>
+              </div>
+              <input
+                type="range"
+                min={0.5}
+                max={2}
+                step={0.5}
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value) as 0.5 | 1 | 1.5 | 2)}
+                className="mt-2 w-full accent-amber-500"
+                aria-label="Volume"
+              />
+              <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+                <span>0.5x</span>
+                <span>1x</span>
+                <span>1.5x</span>
+                <span>2x</span>
+              </div>
+            </div>
+          </div>
+        </div>
         {error && (
           <div className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {error}

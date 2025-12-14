@@ -45,21 +45,21 @@ export function BillingClient({ subscription, profile, userSubscription }: Billi
   };
 
   const handleManagePayPalSubscription = () => {
-    // PayPal subscription management URL
     const subscriptionId = subscription?.provider_subscription_id;
     
     if (subscriptionId && subscriptionId.startsWith('I-')) {
-      // Direct link to manage specific subscription
       window.open(`https://www.paypal.com/myaccount/autopay/connect/${subscriptionId}`, '_blank');
     } else {
-      // Fallback to general autopay management
       window.open('https://www.paypal.com/myaccount/autopay/', '_blank');
     }
   };
 
   const isActive = userSubscription?.isActive && userSubscription?.provider !== 'free';
   const provider = userSubscription?.provider || subscription?.provider;
+  const hadPreviousSubscription = userSubscription?.hadPreviousSubscription;
+  const status = userSubscription?.status;
 
+  // Active subscription
   if (isActive) {
     return (
       <div className="flex flex-col gap-4">
@@ -113,11 +113,50 @@ export function BillingClient({ subscription, profile, userSubscription }: Billi
             Change Plan
           </Link>
         </div>
-
       </div>
     );
   }
 
+  // Canceled/Expired subscription - show renewal option
+  if (hadPreviousSubscription && (status === 'canceled' || status === 'expired')) {
+    return (
+      <div className="flex flex-col gap-4">
+        {/* Previous subscription info */}
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-2 text-amber-400 mb-2">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="font-medium">Your subscription has ended</span>
+          </div>
+          <p className="text-sm text-slate-400">
+            Your <span className="text-white">{userSubscription?.previousPlanName}</span> subscription 
+            {userSubscription?.canceledAt && (
+              <> expired on <span className="text-white">{new Date(userSubscription.canceledAt).toLocaleDateString()}</span></>
+            )}. 
+            Renew now to continue enjoying premium features.
+          </p>
+        </div>
+
+        {/* Renewal buttons */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link
+            href="/pricing"
+            className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-3 px-6 font-semibold text-black hover:from-amber-400 hover:to-orange-400 transition-all text-center"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Renew Subscription
+            </span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Free user (never had a subscription)
   return (
     <div className="flex flex-col sm:flex-row gap-4">
       <Link

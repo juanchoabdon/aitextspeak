@@ -5,6 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signUp } from '@/lib/auth/actions';
 import { trackSignupStarted, trackSignupCompleted, trackAuthError } from '@/lib/analytics/events';
 
+function trackFirstPromoterReferral(uid: string) {
+  try {
+    // Best-effort: FirstPromoter script initializes window.fpr early; if unavailable just skip.
+    if (typeof window !== 'undefined' && typeof window.fpr === 'function') {
+      window.fpr('referral', { uid });
+    }
+  } catch {
+    // no-op
+  }
+}
+
 export function SignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,6 +76,8 @@ export function SignUpForm() {
       });
 
       if (result.success && result.user) {
+        trackFirstPromoterReferral(result.user.id);
+
         // Track signup completed
         trackSignupCompleted(result.user.id, 'email', result.user.email);
         

@@ -9,6 +9,7 @@ import { VoiceSelectorModal } from '@/components/tts/VoiceSelectorModal';
 import { AudioPlayButton } from '@/components/ui/AudioPlayButton';
 import { UpgradeModal } from '@/components/billing/UpgradeModal';
 import { useUsage } from '@/hooks/useUsage';
+import { countBillableCharacters } from '@/lib/tts/ssml';
 import {
   trackAudioAdded,
   trackPreviewGenerated,
@@ -38,6 +39,8 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
   const [text, setText] = useState('');
   const [languageCode, setLanguageCode] = useState('en-US');
   const [voiceId, setVoiceId] = useState('');
+  const [speed, setSpeed] = useState<0.5 | 1 | 1.5 | 2>(1);
+  const [volume, setVolume] = useState<0.5 | 1 | 1.5 | 2>(1);
   const [sessionKey] = useState(generateSessionKey);
 
   // Voice selector modal
@@ -56,7 +59,7 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
   // Get selected voice details
   const selectedVoice = voices.find(v => v.voice_id === voiceId);
 
-  const characterCount = text.length;
+  const characterCount = countBillableCharacters(text);
   const maxCharacters = usage?.isUnlimited ? 50000 : (usage?.charactersRemaining || 500);
   
   // Check if user is approaching or over limit
@@ -123,6 +126,8 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
         provider: selectedVoice?.provider || 'azure',
         language_code: languageCode,
         session_key: sessionKey,
+        speed,
+        volume,
       });
 
       if (result.success && result.audioUrl) {
@@ -182,6 +187,8 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
         voice_name: selectedVoice?.name || voiceId,
         provider: selectedVoice?.provider || 'azure',
         language_code: languageCode,
+        speed,
+        volume,
       });
 
       if (result.success) {
@@ -296,15 +303,24 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
 
             {/* Text Input */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Text to Convert *
-              </label>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="block text-sm font-medium text-slate-300">
+                  Text to Convert *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setText((t) => (t ? `${t} <break time=\"1s\"/>` : `<break time=\"1s\"/>`))}
+                  className="rounded bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700"
+                >
+                  Insert pause
+                </button>
+              </div>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 required
                 rows={8}
-                maxLength={maxCharacters}
+                maxLength={maxCharacters + 2000}
                 className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none resize-none"
                 placeholder="Enter or paste your text here..."
               />
@@ -446,6 +462,61 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
                 )}
               </button>
             </div>
+
+            {/* Prosody Controls */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Speed</label>
+                <select
+                  value={speed}
+                  onChange={(e) => setSpeed(Number(e.target.value) as 0.5 | 1 | 1.5 | 2)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm"
+                >
+                  <option value={0.5}>0.5x</option>
+                  <option value={1}>1x</option>
+                  <option value={1.5}>1.5x</option>
+                  <option value={2}>2x</option>
+                </select>
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-300">Volume</label>
+                  <span className="text-xs text-slate-400">{volume}x</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2}
+                  step={0.5}
+                  value={volume}
+                  onChange={(e) => setVolume(Number(e.target.value) as 0.5 | 1 | 1.5 | 2)}
+                  className="mt-2 w-full accent-amber-500"
+                  aria-label="Volume"
+                />
+                <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+                  <span>0.5x</span>
+                  <span>1x</span>
+                  <span>1.5x</span>
+                  <span>2x</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Affiliate Program */}
+            <a
+              href="https://affiliates.aitextspeak.com"
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-600/10 p-4 hover:border-amber-500/60 transition-colors"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white">Affiliate Program</p>
+                  <p className="mt-1 text-xs text-slate-300">Earn commission by sharing AI TextSpeak.</p>
+                </div>
+                <span className="text-sm font-semibold text-amber-400 whitespace-nowrap">Open →</span>
+              </div>
+            </a>
 
             {/* Preview Button */}
             <button

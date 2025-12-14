@@ -26,17 +26,76 @@ const supabase = createClient(
 );
 
 interface LegacyUsage {
-  id: number;
+  id: number | string;
   user_ids: string;
-  payg_balance: number;
-  payg_purchased: number;
-  characters_preview_used: number;
-  characters_production_used: number;
-  voice_generated: number;
+  payg_balance: number | string;
+  payg_purchased: number | string;
+  characters_preview_used: number | string;
+  characters_production_used: number | string;
+  voice_generated: number | string;
+}
+
+function toBigIntString(value: unknown): string {
+  if (value === null || value === undefined) return '0';
+  const s = String(value).trim();
+  if (!s) return '0';
+  try {
+    // Handles integers stored as strings in JSON exports
+    return BigInt(s).toString();
+  } catch {
+    // Fallback for weird values
+    const n = Number(s);
+    if (!Number.isFinite(n)) return '0';
+    return BigInt(Math.trunc(n)).toString();
+  }
+}
+
+function toInt(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  const n = Number(String(value).trim() || '0');
+  return Number.isFinite(n) ? Math.trunc(n) : 0;
+}
+
+async function loadLegacyUserMap(): Promise<Map<string, string>> {
+  console.log('📋 Loading legacy_users mapping (legacy_ids -> supabase_user_id)...');
+  const map = new Map<string, string>();
+
+  const pageSize = 1000;
+  let offset = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('legacy_users')
+      .select('legacy_ids, supabase_user_id')
+      .not('supabase_user_id', 'is', null)
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      throw new Error(`Failed to load legacy_users mapping: ${error.message}`);
+    }
+    const rows = data || [];
+    if (rows.length === 0) break;
+
+    for (const r of rows as Array<{ legacy_ids: string | null; supabase_user_id: string | null }>) {
+      if (r.legacy_ids && r.supabase_user_id) {
+        map.set(r.legacy_ids, r.supabase_user_id);
+      }
+    }
+
+    offset += rows.length;
+    if (rows.length < pageSize) break;
+  }
+
+  console.log(`   Found ${map.size} legacy_ids mapped\n`);
+  return map;
 }
 
 async function migrateLegacyUsage() {
   console.log('Starting legacy usage migration...\n');
+
+  const args = process.argv.slice(2);
+  const isDryRun = args.includes('--dry-run');
+  const limitArg = args.find(a => a.startsWith('--limit='));
+  const limit = limitArg ? Math.max(0, parseInt(limitArg.split('=')[1], 10)) : undefined;
 
   // Read legacy usage data from JSON file
   const dataPath = path.join(__dirname, 'data', 'legacy_usage.json');
@@ -53,86 +112,87 @@ async function migrateLegacyUsage() {
   }
 
   const legacyData: LegacyUsage[] = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-  console.log(`Found ${legacyData.length} legacy usage records\n`);
+  const input = limit ? legacyData.slice(0, limit) : legacyData;
+  console.log(`Found ${legacyData.length} legacy usage records (${input.length} will be processed)\n`);
+
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  if (!SUPABASE_URL) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL in .env.local');
+  }
+
+  const userMap = await loadLegacyUserMap();
 
   let migrated = 0;
   let skipped = 0;
   let errors = 0;
 
-  for (const usage of legacyData) {
-    try {
-      // Find the corresponding Supabase user via legacy_users table
-      const { data: legacyUser } = await supabase
-        .from('legacy_users')
-        .select('supabase_user_id, legacy_ids')
-        .or(`legacy_ids.eq.${usage.user_ids},legacy_id.eq.${usage.id}`)
-        .single();
+  // Create a historical usage record for "legacy" period.
+  // Use a date in the past to indicate this is legacy data.
+  const legacyPeriodStart = '2020-01-01';
+  const legacyPeriodEnd = '2024-11-30';
 
-      if (!legacyUser?.supabase_user_id) {
-        console.log(`⏭️  Skipping usage for user_ids ${usage.user_ids} - user not migrated yet`);
-        skipped++;
-        continue;
-      }
+  // Batch upserts for speed (and idempotency via unique(user_id, period_start))
+  const BATCH_SIZE = 500;
+  let batch: Array<Record<string, unknown>> = [];
 
-      const supabaseUserId = legacyUser.supabase_user_id;
+  const flush = async () => {
+    if (batch.length === 0) return;
+    if (isDryRun) {
+      migrated += batch.length;
+      batch = [];
+      return;
+    }
 
-      // Calculate total characters used
-      const totalCharactersUsed = 
-        (usage.characters_preview_used || 0) + 
-        (usage.characters_production_used || 0);
+    const { error: upsertError } = await supabase
+      .from('usage_tracking')
+      .upsert(batch, { onConflict: 'user_id,period_start', ignoreDuplicates: true });
 
-      // Check if we already have usage data for this user
-      const { data: existingUsage } = await supabase
-        .from('usage_tracking')
-        .select('id')
-        .eq('user_id', supabaseUserId)
-        .single();
+    if (upsertError) {
+      console.error(`❌ Batch upsert failed (${batch.length} rows):`, upsertError.message);
+      errors += batch.length;
+      batch = [];
+      return;
+    }
 
-      if (existingUsage) {
-        console.log(`⏭️  User ${usage.user_ids} already has usage data, skipping`);
-        skipped++;
-        continue;
-      }
+    migrated += batch.length;
+    batch = [];
+  };
 
-      // Create a historical usage record for "legacy" period
-      // Use a date in the past to indicate this is legacy data
-      const legacyPeriodStart = '2020-01-01';
-      const legacyPeriodEnd = '2024-11-30';
+  for (const usage of input) {
+    const supabaseUserId = userMap.get(usage.user_ids);
+    if (!supabaseUserId) {
+      skipped++;
+      continue;
+    }
 
-      const { error: insertError } = await supabase
-        .from('usage_tracking')
-        .insert({
-          user_id: supabaseUserId,
-          period_start: legacyPeriodStart,
-          period_end: legacyPeriodEnd,
-          characters_used: totalCharactersUsed,
-          audio_files_generated: usage.voice_generated || 0,
-          projects_created: 0, // Unknown from legacy data
-        });
+    const paygBalance = toBigIntString(usage.payg_balance);
+    const paygPurchased = toBigIntString(usage.payg_purchased);
+    const previewUsed = toBigIntString(usage.characters_preview_used);
+    const productionUsed = toBigIntString(usage.characters_production_used);
+    const totalUsed = (BigInt(previewUsed) + BigInt(productionUsed)).toString();
+    const voiceGenerated = toInt(usage.voice_generated);
 
-      if (insertError) {
-        console.error(`❌ Error inserting usage for ${usage.user_ids}:`, insertError.message);
-        errors++;
-        continue;
-      }
+    batch.push({
+      user_id: supabaseUserId,
+      period_start: legacyPeriodStart,
+      period_end: legacyPeriodEnd,
+      characters_used: totalUsed,
+      characters_preview_used: previewUsed,
+      characters_production_used: productionUsed,
+      audio_files_generated: voiceGenerated,
+      projects_created: 0, // Unknown from legacy data
+      payg_balance: paygBalance,
+      payg_purchased: paygPurchased,
+      is_legacy_data: true,
+    });
 
-      // Also update the user's profile with their PAYG balance if they have one
-      if (usage.payg_balance > 0 || usage.payg_purchased > 0) {
-        // Store PAYG data in profiles metadata or a separate table
-        // For now, just log it
-        console.log(`   💰 User has PAYG: balance=${usage.payg_balance}, purchased=${usage.payg_purchased}`);
-      }
-
-      console.log(`✅ Migrated usage for user_ids ${usage.user_ids}:`);
-      console.log(`   Characters: ${totalCharactersUsed.toLocaleString()} (preview: ${usage.characters_preview_used?.toLocaleString() || 0}, production: ${usage.characters_production_used?.toLocaleString() || 0})`);
-      console.log(`   Voice files: ${usage.voice_generated || 0}`);
-      migrated++;
-
-    } catch (error) {
-      console.error(`❌ Error processing usage ${usage.id}:`, error);
-      errors++;
+    if (batch.length >= BATCH_SIZE) {
+      await flush();
+      process.stdout.write(`\r⏳ processed=${migrated + skipped + errors} migrated=${migrated} skipped=${skipped} errors=${errors}`);
     }
   }
+
+  await flush();
 
   console.log('\n' + '='.repeat(50));
   console.log('Migration Summary:');
@@ -142,23 +202,8 @@ async function migrateLegacyUsage() {
   console.log('='.repeat(50));
 }
 
-// Also create a function to add PAYG balance column if needed
-async function addPaygColumns() {
-  console.log('\nNote: If you want to track PAYG balances, you may need to add columns:');
-  console.log('  - payg_balance: Characters remaining from PAYG purchases');
-  console.log('  - payg_purchased: Total characters ever purchased via PAYG');
-  console.log('\nRun this SQL in Supabase:');
-  console.log(`
-ALTER TABLE public.usage_tracking
-ADD COLUMN IF NOT EXISTS payg_balance BIGINT DEFAULT 0,
-ADD COLUMN IF NOT EXISTS payg_purchased BIGINT DEFAULT 0,
-ADD COLUMN IF NOT EXISTS is_legacy_data BOOLEAN DEFAULT FALSE;
-`);
-}
-
 migrateLegacyUsage()
   .then(() => {
-    addPaygColumns();
     console.log('\n✅ Done!');
     process.exit(0);
   })
@@ -166,6 +211,12 @@ migrateLegacyUsage()
     console.error('\n❌ Failed:', error);
     process.exit(1);
   });
+
+
+
+
+
+
 
 
 

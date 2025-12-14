@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { PricingCards } from '@/components/pricing/PricingCards';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
-import type { PlanId } from '@/lib/payments/plans';
+import type { PlanId, AllPlanId } from '@/lib/payments/plans';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
 export const metadata: Metadata = {
   title: 'Pricing for Creators | AI Voice Generator Plans | AI TextSpeak',
-  description: 'Affordable AI voice plans for YouTubers, podcasters & audiobook creators. Start free, upgrade for unlimited voiceovers. Used by 50,000+ content creators. Plans from $10/mo.',
+  description: 'Affordable AI voice plans for YouTubers, podcasters & audiobook creators. Start free, upgrade for unlimited voiceovers. Used by 50,000+ content creators. Plans from $9.99/mo.',
   keywords: [
     // Creator-focused pricing keywords
     'AI voice generator pricing',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Pricing & Plans - AI TextSpeak',
-    description: 'Start free or upgrade for unlimited AI text-to-speech. Plans from $10/month.',
+    description: 'Start free or upgrade for unlimited AI text-to-speech. Plans from $9.99/month.',
     url: `${SITE_URL}/pricing`,
     images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 }],
   },
@@ -62,7 +62,7 @@ const plans: {
   {
     name: 'MONTHLY PLAN',
     subtitle: 'Recurring every 1 month',
-    price: '$10',
+    price: '$9.99',
     period: '/ mo',
     features: [
       'Pay Monthly',
@@ -75,8 +75,8 @@ const plans: {
   },
   {
     name: 'MONTHLY PRO PLAN',
-    subtitle: 'Recurring every 6 month',
-    price: '$30',
+    subtitle: 'Recurring every 1 month',
+    price: '$29.99',
     period: '/ mo',
     features: [
       'Standard & A.I Voices',
@@ -112,7 +112,7 @@ export default async function PricingPage() {
   const isLoggedIn = !!user;
   
   // Get user's current plan (only if logged in)
-  let currentPlanId: PlanId | null = null;
+  let currentPlanId: AllPlanId | null = null;
   if (user) {
     const subscription = await getUserActiveSubscription(user.id);
     currentPlanId = subscription.planId;

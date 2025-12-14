@@ -3,6 +3,9 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { generateSpeech } from './index';
 import { TTSProvider, GenerateProjectInput } from './types';
+import { countBillableCharacters, truncateTextPreservingBreakTags } from './ssml';
+
+const PREVIEW_BUCKET = 'tts-previews';
 
 export interface GenerateResult {
   success: boolean;
@@ -25,6 +28,8 @@ export interface PreviewInput {
   provider: TTSProvider;
   language_code: string;
   session_key: string;
+  speed?: number;
+  volume?: number;
 }
 
 // Generate a preview (first 200 characters)
@@ -46,7 +51,7 @@ export async function generatePreview(input: PreviewInput): Promise<PreviewResul
   }
 
   // Use first 200 characters for preview (or full text if shorter)
-  const previewText = input.text.slice(0, 200);
+  const previewText = truncateTextPreservingBreakTags(input.text, 200);
 
   // Generate speech for preview
   const ttsResult = await generateSpeech({
@@ -54,6 +59,8 @@ export async function generatePreview(input: PreviewInput): Promise<PreviewResul
     voice_id: input.voice_id,
     provider: input.provider,
     language_code: input.language_code,
+    speed: input.speed,
+    volume: input.volume,
   });
 
   if (!ttsResult.success || !ttsResult.audio_buffer) {
@@ -65,7 +72,7 @@ export async function generatePreview(input: PreviewInput): Promise<PreviewResul
   
   const adminClient = createAdminClient();
   const { error: uploadError } = await adminClient.storage
-    .from('project-audio')
+    .from(PREVIEW_BUCKET)
     .upload(fileName, ttsResult.audio_buffer, {
       contentType: 'audio/mpeg',
       cacheControl: '3600',
@@ -77,7 +84,7 @@ export async function generatePreview(input: PreviewInput): Promise<PreviewResul
   }
 
   const { data: urlData } = adminClient.storage
-    .from('project-audio')
+    .from(PREVIEW_BUCKET)
     .getPublicUrl(fileName);
 
   const audioUrl = urlData.publicUrl;
@@ -113,7 +120,7 @@ export async function generatePreview(input: PreviewInput): Promise<PreviewResul
   // Record usage for preview (using preview text length, not full text)
   try {
     const { recordUsage } = await import('@/lib/usage');
-    await recordUsage(user.id, previewText.length);
+    await recordUsage(user.id, countBillableCharacters(previewText));
   } catch (usageError) {
     // Don't fail the request if usage tracking fails
     console.error('Failed to record usage:', usageError);
@@ -184,13 +191,17 @@ export async function deletePreview(sessionKey: string): Promise<void> {
     .single();
 
   if (preview?.audio_url) {
-    // Extract file path from URL and delete
+    // Extract bucket + file path from URL and delete
     const url = new URL(preview.audio_url);
     const pathParts = url.pathname.split('/');
-    const filePath = pathParts.slice(pathParts.indexOf('project-audio') + 1).join('/');
+    const publicIdx = pathParts.indexOf('public');
+    const bucket = publicIdx >= 0 ? pathParts[publicIdx + 1] : null;
+    const filePath = publicIdx >= 0 ? pathParts.slice(publicIdx + 2).join('/') : null;
     
     const adminClient = createAdminClient();
-    await adminClient.storage.from('project-audio').remove([filePath]);
+    if (bucket && filePath) {
+      await adminClient.storage.from(bucket).remove([filePath]);
+    }
   }
 
   await supabase
@@ -217,7 +228,7 @@ export async function generateProject(input: GenerateProjectInput & { session_ke
     return { success: false, error: 'Voice is required' };
   }
 
-  if (input.text.length > 5000) {
+  if (countBillableCharacters(input.text) > 5000) {
     return { success: false, error: 'Text exceeds maximum length of 5000 characters' };
   }
 
@@ -227,6 +238,8 @@ export async function generateProject(input: GenerateProjectInput & { session_ke
     voice_id: input.voice_id,
     provider: input.provider,
     language_code: input.language_code,
+    speed: input.speed,
+    volume: input.volume,
   });
 
   if (!ttsResult.success || !ttsResult.audio_buffer) {

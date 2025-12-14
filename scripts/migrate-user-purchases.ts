@@ -8,6 +8,12 @@
  * - Free plan users (not in subscriptions table)
  * 
  * Run with: npx tsx scripts/migrate-user-purchases.ts
+ *
+ * Options:
+ *   --input=/absolute/or/relative/path.json   (default: scripts/data/legacy_payment_purchased.json, then scripts/data/AIT Payment Purchased.json)
+ *   --dry-run                                (no writes)
+ *   --start-index=N                          (default: 0)
+ *   --end-index=N                            (default: none)
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -52,14 +58,37 @@ interface StuffData {
   [key: string]: unknown;
 }
 
-async function getUserIdFromLegacyIds(legacyUserIds: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('legacy_users')
-    .select('supabase_user_id')
-    .eq('legacy_ids', legacyUserIds)
-    .single();
-  
-  return data?.supabase_user_id || null;
+async function loadLegacyUserMap(): Promise<Map<string, string>> {
+  console.log('📋 Loading legacy_users mapping (legacy_ids -> supabase_user_id)...');
+  const map = new Map<string, string>();
+
+  const pageSize = 1000;
+  let offset = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('legacy_users')
+      .select('legacy_ids, supabase_user_id')
+      .not('supabase_user_id', 'is', null)
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      throw new Error(`Failed to load legacy_users mapping: ${error.message}`);
+    }
+    const rows = data || [];
+    if (rows.length === 0) break;
+
+    for (const r of rows as Array<{ legacy_ids: string | null; supabase_user_id: string | null }>) {
+      if (r.legacy_ids && r.supabase_user_id) {
+        map.set(r.legacy_ids, r.supabase_user_id);
+      }
+    }
+
+    offset += rows.length;
+    if (rows.length < pageSize) break;
+  }
+
+  console.log(`   Found ${map.size} legacy_ids mapped\n`);
+  return map;
 }
 
 function parseStuff(stuff: string | null): StuffData | null {
@@ -77,10 +106,47 @@ function parseCharactersLimit(limit: string | number | undefined): number | null
   return isNaN(parsed) ? null : parsed;
 }
 
+function toInt(value: unknown, fallback = 0): number {
+  if (value === null || value === undefined) return fallback;
+  const n = Number(String(value).trim() || String(fallback));
+  return Number.isFinite(n) ? Math.trunc(n) : fallback;
+}
+
+function toBool01(value: unknown): boolean {
+  return value === '1' || value === 1 || value === true || value === 'true';
+}
+
+function parseLegacyTimestamp(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  if (!s || s === '0000-00-00 00:00:00') return null;
+  try {
+    // Treat legacy timestamps as UTC for consistency with other migration scripts.
+    return new Date(s.replace(' ', 'T') + 'Z').toISOString();
+  } catch {
+    return null;
+  }
+}
+
 async function migrateUserPurchases() {
   console.log('🛒 Starting user purchases migration...\n');
 
-  const dataPath = path.join(process.cwd(), 'scripts/data/legacy_payment_purchased.json');
+  const args = process.argv.slice(2);
+  const isDryRun = args.includes('--dry-run');
+  const inputArg = args.find(a => a.startsWith('--input='));
+  const inputPath = inputArg ? inputArg.split('=').slice(1).join('=') : undefined;
+  const startIndexArg = args.find(a => a.startsWith('--start-index='));
+  const endIndexArg = args.find(a => a.startsWith('--end-index='));
+  const startIndex = startIndexArg ? Math.max(0, parseInt(startIndexArg.split('=')[1], 10)) : 0;
+  const endIndex = endIndexArg ? Math.max(0, parseInt(endIndexArg.split('=')[1], 10)) : undefined;
+
+  const candidatePaths = [
+    inputPath,
+    path.join(process.cwd(), 'scripts/data/legacy_payment_purchased.json'),
+    path.join(process.cwd(), 'scripts/data/AIT Payment Purchased.json'),
+  ].filter(Boolean) as string[];
+
+  const dataPath = candidatePaths.find(p => fs.existsSync(p));
 
   if (!fs.existsSync(dataPath)) {
     console.error(`❌ File not found: ${dataPath}`);
@@ -95,46 +161,41 @@ async function migrateUserPurchases() {
   const rawData = fs.readFileSync(dataPath, 'utf-8');
   const purchases: LegacyPaymentPurchased[] = JSON.parse(rawData);
 
-  console.log(`📦 Found ${purchases.length} purchase records to migrate\n`);
+  const selected = purchases.slice(startIndex, endIndex ?? purchases.length);
+  console.log(`📦 Found ${purchases.length} purchase records (${selected.length} will be processed)\n`);
+
+  const userMap = await loadLegacyUserMap();
 
   let migrated = 0;
   let skipped = 0;
   let failed = 0;
-  let usageUpdated = 0;
 
   // Process in batches for better performance
-  const batchSize = 100;
-  
-  for (let i = 0; i < purchases.length; i += batchSize) {
-    const batch = purchases.slice(i, i + batchSize);
-    
+  const batchSize = 1000;
+  for (let i = 0; i < selected.length; i += batchSize) {
+    const batch = selected.slice(i, i + batchSize);
+
+    const rows: Array<Record<string, unknown>> = [];
     for (const purchase of batch) {
-      // Check if already migrated
-      const { data: existing } = await supabase
-        .from('user_purchases')
-        .select('id')
-        .eq('legacy_id', purchase.id)
-        .single();
-
-      if (existing) {
-        skipped++;
-        continue;
-      }
-
-      // Find user
-      const userId = await getUserIdFromLegacyIds(purchase.user_ids);
-
-      // Parse stuff JSON
       const stuffData = parseStuff(purchase.stuff);
       const voicelabData = parseStuff(purchase.stuff_voicelab);
-      
-      const charactersLimit = parseCharactersLimit(stuffData?.characters_limit);
-      const charactersUsed = stuffData?.characters_used || 0;
 
-      // Insert purchase record
-      const { error } = await supabase.from('user_purchases').insert({
+      const MAX_INT32 = 2147483647;
+
+      const rawLimit = stuffData?.characters_limit;
+      const limitParsed = parseCharactersLimit(rawLimit);
+      const charactersLimit = limitParsed !== null && limitParsed > MAX_INT32 ? MAX_INT32 : limitParsed;
+
+      const rawUsed = (stuffData as StuffData | null)?.characters_used;
+      let charactersUsed = toInt(rawUsed, 0);
+      if (charactersUsed > MAX_INT32) charactersUsed = MAX_INT32;
+
+      const userId = userMap.get(purchase.user_ids) || null;
+      const createdAt = parseLegacyTimestamp(purchase.created_time) || new Date().toISOString();
+
+      rows.push({
         user_id: userId,
-        legacy_id: purchase.id,
+        legacy_id: typeof purchase.id === 'string' ? toInt(purchase.id, 0) : purchase.id,
         legacy_ids: purchase.ids,
         legacy_user_ids: purchase.user_ids,
         legacy_payment_ids: purchase.payment_ids,
@@ -143,49 +204,36 @@ async function migrateUserPurchases() {
         item_name: purchase.item_name,
         characters_limit: charactersLimit,
         characters_used: charactersUsed,
-        used_up: purchase.used_up === '1' || purchase.used_up === 1,
-        auto_renew: purchase.auto_renew === '1' || purchase.auto_renew === 1,
+        used_up: toBool01(purchase.used_up),
+        auto_renew: toBool01(purchase.auto_renew),
         voicelab_data: voicelabData,
-        description: purchase.description,
+        description: purchase.description || null,
         metadata: stuffData,
-        created_at: purchase.created_time,
+        created_at: createdAt,
         is_legacy: true,
       });
-
-      if (error) {
-        // Log only first few errors
-        if (failed < 5) {
-          console.log(`❌ Failed purchase #${purchase.id}: ${error.message}`);
-        }
-        failed++;
-      } else {
-        migrated++;
-
-        // Also update/create usage_tracking if user exists and has usage
-        if (userId && charactersUsed > 0) {
-          const { data: existingUsage } = await supabase
-            .from('usage_tracking')
-            .select('id, characters_used')
-            .eq('user_id', userId)
-            .single();
-
-          if (!existingUsage) {
-            // Create usage record
-            await supabase.from('usage_tracking').insert({
-              user_id: userId,
-              period_start: purchase.created_time,
-              period_end: null, // Ongoing
-              characters_used: charactersUsed,
-              is_legacy: true,
-            });
-            usageUpdated++;
-          }
-        }
-      }
     }
 
-    // Progress update every batch
-    console.log(`   Processed ${Math.min(i + batchSize, purchases.length)} / ${purchases.length} records...`);
+    if (isDryRun) {
+      migrated += rows.length;
+      console.log(`   (dry-run) Processed ${Math.min(i + batchSize, selected.length)} / ${selected.length} records...`);
+      continue;
+    }
+
+    // Idempotent insert by legacy_id (unique).
+    // ignoreDuplicates=true means already-migrated rows won't be updated.
+    const { error } = await supabase
+      .from('user_purchases')
+      .upsert(rows, { onConflict: 'legacy_id', ignoreDuplicates: true });
+
+    if (error) {
+      console.log(`❌ Batch failed at offset ${i}: ${error.message}`);
+      failed += rows.length;
+    } else {
+      migrated += rows.length;
+    }
+
+    console.log(`   Processed ${Math.min(i + batchSize, selected.length)} / ${selected.length} records...`);
   }
 
   console.log('\n========================================');
@@ -193,9 +241,14 @@ async function migrateUserPurchases() {
   console.log(`   ✅ Migrated: ${migrated}`);
   console.log(`   ⏭️  Skipped:  ${skipped}`);
   console.log(`   ❌ Failed:   ${failed}`);
-  console.log(`   📈 Usage records created: ${usageUpdated}`);
   console.log('========================================\n');
 }
 
 migrateUserPurchases().catch(console.error);
+
+
+
+
+
+
 

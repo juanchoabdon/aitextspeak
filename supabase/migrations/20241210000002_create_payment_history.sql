@@ -77,3 +77,9 @@ CREATE POLICY "Service role can manage payment history" ON public.payment_histor
 
 COMMENT ON TABLE public.payment_history IS 'Transaction and invoice history';
 
+
+
+
+
+
+

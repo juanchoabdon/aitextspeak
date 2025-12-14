@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { generateSpeech } from '@/lib/tts';
 import type { TTSProvider } from '@/lib/tts/types';
+import { countBillableCharacters } from '@/lib/tts/ssml';
 
 export type ProjectType = 'youtube' | 'audiobook' | 'podcast' | 'other';
 
@@ -63,6 +64,8 @@ export interface CreateAudioInput {
   voice_name: string;
   provider: TTSProvider;
   language_code: string;
+  speed?: number;
+  volume?: number;
 }
 
 export interface CreateAudioResult {
@@ -100,7 +103,7 @@ export async function createProjectAudio(input: CreateAudioInput): Promise<Creat
     return { success: false, error: 'Voice is required' };
   }
 
-  if (input.text.length > 5000) {
+  if (countBillableCharacters(input.text) > 5000) {
     return { success: false, error: 'Text exceeds maximum length of 5000 characters' };
   }
 
@@ -110,6 +113,8 @@ export async function createProjectAudio(input: CreateAudioInput): Promise<Creat
     voice_id: input.voice_id,
     provider: input.provider,
     language_code: input.language_code,
+    speed: input.speed,
+    volume: input.volume,
   });
 
   if (!ttsResult.success || !ttsResult.audio_buffer) {
@@ -156,7 +161,7 @@ export async function createProjectAudio(input: CreateAudioInput): Promise<Creat
       voice_name: input.voice_name,
       language_code: input.language_code,
       provider: input.provider,
-      characters_count: input.text.length,
+      characters_count: countBillableCharacters(input.text),
       sort_order: (count || 0) + 1,
     })
     .select('id')
@@ -170,7 +175,7 @@ export async function createProjectAudio(input: CreateAudioInput): Promise<Creat
   // Record usage
   try {
     const { recordUsage } = await import('@/lib/usage');
-    await recordUsage(user.id, input.text.length);
+    await recordUsage(user.id, countBillableCharacters(input.text));
   } catch (usageError) {
     // Don't fail the request if usage tracking fails
     console.error('Failed to record usage:', usageError);

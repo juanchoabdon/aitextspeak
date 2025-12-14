@@ -1,0 +1,13 @@
+🔁 Backfilling project_audio from legacy projects...
+
+🎯 Range: legacy_id 133000 .. +inf
+
+📦 Legacy projects found: 1698
+⏳ 200/1698 (12%) | inserted=0 | alreadyHadAudio=200 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=133203⏳ 400/1698 (24%) | inserted=192 | alreadyHadAudio=208 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=133427⏳ 600/1698 (35%) | inserted=200 | alreadyHadAudio=400 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=133627⏳ 800/1698 (47%) | inserted=200 | alreadyHadAudio=600 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=133852⏳ 1000/1698 (59%) | inserted=200 | alreadyHadAudio=800 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=134091⏳ 1200/1698 (71%) | inserted=200 | alreadyHadAudio=1000 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=134311⏳ 1400/1698 (82%) | inserted=200 | alreadyHadAudio=1200 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=134549⏳ 1600/1698 (94%) | inserted=200 | alreadyHadAudio=1400 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=134776⏳ 1698/1698 (100%) | inserted=200 | alreadyHadAudio=1498 | skippedNoAudioUrl=0 | skippedNoVoice=0 | failed=0 | lastLegacyId=134882
+
+✅ Backfill finished
+   inserted: 200
+   alreadyHadAudio: 1498
+   skippedNoAudioUrl: 0
+   skippedNoVoice: 0
+   failed: 0

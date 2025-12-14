@@ -1,0 +1,54 @@
+\n=== (2/3) Audio migration DRY RUN (limit=5) ===
+🎵 Audio Files Migration (Preserving Structure)
+================================================
+
+📍 Legacy server: https://app.aitextspeak.com
+📍 Supabase bucket: project-audio
+
+🔍 DRY RUN MODE - No files will be uploaded
+
+📦 Found 5 audio files to migrate
+
+
+🎵 Project: "Untitled..." (legacy_id: 1)
+   Current path: tts_file/user/1N836Fvr401185823df63280979bd1f641b576444m842CWNxw.mp3
+   📁 Storage path: tts_file/user/1N836Fvr401185823df63280979bd1f641b576444m842CWNxw.mp3
+   📝 Would download from: https://app.aitextspeak.com/tts_file/user/1N836Fvr401185823df63280979bd1f641b576444m842CWNxw.mp3
+   📝 Would upload to: project-audio/tts_file/user/1N836Fvr401185823df63280979bd1f641b576444m842CWNxw.mp3
+
+🎵 Project: "Untitled..." (legacy_id: 2)
+   Current path: tts_file/user/CpVvWjfyDba897856a3916aa2566ac9b057b967b1hbyQtAxEH.mp3
+   📁 Storage path: tts_file/user/CpVvWjfyDba897856a3916aa2566ac9b057b967b1hbyQtAxEH.mp3
+   📝 Would download from: https://app.aitextspeak.com/tts_file/user/CpVvWjfyDba897856a3916aa2566ac9b057b967b1hbyQtAxEH.mp3
+   📝 Would upload to: project-audio/tts_file/user/CpVvWjfyDba897856a3916aa2566ac9b057b967b1hbyQtAxEH.mp3
+
+🎵 Project: "Untitled..." (legacy_id: 3)
+   Current path: tts_file/user/fapMHxuGn3f792934088b886948333ec47f8bbd5dtUjepl7c1.mp3
+   📁 Storage path: tts_file/user/fapMHxuGn3f792934088b886948333ec47f8bbd5dtUjepl7c1.mp3
+   📝 Would download from: https://app.aitextspeak.com/tts_file/user/fapMHxuGn3f792934088b886948333ec47f8bbd5dtUjepl7c1.mp3
+   📝 Would upload to: project-audio/tts_file/user/fapMHxuGn3f792934088b886948333ec47f8bbd5dtUjepl7c1.mp3
+
+🎵 Project: "Untitled..." (legacy_id: 4)
+   Current path: tts_file/user/lF9BqmS517fcb629f44c4e762d3b66bc28ac09d80bx5UvJDpy.mp3
+   📁 Storage path: tts_file/user/lF9BqmS517fcb629f44c4e762d3b66bc28ac09d80bx5UvJDpy.mp3
+   📝 Would download from: https://app.aitextspeak.com/tts_file/user/lF9BqmS517fcb629f44c4e762d3b66bc28ac09d80bx5UvJDpy.mp3
+   📝 Would upload to: project-audio/tts_file/user/lF9BqmS517fcb629f44c4e762d3b66bc28ac09d80bx5UvJDpy.mp3
+
+🎵 Project: "Untitled..." (legacy_id: 5)
+   Current path: tts_file/user/Iqy1pzjE3765fba1ee5671ffbaec287db7e43da76t0xNuo9ZP.mp3
+   📁 Storage path: tts_file/user/Iqy1pzjE3765fba1ee5671ffbaec287db7e43da76t0xNuo9ZP.mp3
+   📝 Would download from: https://app.aitextspeak.com/tts_file/user/Iqy1pzjE3765fba1ee5671ffbaec287db7e43da76t0xNuo9ZP.mp3
+   📝 Would upload to: project-audio/tts_file/user/Iqy1pzjE3765fba1ee5671ffbaec287db7e43da76t0xNuo9ZP.mp3
+
+========================================
+📊 Migration Summary:
+   ✅ Migrated: 5
+   ⏭️  Skipped:  0
+   ❌ Failed:   0
+========================================
+
+💡 This was a dry run. Run without --dry-run to actually migrate files.
+
+📁 New URL structure in Supabase:
+   https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/{filename}.mp3
+\n✅ Audio dry run finished: Thu Dec 11 23:25:32 -05 2025

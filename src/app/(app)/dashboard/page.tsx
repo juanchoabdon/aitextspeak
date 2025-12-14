@@ -109,6 +109,26 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
+          {/* Affiliate Program */}
+          <a
+            href="https://affiliates.aitextspeak.com"
+            target="_blank"
+            rel="noreferrer"
+            className="block rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-600/10 p-6 hover:border-amber-500/60 transition-colors mb-8"
+          >
+            <div className="flex items-center justify-between gap-6">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-white">Affiliate Program</h2>
+                <p className="mt-1 text-sm text-slate-300">
+                  Earn commission by sharing AI TextSpeak with your audience.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap">
+                Open →
+              </div>
+            </div>
+          </a>
+
           {/* Recent Projects */}
           {recentProjects.length > 0 && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 mb-8">

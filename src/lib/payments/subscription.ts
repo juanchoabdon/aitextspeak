@@ -9,28 +9,54 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { syncLegacySubscriptionStatus } from './paypal-legacy';
-import { PLANS, type PlanId } from './plans';
+import { PLANS, getPlanByName, type PlanId, type AllPlanId } from './plans';
 
 export interface UserSubscription {
   isActive: boolean;
   provider: 'stripe' | 'paypal' | 'paypal_legacy' | 'free';
-  planId: PlanId;
+  planId: AllPlanId;
   planName: string;
   expiresAt: string | null;
   charactersPerMonth: number;
   isLegacy: boolean;
+  isAnnual?: boolean; // For displaying billing interval
+  // New fields for subscription history
+  status: 'active' | 'canceled' | 'expired' | 'free';
+  hadPreviousSubscription: boolean;
+  previousPlanName?: string;
+  canceledAt?: string | null;
 }
 
 /**
- * Get a user's current active subscription
- * Checks all providers and returns the active one
+ * Map legacy plan names to plan IDs
+ */
+function mapLegacyPlanName(planName: string | null): AllPlanId {
+  if (!planName) return 'monthly';
+  
+  const name = planName.toLowerCase();
+  
+  // Annual plans
+  if (name.includes('pro') && name.includes('annual')) return 'pro_annual';
+  if (name.includes('basic') && name.includes('annual')) return 'basic_annual';
+  
+  // Monthly plans
+  if (name.includes('pro')) return 'monthly_pro';
+  if (name.includes('lifetime')) return 'lifetime';
+  if (name.includes('basic') || name.includes('monthly')) return 'monthly';
+  
+  return 'monthly';
+}
+
+/**
+ * Get a user's current subscription (active or most recent)
+ * Checks all providers and returns the current status
  */
 export async function getUserActiveSubscription(
   userId: string
 ): Promise<UserSubscription> {
   const supabase = createAdminClient();
 
-  // Get all subscriptions for user
+  // Get all subscriptions for user, ordered by most recent first
   const { data: subscriptions } = await supabase
     .from('subscriptions')
     .select('*')
@@ -41,7 +67,7 @@ export async function getUserActiveSubscription(
     return getFreePlan();
   }
 
-  // Check for active subscription
+  // Find active subscription first
   for (const sub of subscriptions) {
     // For legacy PayPal, verify with PayPal API
     if (sub.provider === 'paypal_legacy' && sub.status === 'active') {
@@ -51,33 +77,65 @@ export async function getUserActiveSubscription(
       );
       
       if (active) {
+        const planId = mapLegacyPlanName(sub.plan_name);
+        const plan = PLANS[planId];
+        const isAnnual = plan?.interval === 'year' || (sub.plan_name || '').toLowerCase().includes('annual');
+        
         return {
           isActive: true,
           provider: 'paypal_legacy',
-          planId: (sub.plan_id as PlanId) || 'monthly',
+          planId,
           planName: sub.plan_name || 'Legacy Plan',
           expiresAt: sub.current_period_end,
-          charactersPerMonth: PLANS[(sub.plan_id as PlanId) || 'monthly']?.charactersPerMonth || 100000,
+          charactersPerMonth: plan?.charactersPerMonth || 1000000,
           isLegacy: true,
+          isAnnual,
+          status: 'active',
+          hadPreviousSubscription: false,
         };
       }
     }
 
     // For Stripe and new PayPal, trust our database
     if (sub.status === 'active') {
-      const planId = (sub.plan_id as PlanId) || 'monthly';
+      const planId = (sub.plan_id as AllPlanId) || mapLegacyPlanName(sub.plan_name);
       const plan = PLANS[planId] || PLANS.monthly;
+      const isAnnual = plan.interval === 'year' || (sub.plan_name || '').toLowerCase().includes('annual');
 
       return {
         isActive: true,
-        provider: sub.provider as 'stripe' | 'paypal',
+        provider: sub.provider as 'stripe' | 'paypal' | 'paypal_legacy',
         planId,
         planName: sub.plan_name || plan.name,
         expiresAt: sub.current_period_end,
         charactersPerMonth: plan.charactersPerMonth,
         isLegacy: sub.is_legacy || false,
+        isAnnual,
+        status: 'active',
+        hadPreviousSubscription: false,
       };
     }
+  }
+
+  // No active subscription - check for canceled/expired
+  const mostRecentSub = subscriptions[0];
+  if (mostRecentSub) {
+    const planId = (mostRecentSub.plan_id as AllPlanId) || mapLegacyPlanName(mostRecentSub.plan_name);
+    const status = mostRecentSub.status === 'canceled' ? 'canceled' : 'expired';
+    
+    return {
+      isActive: false,
+      provider: mostRecentSub.provider as 'stripe' | 'paypal' | 'paypal_legacy',
+      planId: 'free', // They're on free now
+      planName: 'Free Plan',
+      expiresAt: null,
+      charactersPerMonth: PLANS.free.charactersPerMonth,
+      isLegacy: mostRecentSub.is_legacy || false,
+      status,
+      hadPreviousSubscription: true,
+      previousPlanName: mostRecentSub.plan_name || PLANS[planId]?.name || 'Previous Plan',
+      canceledAt: mostRecentSub.canceled_at || mostRecentSub.current_period_end,
+    };
   }
 
   return getFreePlan();
@@ -96,13 +154,15 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
  */
 function getFreePlan(): UserSubscription {
   return {
-    isActive: true,
+    isActive: false,
     provider: 'free',
     planId: 'free',
     planName: 'Free Plan',
     expiresAt: null,
     charactersPerMonth: PLANS.free.charactersPerMonth,
     isLegacy: false,
+    status: 'free',
+    hadPreviousSubscription: false,
   };
 }
 

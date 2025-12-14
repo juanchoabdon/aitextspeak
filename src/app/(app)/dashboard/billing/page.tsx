@@ -108,25 +108,19 @@ export default async function BillingPage({
                     <span className="text-slate-500">Provider:</span>{' '}
                     <span className="text-white capitalize">{subscription.provider.replace('_', ' ')}</span>
                   </p>
-                  {subscriptionData?.billing_interval && (
-                    <p>
-                      <span className="text-slate-500">Billing:</span>{' '}
-                      <span className="text-white capitalize">{subscriptionData.billing_interval}ly</span>
-                    </p>
-                  )}
+                  <p>
+                    <span className="text-slate-500">Billing:</span>{' '}
+                    <span className="text-white capitalize">
+                      {subscription.isAnnual ? 'Annually' : 'Monthly'}
+                    </span>
+                  </p>
                   {subscription.expiresAt && (
                     <p>
-                      <span className="text-slate-500">Next billing date:</span>{' '}
+                      <span className="text-slate-500">
+                        {subscription.isAnnual ? 'Renewal date:' : 'Next billing date:'}
+                      </span>{' '}
                       <span className="text-white">
                         {new Date(subscription.expiresAt).toLocaleDateString()}
-                      </span>
-                    </p>
-                  )}
-                  {subscriptionData?.price_amount && (
-                    <p>
-                      <span className="text-slate-500">Amount:</span>{' '}
-                      <span className="text-white">
-                        ${subscriptionData.price_amount} {subscriptionData.price_currency}
                       </span>
                     </p>
                   )}

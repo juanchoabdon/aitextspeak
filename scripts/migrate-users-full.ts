@@ -32,22 +32,51 @@ const supabase = createClient(
 const isDryRun = process.argv.includes('--dry-run');
 
 interface LegacyUserData {
-  legacy_id: number;
-  legacy_ids: string;
-  username: string | null;
-  email: string;
-  password_hash: string;
-  status: string | number;
-  first_name: string | null;
-  last_name: string | null;
-  country: string | null;
-  phone: string | null;
-  role_ids: string | null;
-  email_verified: number | boolean;
-  affiliate_id: string | null;
-  referred_by: string | null;
-  legacy_created_time: string | null;
-  legacy_updated_time: string | null;
+  // Support both formats (aliased from SQL or direct from table)
+  legacy_id?: number;
+  id?: string | number;
+  legacy_ids?: string;
+  ids?: string;
+  username?: string | null;
+  email?: string;
+  email_address?: string;
+  password_hash?: string;
+  password?: string;
+  status?: string | number;
+  first_name?: string | null;
+  last_name?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  role_ids?: string | null;
+  email_verified?: string | number | boolean;
+  affiliate_id?: string | null;
+  affiliate_code?: string | null;
+  referred_by?: string | null;
+  legacy_created_time?: string | null;
+  created_time?: string | null;
+  legacy_updated_time?: string | null;
+  update_time?: string | null;
+}
+
+function normalizeUser(user: LegacyUserData) {
+  return {
+    legacy_id: user.legacy_id || Number(user.id),
+    legacy_ids: user.legacy_ids || user.ids || '',
+    username: user.username || null,
+    email: (user.email || user.email_address || '').toLowerCase().trim(),
+    password_hash: user.password_hash || user.password || '',
+    status: user.status,
+    first_name: user.first_name || null,
+    last_name: user.last_name || null,
+    country: user.country || null,
+    phone: user.phone || null,
+    role_ids: user.role_ids || null,
+    email_verified: user.email_verified === '1' || user.email_verified === 1 || user.email_verified === true,
+    affiliate_id: user.affiliate_id || user.affiliate_code || null,
+    referred_by: user.referred_by || null,
+    legacy_created_time: user.legacy_created_time || user.created_time || null,
+    legacy_updated_time: user.legacy_updated_time || user.update_time || null,
+  };
 }
 
 async function migrateAllUsers() {
@@ -76,12 +105,14 @@ async function migrateAllUsers() {
   let failed = 0;
   const errors: { email: string; error: string }[] = [];
 
-  for (const user of legacyUsers) {
-    const email = user.email.toLowerCase().trim();
+  for (const rawUser of legacyUsers) {
+    // Normalize user data to handle both formats
+    const user = normalizeUser(rawUser);
+    const email = user.email;
     
     // Skip invalid emails
     if (!email || !email.includes('@')) {
-      console.log(`⏭️  Skipping invalid email: ${user.email}`);
+      console.log(`⏭️  Skipping invalid email: ${email}`);
       skipped++;
       continue;
     }
@@ -137,7 +168,7 @@ async function migrateAllUsers() {
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: email,
       password: tempPassword,
-      email_confirm: user.email_verified === 1 || user.email_verified === true,
+      email_confirm: user.email_verified,
       user_metadata: {
         first_name: user.first_name,
         last_name: user.last_name,

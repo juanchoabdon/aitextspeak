@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PricingCard } from './PricingCard';
-import type { PlanId } from '@/lib/payments/plans';
+import type { PlanId, AllPlanId } from '@/lib/payments/plans';
 import { trackCheckoutStarted, trackPaymentError, trackPlanSelected } from '@/lib/analytics/events';
 
 interface Plan {
@@ -19,7 +19,7 @@ interface Plan {
 interface PricingCardsProps {
   plans: Plan[];
   isLoggedIn: boolean;
-  currentPlanId: PlanId | null;
+  currentPlanId: AllPlanId | null; // Can include legacy plans
 }
 
 export function PricingCards({ plans, isLoggedIn, currentPlanId }: PricingCardsProps) {
@@ -199,3 +199,9 @@ export function PricingCards({ plans, isLoggedIn, currentPlanId }: PricingCardsP
     </>
   );
 }
+
+
+
+
+
+

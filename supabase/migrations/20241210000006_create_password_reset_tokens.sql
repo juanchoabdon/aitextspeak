@@ -15,3 +15,9 @@ CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_email ON public.password_re
 
 -- Enable RLS
 ALTER TABLE public.password_reset_tokens ENABLE ROW LEVEL SECURITY;
+
+
+
+
+
+

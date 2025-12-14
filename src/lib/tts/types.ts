@@ -19,6 +19,12 @@ export interface TTSRequest {
   provider: TTSProvider;
   // Azure specific
   language_code?: string;
+  /**
+   * Prosody controls (best-effort, provider-dependent).
+   * Expected values: 0.5 | 1 | 1.5 | 2
+   */
+  speed?: number;
+  volume?: number;
   // ElevenLabs specific
   model_id?: string;
   voice_settings?: {
@@ -42,7 +48,15 @@ export interface GenerateProjectInput {
   provider: TTSProvider;
   language_code: string;
   voice_name: string;
+  speed?: number;
+  volume?: number;
 }
+
+
+
+
+
+
 
 
 

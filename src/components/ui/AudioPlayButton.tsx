@@ -127,6 +127,7 @@ export function AudioPlayButton({
       <audio ref={audioRef} src={src} className="hidden" />
       
       <button
+        type="button"
         onClick={togglePlayback}
         className={`relative overflow-hidden flex items-center rounded-lg font-medium transition-colors ${sizeClasses[size]} ${variantClasses[variant]}`}
       >
@@ -229,6 +230,7 @@ export function AudioPlayButtonInline({
 
   return (
     <button
+      type="button"
       onClick={togglePlayback}
       className={`relative overflow-hidden flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
         isPlaying

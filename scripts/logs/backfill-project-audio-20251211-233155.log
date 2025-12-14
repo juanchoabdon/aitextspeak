@@ -1,0 +1,12 @@
+🔁 Backfilling project_audio from legacy projects...
+
+📦 Legacy projects found: 118890
+❌ Error fetching existing project_audio: Bad Request
+
+
+✅ Backfill finished
+   inserted: 0
+   alreadyHadAudio: 0
+   skippedNoAudioUrl: 0
+   skippedNoVoice: 0
+   failed: 0

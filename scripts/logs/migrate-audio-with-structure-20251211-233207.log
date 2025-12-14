@@ -1,0 +1,562 @@
+🎵 Audio Files Migration (Preserving Structure)
+================================================
+
+📍 Legacy server: https://app.aitextspeak.com
+📍 Supabase bucket: project-audio
+
+📦 Found 1000 audio files to migrate
+
+
+🎵 Project: "Untitled..." (legacy_id: 3164)
+   Current path: tts_file/user/NXH9O7Pts50860d73f9f609d52a04a62c547a0f83yzmQoCHK2.mp3
+   📁 Storage path: tts_file/user/NXH9O7Pts50860d73f9f609d52a04a62c547a0f83yzmQoCHK2.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/NXH9O7Pts50860d73f9f609d52a04a62c547a0f83yzmQoCHK2.mp3
+   📦 Downloaded 138.52 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/NXH9O7Pts50860d73f9f609d52a04a62c547a0f83yzmQoCHK2.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3165)
+   Current path: tts_file/user/WKQpU8NOeb326dc59395870324b857dec75a3905du40bTDpjY.mp3
+   📁 Storage path: tts_file/user/WKQpU8NOeb326dc59395870324b857dec75a3905du40bTDpjY.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/WKQpU8NOeb326dc59395870324b857dec75a3905du40bTDpjY.mp3
+   📦 Downloaded 136.41 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/WKQpU8NOeb326dc59395870324b857dec75a3905du40bTDpjY.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3166)
+   Current path: tts_file/user/cJVdtowNx20812478ec118d98aa98f0cebaf2488eiN12SDeZq.mp3
+   📁 Storage path: tts_file/user/cJVdtowNx20812478ec118d98aa98f0cebaf2488eiN12SDeZq.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/cJVdtowNx20812478ec118d98aa98f0cebaf2488eiN12SDeZq.mp3
+   📦 Downloaded 118.27 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/cJVdtowNx20812478ec118d98aa98f0cebaf2488eiN12SDeZq.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3167)
+   Current path: tts_file/user/SRJoN3ex7c6f40a2cb59d5aec08d7861d5bdd3739QlBJchFD4.mp3
+   📁 Storage path: tts_file/user/SRJoN3ex7c6f40a2cb59d5aec08d7861d5bdd3739QlBJchFD4.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/SRJoN3ex7c6f40a2cb59d5aec08d7861d5bdd3739QlBJchFD4.mp3
+   📦 Downloaded 94.22 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/SRJoN3ex7c6f40a2cb59d5aec08d7861d5bdd3739QlBJchFD4.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3168)
+   Current path: tts_file/user/Y7gsdo40q7e5876732531bf5d9f848df3c3fce5d3MDA7lPOkm.mp3
+   📁 Storage path: tts_file/user/Y7gsdo40q7e5876732531bf5d9f848df3c3fce5d3MDA7lPOkm.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/Y7gsdo40q7e5876732531bf5d9f848df3c3fce5d3MDA7lPOkm.mp3
+   📦 Downloaded 25.17 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/Y7gsdo40q7e5876732531bf5d9f848df3c3fce5d3MDA7lPOkm.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3169)
+   Current path: tts_file/user/nCRNH4ZWe1c4ea086013845443d6d82d359d4db0bCkyLNcheB.mp3
+   📁 Storage path: tts_file/user/nCRNH4ZWe1c4ea086013845443d6d82d359d4db0bCkyLNcheB.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/nCRNH4ZWe1c4ea086013845443d6d82d359d4db0bCkyLNcheB.mp3
+   📦 Downloaded 56.81 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/nCRNH4ZWe1c4ea086013845443d6d82d359d4db0bCkyLNcheB.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3170)
+   Current path: tts_file/user/JxTRqB7mYac89928fa33f74dbfe43170803db8fcfec9z560Ar.mp3
+   📁 Storage path: tts_file/user/JxTRqB7mYac89928fa33f74dbfe43170803db8fcfec9z560Ar.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/JxTRqB7mYac89928fa33f74dbfe43170803db8fcfec9z560Ar.mp3
+   📦 Downloaded 252.14 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/JxTRqB7mYac89928fa33f74dbfe43170803db8fcfec9z560Ar.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3171)
+   Current path: tts_file/user/Cnysl6xWQ50f4c6bcdcb71cadaa3b32287777ed666pIkywj7U.mp3
+   📁 Storage path: tts_file/user/Cnysl6xWQ50f4c6bcdcb71cadaa3b32287777ed666pIkywj7U.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/Cnysl6xWQ50f4c6bcdcb71cadaa3b32287777ed666pIkywj7U.mp3
+   📦 Downloaded 26.02 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/Cnysl6xWQ50f4c6bcdcb71cadaa3b32287777ed666pIkywj7U.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3172)
+   Current path: tts_file/user/GeHwfoDYP5f4592fe3e33355df1f959c47545cb34el8FImC7M.mp3
+   📁 Storage path: tts_file/user/GeHwfoDYP5f4592fe3e33355df1f959c47545cb34el8FImC7M.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/GeHwfoDYP5f4592fe3e33355df1f959c47545cb34el8FImC7M.mp3
+   📦 Downloaded 224.72 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/GeHwfoDYP5f4592fe3e33355df1f959c47545cb34el8FImC7M.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3173)
+   Current path: tts_file/user/FMdtTmy6n832fb902682326c8fafb0133aa162c80z4RqvX9p2.mp3
+   📁 Storage path: tts_file/user/FMdtTmy6n832fb902682326c8fafb0133aa162c80z4RqvX9p2.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/FMdtTmy6n832fb902682326c8fafb0133aa162c80z4RqvX9p2.mp3
+   📦 Downloaded 50.06 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/FMdtTmy6n832fb902682326c8fafb0133aa162c80z4RqvX9p2.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3174)
+   Current path: tts_file/user/vABmqDeag2cbc2f8af9398f895e089ee249d09221wGc8yJxQb.mp3
+   📁 Storage path: tts_file/user/vABmqDeag2cbc2f8af9398f895e089ee249d09221wGc8yJxQb.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/vABmqDeag2cbc2f8af9398f895e089ee249d09221wGc8yJxQb.mp3
+   📦 Downloaded 43.03 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/vABmqDeag2cbc2f8af9398f895e089ee249d09221wGc8yJxQb.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3175)
+   Current path: tts_file/user/q1tXQciEI3d5b0da4d6a8238866a7320c7213b4910SQPJpoOH.mp3
+   📁 Storage path: tts_file/user/q1tXQciEI3d5b0da4d6a8238866a7320c7213b4910SQPJpoOH.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/q1tXQciEI3d5b0da4d6a8238866a7320c7213b4910SQPJpoOH.mp3
+   📦 Downloaded 18.56 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/q1tXQciEI3d5b0da4d6a8238866a7320c7213b4910SQPJpoOH.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3176)
+   Current path: tts_file/user/tWlIg2mqfe96653cda6b7cc5881188e595aaa88cc2YG8ToOdH.mp3
+   📁 Storage path: tts_file/user/tWlIg2mqfe96653cda6b7cc5881188e595aaa88cc2YG8ToOdH.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/tWlIg2mqfe96653cda6b7cc5881188e595aaa88cc2YG8ToOdH.mp3
+   📦 Downloaded 50.77 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/tWlIg2mqfe96653cda6b7cc5881188e595aaa88cc2YG8ToOdH.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3177)
+   Current path: tts_file/user/LJrEW0hIm9640e8503e2f94d7b0fb8178c0199971vE9auBUZr.mp3
+   📁 Storage path: tts_file/user/LJrEW0hIm9640e8503e2f94d7b0fb8178c0199971vE9auBUZr.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/LJrEW0hIm9640e8503e2f94d7b0fb8178c0199971vE9auBUZr.mp3
+   📦 Downloaded 54.70 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/LJrEW0hIm9640e8503e2f94d7b0fb8178c0199971vE9auBUZr.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3178)
+   Current path: tts_file/user/lsqcRiy7D52a909ceb97e7cfff2eb2f6f4ff45ea2n2JIy0sof.mp3
+   📁 Storage path: tts_file/user/lsqcRiy7D52a909ceb97e7cfff2eb2f6f4ff45ea2n2JIy0sof.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/lsqcRiy7D52a909ceb97e7cfff2eb2f6f4ff45ea2n2JIy0sof.mp3
+   📦 Downloaded 15.61 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/lsqcRiy7D52a909ceb97e7cfff2eb2f6f4ff45ea2n2JIy0sof.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3179)
+   Current path: tts_file/user/xrlOAEKkRb3a8ad1548cda8e7404fbf389e5b25f82f3Xc7kZC.mp3
+   📁 Storage path: tts_file/user/xrlOAEKkRb3a8ad1548cda8e7404fbf389e5b25f82f3Xc7kZC.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/xrlOAEKkRb3a8ad1548cda8e7404fbf389e5b25f82f3Xc7kZC.mp3
+   📦 Downloaded 15.33 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/xrlOAEKkRb3a8ad1548cda8e7404fbf389e5b25f82f3Xc7kZC.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3180)
+   Current path: tts_file/user/IrEnvoKz3f1addda17e61de3dab8bd1d5f36f8e61g1tS9NA6H.mp3
+   📁 Storage path: tts_file/user/IrEnvoKz3f1addda17e61de3dab8bd1d5f36f8e61g1tS9NA6H.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/IrEnvoKz3f1addda17e61de3dab8bd1d5f36f8e61g1tS9NA6H.mp3
+   📦 Downloaded 13.50 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/IrEnvoKz3f1addda17e61de3dab8bd1d5f36f8e61g1tS9NA6H.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3181)
+   Current path: tts_file/user/RDmpU5Qct8f458a28d9f53c538cc1f5aec0cda836xhevcfDVP.mp3
+   📁 Storage path: tts_file/user/RDmpU5Qct8f458a28d9f53c538cc1f5aec0cda836xhevcfDVP.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/RDmpU5Qct8f458a28d9f53c538cc1f5aec0cda836xhevcfDVP.mp3
+   📦 Downloaded 16.31 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/RDmpU5Qct8f458a28d9f53c538cc1f5aec0cda836xhevcfDVP.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3182)
+   Current path: tts_file/user/5FOng4ZmW3c49dc85e9a48e33f74d60a8ff87f2eapzSaEsgYT.mp3
+   📁 Storage path: tts_file/user/5FOng4ZmW3c49dc85e9a48e33f74d60a8ff87f2eapzSaEsgYT.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/5FOng4ZmW3c49dc85e9a48e33f74d60a8ff87f2eapzSaEsgYT.mp3
+   📦 Downloaded 10.27 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/5FOng4ZmW3c49dc85e9a48e33f74d60a8ff87f2eapzSaEsgYT.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3183)
+   Current path: tts_file/user/OV1C2s0aF8053c5cf3f217c82d9d12fbeaae9b697P5OSdej4i.mp3
+   📁 Storage path: tts_file/user/OV1C2s0aF8053c5cf3f217c82d9d12fbeaae9b697P5OSdej4i.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/OV1C2s0aF8053c5cf3f217c82d9d12fbeaae9b697P5OSdej4i.mp3
+   📦 Downloaded 17.30 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/OV1C2s0aF8053c5cf3f217c82d9d12fbeaae9b697P5OSdej4i.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3184)
+   Current path: tts_file/user/JtzQaV0RBad69b1580c8324772ed93dd50abe4a713cLShoqrp.mp3
+   📁 Storage path: tts_file/user/JtzQaV0RBad69b1580c8324772ed93dd50abe4a713cLShoqrp.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/JtzQaV0RBad69b1580c8324772ed93dd50abe4a713cLShoqrp.mp3
+   📦 Downloaded 18.70 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/JtzQaV0RBad69b1580c8324772ed93dd50abe4a713cLShoqrp.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3185)
+   Current path: tts_file/user/MY3BzyPWI4dcccfdc53e38bd72564723989c8cc70ktVEDn3aX.mp3
+   📁 Storage path: tts_file/user/MY3BzyPWI4dcccfdc53e38bd72564723989c8cc70ktVEDn3aX.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/MY3BzyPWI4dcccfdc53e38bd72564723989c8cc70ktVEDn3aX.mp3
+   📦 Downloaded 14.20 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/MY3BzyPWI4dcccfdc53e38bd72564723989c8cc70ktVEDn3aX.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3186)
+   Current path: tts_file/user/sIZA7a9mN47720c0262291adf251af95fb7628b44Yk5MJZCcW.mp3
+   📁 Storage path: tts_file/user/sIZA7a9mN47720c0262291adf251af95fb7628b44Yk5MJZCcW.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/sIZA7a9mN47720c0262291adf251af95fb7628b44Yk5MJZCcW.mp3
+   📦 Downloaded 111.38 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/sIZA7a9mN47720c0262291adf251af95fb7628b44Yk5MJZCcW.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3187)
+   Current path: tts_file/user/z8Pf1hHg0969945fd91bd74f1f97d131c32db67a9Ugi6sYMJv.mp3
+   📁 Storage path: tts_file/user/z8Pf1hHg0969945fd91bd74f1f97d131c32db67a9Ugi6sYMJv.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/z8Pf1hHg0969945fd91bd74f1f97d131c32db67a9Ugi6sYMJv.mp3
+   📦 Downloaded 29.11 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/z8Pf1hHg0969945fd91bd74f1f97d131c32db67a9Ugi6sYMJv.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3188)
+   Current path: tts_file/user/daRDLxpZY01973ba6d2229200f4b8ae20650e3039QfpoKABkw.mp3
+   📁 Storage path: tts_file/user/daRDLxpZY01973ba6d2229200f4b8ae20650e3039QfpoKABkw.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/daRDLxpZY01973ba6d2229200f4b8ae20650e3039QfpoKABkw.mp3
+   📦 Downloaded 90.98 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/daRDLxpZY01973ba6d2229200f4b8ae20650e3039QfpoKABkw.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3189)
+   Current path: tts_file/user/6Ct3Nvx0S13ef1ee2907cb82ed90222dba0ea45eeIXcNW5hQ3.mp3
+   📁 Storage path: tts_file/user/6Ct3Nvx0S13ef1ee2907cb82ed90222dba0ea45eeIXcNW5hQ3.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/6Ct3Nvx0S13ef1ee2907cb82ed90222dba0ea45eeIXcNW5hQ3.mp3
+   📦 Downloaded 121.36 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/6Ct3Nvx0S13ef1ee2907cb82ed90222dba0ea45eeIXcNW5hQ3.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3190)
+   Current path: tts_file/user/jwldrH3Gv89a08082b933d6c8a3ce966fbab88244QAdnJaHxF.mp3
+   📁 Storage path: tts_file/user/jwldrH3Gv89a08082b933d6c8a3ce966fbab88244QAdnJaHxF.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/jwldrH3Gv89a08082b933d6c8a3ce966fbab88244QAdnJaHxF.mp3
+   📦 Downloaded 75.94 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/jwldrH3Gv89a08082b933d6c8a3ce966fbab88244QAdnJaHxF.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3191)
+   Current path: tts_file/user/pBSf938cead794eb3e13fa8aea1479ae2ac8c195d6ZJhMtjVC.mp3
+   📁 Storage path: tts_file/user/pBSf938cead794eb3e13fa8aea1479ae2ac8c195d6ZJhMtjVC.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/pBSf938cead794eb3e13fa8aea1479ae2ac8c195d6ZJhMtjVC.mp3
+   📦 Downloaded 47.25 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/pBSf938cead794eb3e13fa8aea1479ae2ac8c195d6ZJhMtjVC.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3192)
+   Current path: tts_file/user/Ii0DwxH2v66250f471f408e39648daaac1c55ac20GtxO1IA25.mp3
+   📁 Storage path: tts_file/user/Ii0DwxH2v66250f471f408e39648daaac1c55ac20GtxO1IA25.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/Ii0DwxH2v66250f471f408e39648daaac1c55ac20GtxO1IA25.mp3
+   📦 Downloaded 36.84 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/Ii0DwxH2v66250f471f408e39648daaac1c55ac20GtxO1IA25.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3193)
+   Current path: tts_file/user/YIO15AWtQa068c2894f971ca08808a3aad30174f1zsOVSqLh8.mp3
+   📁 Storage path: tts_file/user/YIO15AWtQa068c2894f971ca08808a3aad30174f1zsOVSqLh8.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/YIO15AWtQa068c2894f971ca08808a3aad30174f1zsOVSqLh8.mp3
+   📦 Downloaded 69.89 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/YIO15AWtQa068c2894f971ca08808a3aad30174f1zsOVSqLh8.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3194)
+   Current path: tts_file/user/1t0dfIZON90374c612e6661ae29f2769150595565ckyiNfE3d.mp3
+   📁 Storage path: tts_file/user/1t0dfIZON90374c612e6661ae29f2769150595565ckyiNfE3d.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/1t0dfIZON90374c612e6661ae29f2769150595565ckyiNfE3d.mp3
+   📦 Downloaded 32.77 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/1t0dfIZON90374c612e6661ae29f2769150595565ckyiNfE3d.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3195)
+   Current path: tts_file/user/UTJma1clP32a26f95b6eac3bf437fcf323a064b43jt6ZUcxAv.mp3
+   📁 Storage path: tts_file/user/UTJma1clP32a26f95b6eac3bf437fcf323a064b43jt6ZUcxAv.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/UTJma1clP32a26f95b6eac3bf437fcf323a064b43jt6ZUcxAv.mp3
+   📦 Downloaded 128.81 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/UTJma1clP32a26f95b6eac3bf437fcf323a064b43jt6ZUcxAv.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3196)
+   Current path: tts_file/user/6OhJAPtTxb4ace6403058f36aaaaa9487531f0d511s0qJr9WA.mp3
+   📁 Storage path: tts_file/user/6OhJAPtTxb4ace6403058f36aaaaa9487531f0d511s0qJr9WA.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/6OhJAPtTxb4ace6403058f36aaaaa9487531f0d511s0qJr9WA.mp3
+   📦 Downloaded 19.13 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/6OhJAPtTxb4ace6403058f36aaaaa9487531f0d511s0qJr9WA.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3900)
+   Current path: tts_file/user/rBoZIRujwa13e002e125cca42e88de15e944d1054nTWKpalBr.mp3
+   📁 Storage path: tts_file/user/rBoZIRujwa13e002e125cca42e88de15e944d1054nTWKpalBr.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/rBoZIRujwa13e002e125cca42e88de15e944d1054nTWKpalBr.mp3
+   📦 Downloaded 19.97 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/rBoZIRujwa13e002e125cca42e88de15e944d1054nTWKpalBr.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3901)
+   Current path: tts_file/user/dI7RefhJZ37accdc7d265031126b3a29e22c37cc8PXSlo2uAL.mp3
+   📁 Storage path: tts_file/user/dI7RefhJZ37accdc7d265031126b3a29e22c37cc8PXSlo2uAL.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/dI7RefhJZ37accdc7d265031126b3a29e22c37cc8PXSlo2uAL.mp3
+   📦 Downloaded 15.47 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/dI7RefhJZ37accdc7d265031126b3a29e22c37cc8PXSlo2uAL.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3902)
+   Current path: tts_file/user/OMF26T9Hq4239d5b8c7a38b65670fe4f4ea152b26s3OjlQHGX.mp3
+   📁 Storage path: tts_file/user/OMF26T9Hq4239d5b8c7a38b65670fe4f4ea152b26s3OjlQHGX.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/OMF26T9Hq4239d5b8c7a38b65670fe4f4ea152b26s3OjlQHGX.mp3
+   📦 Downloaded 24.33 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/OMF26T9Hq4239d5b8c7a38b65670fe4f4ea152b26s3OjlQHGX.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3903)
+   Current path: tts_file/user/IxqBSzf40780a06f43e3123596dd1fcc7b304883dyLBn4Ua7f.mp3
+   📁 Storage path: tts_file/user/IxqBSzf40780a06f43e3123596dd1fcc7b304883dyLBn4Ua7f.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/IxqBSzf40780a06f43e3123596dd1fcc7b304883dyLBn4Ua7f.mp3
+   📦 Downloaded 36.14 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/IxqBSzf40780a06f43e3123596dd1fcc7b304883dyLBn4Ua7f.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3904)
+   Current path: tts_file/user/9lHXBYow3a2123bd6c1414d92f04457674fba49436IHn2LZUD.mp3
+   📁 Storage path: tts_file/user/9lHXBYow3a2123bd6c1414d92f04457674fba49436IHn2LZUD.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/9lHXBYow3a2123bd6c1414d92f04457674fba49436IHn2LZUD.mp3
+   📦 Downloaded 15.47 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/9lHXBYow3a2123bd6c1414d92f04457674fba49436IHn2LZUD.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3197)
+   Current path: tts_file/user/imzR6oOhHa2a109c8a0f615ac955a00f48df16eb7Zs5NtcrVg.mp3
+   📁 Storage path: tts_file/user/imzR6oOhHa2a109c8a0f615ac955a00f48df16eb7Zs5NtcrVg.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/imzR6oOhHa2a109c8a0f615ac955a00f48df16eb7Zs5NtcrVg.mp3
+   📦 Downloaded 78.19 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/imzR6oOhHa2a109c8a0f615ac955a00f48df16eb7Zs5NtcrVg.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3198)
+   Current path: tts_file/user/ibLGXZd9h6997ddf840dd37b01da8e319fc050588P6YyGVc2I.mp3
+   📁 Storage path: tts_file/user/ibLGXZd9h6997ddf840dd37b01da8e319fc050588P6YyGVc2I.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/ibLGXZd9h6997ddf840dd37b01da8e319fc050588P6YyGVc2I.mp3
+   📦 Downloaded 31.22 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/ibLGXZd9h6997ddf840dd37b01da8e319fc050588P6YyGVc2I.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3199)
+   Current path: tts_file/user/mViZHYA154eaf0085d8041e145444b7b27c860a45ZqC3U5hrs.mp3
+   📁 Storage path: tts_file/user/mViZHYA154eaf0085d8041e145444b7b27c860a45ZqC3U5hrs.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/mViZHYA154eaf0085d8041e145444b7b27c860a45ZqC3U5hrs.mp3
+   📦 Downloaded 30.66 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/mViZHYA154eaf0085d8041e145444b7b27c860a45ZqC3U5hrs.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3200)
+   Current path: tts_file/user/pTZ4k7EOw78d1d29a501c254708348904ce98150cHCEUV5w3L.mp3
+   📁 Storage path: tts_file/user/pTZ4k7EOw78d1d29a501c254708348904ce98150cHCEUV5w3L.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/pTZ4k7EOw78d1d29a501c254708348904ce98150cHCEUV5w3L.mp3
+   📦 Downloaded 24.33 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/pTZ4k7EOw78d1d29a501c254708348904ce98150cHCEUV5w3L.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3201)
+   Current path: tts_file/user/zNIusKBliab3606f361e1463a998e1affc8ef6c99qPiNK9Rvo.mp3
+   📁 Storage path: tts_file/user/zNIusKBliab3606f361e1463a998e1affc8ef6c99qPiNK9Rvo.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/zNIusKBliab3606f361e1463a998e1affc8ef6c99qPiNK9Rvo.mp3
+   📦 Downloaded 8.86 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/zNIusKBliab3606f361e1463a998e1affc8ef6c99qPiNK9Rvo.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3202)
+   Current path: tts_file/user/pRLxXGdf0ba71a92cdcec5416a1a435551804e7fcyLVqXu3Nt.mp3
+   📁 Storage path: tts_file/user/pRLxXGdf0ba71a92cdcec5416a1a435551804e7fcyLVqXu3Nt.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/pRLxXGdf0ba71a92cdcec5416a1a435551804e7fcyLVqXu3Nt.mp3
+   📦 Downloaded 172.41 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/pRLxXGdf0ba71a92cdcec5416a1a435551804e7fcyLVqXu3Nt.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3203)
+   Current path: tts_file/user/eo5hbMBfwad981c97a29ffe40b6aebe37d7c0d581fzluvYiWb.mp3
+   📁 Storage path: tts_file/user/eo5hbMBfwad981c97a29ffe40b6aebe37d7c0d581fzluvYiWb.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/eo5hbMBfwad981c97a29ffe40b6aebe37d7c0d581fzluvYiWb.mp3
+   📦 Downloaded 413.16 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/eo5hbMBfwad981c97a29ffe40b6aebe37d7c0d581fzluvYiWb.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3204)
+   Current path: tts_file/user/m9ykUreDReee791ae63c296813e6fd6f9e7831210LYKABQGr9.mp3
+   📁 Storage path: tts_file/user/m9ykUreDReee791ae63c296813e6fd6f9e7831210LYKABQGr9.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/m9ykUreDReee791ae63c296813e6fd6f9e7831210LYKABQGr9.mp3
+   📦 Downloaded 18.42 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/m9ykUreDReee791ae63c296813e6fd6f9e7831210LYKABQGr9.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3205)
+   Current path: tts_file/user/fMRqT3vAz5e922632c124f3f2eaabf2b649825526M0rFiEYzO.mp3
+   📁 Storage path: tts_file/user/fMRqT3vAz5e922632c124f3f2eaabf2b649825526M0rFiEYzO.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/fMRqT3vAz5e922632c124f3f2eaabf2b649825526M0rFiEYzO.mp3
+   📦 Downloaded 64.83 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/fMRqT3vAz5e922632c124f3f2eaabf2b649825526M0rFiEYzO.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3206)
+   Current path: tts_file/user/Pk4hTyFta38916d92c12d565c717d762a96eb28abSZVphX8FG.mp3
+   📁 Storage path: tts_file/user/Pk4hTyFta38916d92c12d565c717d762a96eb28abSZVphX8FG.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/Pk4hTyFta38916d92c12d565c717d762a96eb28abSZVphX8FG.mp3
+   📦 Downloaded 16.59 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/Pk4hTyFta38916d92c12d565c717d762a96eb28abSZVphX8FG.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3207)
+   Current path: tts_file/user/JodjU2kvz645352f32525d01242c8a8a0ef75d9abKWL6Zze3X.mp3
+   📁 Storage path: tts_file/user/JodjU2kvz645352f32525d01242c8a8a0ef75d9abKWL6Zze3X.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/JodjU2kvz645352f32525d01242c8a8a0ef75d9abKWL6Zze3X.mp3
+   📦 Downloaded 94.50 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/JodjU2kvz645352f32525d01242c8a8a0ef75d9abKWL6Zze3X.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3208)
+   Current path: tts_file/user/c7yfBtAlD1f50f85d73d2a018a4ba2bd2ba82b514xijtfVp2c.mp3
+   📁 Storage path: tts_file/user/c7yfBtAlD1f50f85d73d2a018a4ba2bd2ba82b514xijtfVp2c.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/c7yfBtAlD1f50f85d73d2a018a4ba2bd2ba82b514xijtfVp2c.mp3
+   📦 Downloaded 25.45 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/c7yfBtAlD1f50f85d73d2a018a4ba2bd2ba82b514xijtfVp2c.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3209)
+   Current path: tts_file/user/8YwBkUHbc5feebae6e5238156c13abf7520a635ffex01rZPER.mp3
+   📁 Storage path: tts_file/user/8YwBkUHbc5feebae6e5238156c13abf7520a635ffex01rZPER.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/8YwBkUHbc5feebae6e5238156c13abf7520a635ffex01rZPER.mp3
+   📦 Downloaded 26.58 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/8YwBkUHbc5feebae6e5238156c13abf7520a635ffex01rZPER.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3264)
+   Current path: tts_file/user/jpaMKU37N657f1cc182437fe3eed8ea6e23de49c274V8JIMZK.mp3
+   📁 Storage path: tts_file/user/jpaMKU37N657f1cc182437fe3eed8ea6e23de49c274V8JIMZK.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/jpaMKU37N657f1cc182437fe3eed8ea6e23de49c274V8JIMZK.mp3
+   📦 Downloaded 21.23 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/jpaMKU37N657f1cc182437fe3eed8ea6e23de49c274V8JIMZK.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3210)
+   Current path: tts_file/user/0JZSPcv466f50c80ab22ab9bc44355d2633568dbdXid43W1NU.mp3
+   📁 Storage path: tts_file/user/0JZSPcv466f50c80ab22ab9bc44355d2633568dbdXid43W1NU.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/0JZSPcv466f50c80ab22ab9bc44355d2633568dbdXid43W1NU.mp3
+   📦 Downloaded 337.78 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/0JZSPcv466f50c80ab22ab9bc44355d2633568dbdXid43W1NU.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3211)
+   Current path: tts_file/user/ALwBeYNrC380291ced31c1e89d3e5e1b43fbff9eaEHnMlqoKU.mp3
+   📁 Storage path: tts_file/user/ALwBeYNrC380291ced31c1e89d3e5e1b43fbff9eaEHnMlqoKU.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/ALwBeYNrC380291ced31c1e89d3e5e1b43fbff9eaEHnMlqoKU.mp3
+   📦 Downloaded 26.72 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/ALwBeYNrC380291ced31c1e89d3e5e1b43fbff9eaEHnMlqoKU.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3212)
+   Current path: tts_file/user/1J5KBAWHE2b9bf3cad274a863654740361a15ec16pnAeWRLjw.mp3
+   📁 Storage path: tts_file/user/1J5KBAWHE2b9bf3cad274a863654740361a15ec16pnAeWRLjw.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/1J5KBAWHE2b9bf3cad274a863654740361a15ec16pnAeWRLjw.mp3
+   📦 Downloaded 154.97 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/1J5KBAWHE2b9bf3cad274a863654740361a15ec16pnAeWRLjw.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3213)
+   Current path: tts_file/user/zwCcR5BdW06ae889d85db1cf8e53b8205fa0f4346WX4jmkrOh.mp3
+   📁 Storage path: tts_file/user/zwCcR5BdW06ae889d85db1cf8e53b8205fa0f4346WX4jmkrOh.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/zwCcR5BdW06ae889d85db1cf8e53b8205fa0f4346WX4jmkrOh.mp3
+   📦 Downloaded 129.80 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/zwCcR5BdW06ae889d85db1cf8e53b8205fa0f4346WX4jmkrOh.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3214)
+   Current path: tts_file/user/jH0bLQ1Ex9d8e6879784984958b73c1bd0baa7077l9tY3mI5h.mp3
+   📁 Storage path: tts_file/user/jH0bLQ1Ex9d8e6879784984958b73c1bd0baa7077l9tY3mI5h.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/jH0bLQ1Ex9d8e6879784984958b73c1bd0baa7077l9tY3mI5h.mp3
+   📦 Downloaded 464.63 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/jH0bLQ1Ex9d8e6879784984958b73c1bd0baa7077l9tY3mI5h.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3217)
+   Current path: tts_file/user/6VCLaXdlH53bf890fdb73c8cf0735ffe1b63acca7qEUaYTuZ4.mp3
+   📁 Storage path: tts_file/user/6VCLaXdlH53bf890fdb73c8cf0735ffe1b63acca7qEUaYTuZ4.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/6VCLaXdlH53bf890fdb73c8cf0735ffe1b63acca7qEUaYTuZ4.mp3
+   📦 Downloaded 16.45 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/6VCLaXdlH53bf890fdb73c8cf0735ffe1b63acca7qEUaYTuZ4.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3218)
+   Current path: tts_file/user/vgMakVUC5aa72353fd9da7f1cb1fe11c1e3226c4ahQPEwm4Yc.mp3
+   📁 Storage path: tts_file/user/vgMakVUC5aa72353fd9da7f1cb1fe11c1e3226c4ahQPEwm4Yc.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/vgMakVUC5aa72353fd9da7f1cb1fe11c1e3226c4ahQPEwm4Yc.mp3
+   📦 Downloaded 13.50 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/vgMakVUC5aa72353fd9da7f1cb1fe11c1e3226c4ahQPEwm4Yc.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3219)
+   Current path: tts_file/user/na13cPGmO26fad85cc96a2cacf5c32b2196aca35ejy1U9K5hD.mp3
+   📁 Storage path: tts_file/user/na13cPGmO26fad85cc96a2cacf5c32b2196aca35ejy1U9K5hD.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/na13cPGmO26fad85cc96a2cacf5c32b2196aca35ejy1U9K5hD.mp3
+   📦 Downloaded 45.56 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/na13cPGmO26fad85cc96a2cacf5c32b2196aca35ejy1U9K5hD.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3223)
+   Current path: tts_file/user/YcGoR40Pqf516ab358c46cd15df51c35a49754facTxLFSs8HZ.mp3
+   📁 Storage path: tts_file/user/YcGoR40Pqf516ab358c46cd15df51c35a49754facTxLFSs8HZ.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/YcGoR40Pqf516ab358c46cd15df51c35a49754facTxLFSs8HZ.mp3
+   📦 Downloaded 29.11 KB
+   ⬆️  Uploading to Supabase...
+   🔗 New URL: https://bmmhzxnwveeeqpaujhrd.supabase.co/storage/v1/object/public/project-audio/tts_file/user/YcGoR40Pqf516ab358c46cd15df51c35a49754facTxLFSs8HZ.mp3
+   ✅ Migrated successfully!
+
+🎵 Project: "Untitled..." (legacy_id: 3225)
+   Current path: tts_file/user/ijPo9TRKOd200201d8dc814ae1408985bcb8a0d52TLC26B5xh.mp3
+   📁 Storage path: tts_file/user/ijPo9TRKOd200201d8dc814ae1408985bcb8a0d52TLC26B5xh.mp3
+   ⬇️  Downloading from: https://app.aitextspeak.com/tts_file/user/ijPo9TRKOd200201d8dc814ae1408985bcb8a0d52TLC26B5xh.mp3

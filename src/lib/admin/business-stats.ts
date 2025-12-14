@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export type DatePeriod = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
@@ -69,6 +70,9 @@ export async function getBusinessStats(
   customStart?: string,
   customEnd?: string
 ): Promise<BusinessStats> {
+  // Prevent stale admin metrics due to Next.js server fetch caching.
+  noStore();
+
   const supabase = createAdminClient();
   const { start, end } = getDateRange(period, customStart, customEnd);
   
@@ -117,14 +121,35 @@ export async function getBusinessStats(
   };
 }
 
-// Plan prices for MRR calculation (in case price_amount is not set)
-const PLAN_PRICES: Record<string, number> = {
+// Monthly plan prices for MRR calculation (from legacy AIT Payment Item table)
+const MONTHLY_PLAN_PRICES: Record<string, number> = {
+  // Current plans
   'monthly': 9.99,
-  'basic': 9.99,
-  'basic plan': 9.99,
   'monthly_pro': 29.99,
+  
+  // Legacy plans (from AIT Payment Item CSV)
+  'basic plan': 9.99,
+  'basic monthly': 9.99,
+  'basic': 9.99,
+  'standard plan': 19.99,
+  'premium plan': 29.99,
+  'elite plan': 49.99,
+  'extra plan': 99.99,
+  'ultimate plan': 149.99,
+  'unlimited plan': 14.99,
+  'voice cloning': 5.00,
   'monthly pro': 29.99,
+  'monthly pro package': 29.99,
   'pro': 29.99,
+  'pro monthly': 29.99,
+};
+
+// Multi-month plan prices (will be divided by months for MRR)
+// Legacy "Pro Annual" / "6 Month Package" = $29.99 per 6 months
+const MULTI_MONTH_PLANS: Record<string, { price: number; months: number }> = {
+  'pro annual': { price: 29.99, months: 6 },
+  '6 month package': { price: 29.99, months: 6 },
+  '6 month package (50% off)': { price: 29.99, months: 6 },
 };
 
 /**
@@ -132,19 +157,25 @@ const PLAN_PRICES: Record<string, number> = {
  * This is independent of the period filter - it's always current
  */
 export async function getMRRStats(): Promise<MRRStats> {
+  // Prevent stale admin metrics due to Next.js server fetch caching.
+  noStore();
+
   const supabase = createAdminClient();
 
   // Calculate date 30 days ago for churn calculation
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+  const now = new Date().toISOString();
+
   // Run queries in parallel
   const [activeSubsResult, cancelledSubsResult] = await Promise.all([
-    // Get all active subscriptions with their price
+    // Get all REALLY active subscriptions (status=active AND period hasn't ended)
     supabase
       .from('subscriptions')
       .select('plan_name, price_amount, plan_id')
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      .gt('current_period_end', now),
     
     // Get subscriptions canceled in last 30 days
     supabase
@@ -172,15 +203,28 @@ export async function getMRRStats(): Promise<MRRStats> {
         planName.includes('one_time') || planName.includes('one-time')) {
       lifetimeCount++;
     } else {
-      // It's a monthly/recurring subscription
+      // It's a recurring subscription
       monthlyCount++;
+      
+      // Check if it's a multi-month plan (annual, 6-month, etc.)
+      const multiMonthPlan = MULTI_MONTH_PLANS[planName] || MULTI_MONTH_PLANS[planId];
       
       // Get price - use price_amount if set, otherwise look up from plan name/id
       let price = sub.price_amount || 0;
+      
       if (price === 0) {
-        // Try to get price from plan name or plan_id
-        price = PLAN_PRICES[planName] || PLAN_PRICES[planId] || 0;
+        if (multiMonthPlan) {
+          // Multi-month plans - divide total by months
+          price = multiMonthPlan.price / multiMonthPlan.months;
+        } else {
+          // Monthly plans - use monthly price directly
+          price = MONTHLY_PLAN_PRICES[planName] || MONTHLY_PLAN_PRICES[planId] || 9.99;
+        }
+      } else if (multiMonthPlan) {
+        // If price_amount is set but it's multi-month, divide by months
+        price = price / multiMonthPlan.months;
       }
+      
       mrr += price;
     }
   }
@@ -201,3 +245,9 @@ export async function getMRRStats(): Promise<MRRStats> {
     cancelledLast30Days,
   };
 }
+
+
+
+
+
+

@@ -76,3 +76,9 @@ CREATE TRIGGER trigger_support_tickets_updated_at
   BEFORE UPDATE ON public.support_tickets
   FOR EACH ROW
   EXECUTE FUNCTION update_support_ticket_updated_at();
+
+
+
+
+
+

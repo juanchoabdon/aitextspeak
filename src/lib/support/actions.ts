@@ -135,3 +135,9 @@ async function sendSupportNotificationEmail(ticketId: string, input: TicketInput
     replyTo: { email: input.email, name: input.name || undefined },
   });
 }
+
+
+
+
+
+

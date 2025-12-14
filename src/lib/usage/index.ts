@@ -6,7 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
-import { PLANS, type PlanId } from '@/lib/payments/plans';
+import { PLANS, type AllPlanId } from '@/lib/payments/plans';
 
 export interface UsageInfo {
   charactersUsed: number;
@@ -15,7 +15,7 @@ export interface UsageInfo {
   percentUsed: number;
   isUnlimited: boolean;
   hasReachedLimit: boolean;
-  currentPlan: PlanId;
+  currentPlan: AllPlanId;
   planName: string;
   allowedLanguages: string[] | 'all';
 }
