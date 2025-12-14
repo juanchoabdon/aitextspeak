@@ -10,86 +10,107 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
  * Request password reset - sends email via Brevo API
  */
 export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
-  if (!email || !email.includes('@')) {
-    return { success: false, error: 'Please enter a valid email address' };
-  }
+  try {
+    if (!email || !email.includes('@')) {
+      console.error('[Password Reset] Invalid email format:', email);
+      return { success: false, error: 'Please enter a valid email address' };
+    }
 
-  const supabase = await createAdminClient();
-  const normalizedEmail = email.toLowerCase().trim();
+    const supabase = await createAdminClient();
+    const normalizedEmail = email.toLowerCase().trim();
 
-  // Find user
-  const { data: users } = await supabase.auth.admin.listUsers();
-  const user = users?.users.find(u => u.email?.toLowerCase() === normalizedEmail);
-  
-  if (!user) {
-    // Don't reveal if user exists - always say success
-    return { success: true };
-  }
+    console.log('[Password Reset] Starting password reset request for:', normalizedEmail);
 
-  // Get user's name for personalization (using admin client to bypass RLS)
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('first_name')
-    .eq('id', user.id)
-    .single();
+    // Find user
+    const { data: users, error: listUsersError } = await supabase.auth.admin.listUsers();
+    
+    if (listUsersError) {
+      console.error('[Password Reset] Error listing users:', listUsersError);
+      return { success: false, error: 'Something went wrong. Please try again.' };
+    }
 
-  // Generate secure token
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const user = users?.users.find(u => u.email?.toLowerCase() === normalizedEmail);
+    
+    if (!user) {
+      // Don't reveal if user exists - always say success (security best practice)
+      console.log('[Password Reset] User not found for email:', normalizedEmail);
+      return { success: true };
+    }
 
-  // Delete existing tokens for this user (using admin client to bypass RLS)
-  // Type assertion needed because password_reset_tokens is not in the generated types
-  await (supabase as any)
-    .from('password_reset_tokens')
-    .delete()
-    .eq('user_id', user.id);
+    console.log('[Password Reset] User found:', { userId: user.id, email: user.email });
 
-  // Store new token (using admin client to bypass RLS)
-  const { error: tokenError } = await (supabase as any)
-    .from('password_reset_tokens')
-    .insert({
-      user_id: user.id,
-      email: normalizedEmail,
-      token,
-      expires_at: expiresAt.toISOString(),
-    });
+    // Get user's name for personalization (using admin client to bypass RLS)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name')
+      .eq('id', user.id)
+      .single();
 
-  if (tokenError) {
-    console.error('[Password Reset] Token error:', tokenError);
-    console.error('[Password Reset] Token error details:', JSON.stringify(tokenError, null, 2));
-    return { success: false, error: 'Something went wrong. Please try again.' };
-  }
+    // Generate secure token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-  console.log('[Password Reset] Token stored successfully');
-
-  // Send email via Brevo
-  const resetLink = `${SITE_URL}/auth/reset-password?token=${token}`;
-  
-  console.log('[Password Reset] Attempting to send email to:', normalizedEmail);
-  console.log('[Password Reset] Reset link:', resetLink);
-  console.log('[Password Reset] User profile:', { hasProfile: !!profile, firstName: profile?.first_name });
-  
-  const emailResult = await sendEmail({
-    to: [{ email: normalizedEmail, name: profile?.first_name || undefined }],
-    subject: 'Reset Your AI TextSpeak Password',
-    htmlContent: getPasswordResetEmailHtml(resetLink, profile?.first_name || undefined),
-  });
-
-  console.log('[Password Reset] Email result:', emailResult);
-
-  if (!emailResult.success) {
-    console.error('[Password Reset] Email failed:', emailResult.error);
-    // Clean up token if email fails (using admin client)
+    // Delete existing tokens for this user (using admin client to bypass RLS)
+    // Type assertion needed because password_reset_tokens is not in the generated types
     await (supabase as any)
       .from('password_reset_tokens')
       .delete()
-      .eq('token', token);
-    return { success: false, error: emailResult.error || 'Failed to send email. Please try again.' };
+      .eq('user_id', user.id);
+
+    // Store new token (using admin client to bypass RLS)
+    const { error: tokenError } = await (supabase as any)
+      .from('password_reset_tokens')
+      .insert({
+        user_id: user.id,
+        email: normalizedEmail,
+        token,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (tokenError) {
+      console.error('[Password Reset] Token error:', tokenError);
+      console.error('[Password Reset] Token error details:', JSON.stringify(tokenError, null, 2));
+      return { success: false, error: 'Something went wrong. Please try again.' };
+    }
+
+    console.log('[Password Reset] Token stored successfully');
+
+    // Send email via Brevo
+    const resetLink = `${SITE_URL}/auth/reset-password?token=${token}`;
+    
+    console.log('[Password Reset] Attempting to send email to:', normalizedEmail);
+    console.log('[Password Reset] Reset link:', resetLink);
+    console.log('[Password Reset] User profile:', { hasProfile: !!profile, firstName: profile?.first_name });
+    console.log('[Password Reset] SITE_URL:', SITE_URL);
+    console.log('[Password Reset] BREVO_API_KEY configured:', !!process.env.BREVO_API_KEY);
+    
+    const emailResult = await sendEmail({
+      to: [{ email: normalizedEmail, name: profile?.first_name || undefined }],
+      subject: 'Reset Your AI TextSpeak Password',
+      htmlContent: getPasswordResetEmailHtml(resetLink, profile?.first_name || undefined),
+    });
+
+    console.log('[Password Reset] Email result:', JSON.stringify(emailResult, null, 2));
+
+    if (!emailResult.success) {
+      console.error('[Password Reset] Email failed:', emailResult.error);
+      console.error('[Password Reset] Full email result:', JSON.stringify(emailResult, null, 2));
+      // Clean up token if email fails (using admin client)
+      await (supabase as any)
+        .from('password_reset_tokens')
+        .delete()
+        .eq('token', token);
+      return { success: false, error: emailResult.error || 'Failed to send email. Please try again.' };
+    }
+
+    console.log('[Password Reset] ✅ Email sent successfully to:', normalizedEmail);
+
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Password Reset] Unexpected error:', errorMessage, error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
-
-  console.log('[Password Reset] Email sent successfully to:', normalizedEmail);
-
-  return { success: true };
 }
 
 /**
