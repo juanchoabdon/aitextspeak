@@ -6,9 +6,6 @@ import crypto from 'crypto';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnySupabaseClient = any;
-
 /**
  * Request password reset - sends email via Brevo API
  */
@@ -29,8 +26,8 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
     return { success: true };
   }
 
-  // Get user's name for personalization
-  const { data: profile } = await (supabase as AnySupabaseClient)
+  // Get user's name for personalization (using admin client to bypass RLS)
+  const { data: profile } = await supabase
     .from('profiles')
     .select('first_name')
     .eq('id', user.id)
@@ -40,14 +37,14 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-  // Delete existing tokens for this user
-  await (supabase as AnySupabaseClient)
+  // Delete existing tokens for this user (using admin client to bypass RLS)
+  await supabase
     .from('password_reset_tokens')
     .delete()
     .eq('user_id', user.id);
 
-  // Store new token
-  const { error: tokenError } = await (supabase as AnySupabaseClient)
+  // Store new token (using admin client to bypass RLS)
+  const { error: tokenError } = await supabase
     .from('password_reset_tokens')
     .insert({
       user_id: user.id,
@@ -58,27 +55,31 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
 
   if (tokenError) {
     console.error('[Password Reset] Token error:', tokenError);
+    console.error('[Password Reset] Token error details:', JSON.stringify(tokenError, null, 2));
     return { success: false, error: 'Something went wrong. Please try again.' };
   }
+
+  console.log('[Password Reset] Token stored successfully');
 
   // Send email via Brevo
   const resetLink = `${SITE_URL}/auth/reset-password?token=${token}`;
   
   console.log('[Password Reset] Attempting to send email to:', normalizedEmail);
   console.log('[Password Reset] Reset link:', resetLink);
+  console.log('[Password Reset] User profile:', { hasProfile: !!profile, firstName: profile?.first_name });
   
   const emailResult = await sendEmail({
-    to: [{ email: normalizedEmail, name: profile?.first_name }],
+    to: [{ email: normalizedEmail, name: profile?.first_name || undefined }],
     subject: 'Reset Your AI TextSpeak Password',
-    htmlContent: getPasswordResetEmailHtml(resetLink, profile?.first_name),
+    htmlContent: getPasswordResetEmailHtml(resetLink, profile?.first_name || undefined),
   });
 
   console.log('[Password Reset] Email result:', emailResult);
 
   if (!emailResult.success) {
     console.error('[Password Reset] Email failed:', emailResult.error);
-    // Clean up token if email fails
-    await (supabase as AnySupabaseClient)
+    // Clean up token if email fails (using admin client)
+    await supabase
       .from('password_reset_tokens')
       .delete()
       .eq('token', token);
@@ -98,7 +99,7 @@ export async function validateResetToken(token: string): Promise<{ valid: boolea
 
   const supabase = await createAdminClient();
 
-  const { data, error } = await (supabase as AnySupabaseClient)
+  const { data, error } = await supabase
     .from('password_reset_tokens')
     .select('*')
     .eq('token', token)
@@ -131,7 +132,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   const supabase = await createAdminClient();
 
   // Validate token
-  const { data, error } = await (supabase as AnySupabaseClient)
+  const { data, error } = await supabase
     .from('password_reset_tokens')
     .select('*')
     .eq('token', token)
@@ -161,7 +162,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   }
 
   // Mark token as used
-  await (supabase as AnySupabaseClient)
+  await supabase
     .from('password_reset_tokens')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
