@@ -32,6 +32,14 @@ export async function middleware(request: NextRequest) {
   const hostname = getHostname(request);
 
   // ========================================
+  // SKIP MIDDLEWARE FOR WEBHOOK ROUTES
+  // Webhooks need to bypass auth and session updates
+  // ========================================
+  if (pathname.startsWith('/webhook/')) {
+    return NextResponse.next();
+  }
+
+  // ========================================
   // LEGACY SUBDOMAIN REDIRECT
   // Redirect app.aitextspeak.com → aitextspeak.com
   // ========================================
@@ -79,8 +87,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - webhook routes (handled separately above)
      * - public folder files
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

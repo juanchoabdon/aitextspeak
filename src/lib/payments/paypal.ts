@@ -396,6 +396,7 @@ interface PayPalWebhookResource {
   id?: string;
   custom_id?: string;
   plan_id?: string;
+  status?: string; // Subscription status: ACTIVE, APPROVAL_PENDING, etc.
   start_time?: string;
   billing_agreement_id?: string;
   subscriber?: {
@@ -437,24 +438,34 @@ export async function handlePayPalWebhook(
     const resource = event.resource;
 
     switch (event.event_type) {
+      case 'BILLING.SUBSCRIPTION.CREATED':
       case 'BILLING.SUBSCRIPTION.ACTIVATED': {
         const subscriptionId = resource.id;
         const userId = resource.custom_id;
         const planId = resource.plan_id;
+        // Get subscription status from resource, or infer from event type
+        const subscriptionStatus = resource.status || 
+          (event.event_type === 'BILLING.SUBSCRIPTION.ACTIVATED' ? 'ACTIVE' : 'APPROVAL_PENDING');
 
         if (!userId || !subscriptionId) {
-          console.error('Missing userId or subscriptionId');
+          console.error('Missing userId or subscriptionId', { subscriptionId, userId, planId, eventType: event.event_type });
           break;
         }
 
         const plan = planId ? getPlanByPayPalPlan(planId) : null;
+
+        // Determine status based on subscription state
+        // CREATED might be incomplete/approval_pending, ACTIVATED is always active
+        const dbStatus = (subscriptionStatus === 'ACTIVE' || event.event_type === 'BILLING.SUBSCRIPTION.ACTIVATED')
+          ? 'active' 
+          : 'incomplete';
 
         await supabase.from('subscriptions').upsert({
           user_id: userId,
           provider: 'paypal',
           provider_subscription_id: subscriptionId,
           provider_customer_id: resource.subscriber?.payer_id || null,
-          status: 'active',
+          status: dbStatus,
           plan_id: plan?.id || 'monthly',
           plan_name: plan?.name || 'Monthly',
           price_amount: plan?.price || 0,
@@ -467,44 +478,59 @@ export async function handlePayPalWebhook(
           onConflict: 'user_id,provider',
         });
 
-        // Save transaction to payment_history
-        await supabase.from('payment_history').insert({
-          user_id: userId,
-          transaction_type: 'subscription',
-          gateway: 'paypal',
-          gateway_identifier: subscriptionId,
-          currency: 'USD',
-          amount: plan?.price || 0,
-          item_name: plan?.name || 'Subscription',
-          redirect_status: 'success',
-          callback_status: 'success',
-          visible_for_user: true,
-          metadata: {
-            plan_id: plan?.id,
-            paypal_plan_id: planId,
-            payer_id: resource.subscriber?.payer_id,
-          },
-        });
+        // Only create payment_history and update role when subscription is activated
+        if (event.event_type === 'BILLING.SUBSCRIPTION.ACTIVATED' || subscriptionStatus === 'ACTIVE') {
+          // Check if payment_history already exists for this subscription
+          const { data: existingPayment } = await supabase
+            .from('payment_history')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('gateway', 'paypal')
+            .eq('gateway_identifier', subscriptionId)
+            .eq('transaction_type', 'subscription')
+            .single();
 
-        await supabase
-          .from('profiles')
-          .update({ role: 'pro' })
-          .eq('id', userId);
+          if (!existingPayment) {
+            // Save transaction to payment_history
+            await supabase.from('payment_history').insert({
+              user_id: userId,
+              transaction_type: 'subscription',
+              gateway: 'paypal',
+              gateway_identifier: subscriptionId,
+              currency: 'USD',
+              amount: plan?.price || 0,
+              item_name: plan?.name || 'Subscription',
+              redirect_status: 'success',
+              callback_status: 'success',
+              visible_for_user: true,
+              metadata: {
+                plan_id: plan?.id,
+                paypal_plan_id: planId,
+                payer_id: resource.subscriber?.payer_id,
+              },
+            });
+          }
 
-        // Track analytics
-        trackPaymentCompleted(userId, {
-          planId: plan?.id || 'monthly',
-          amount: plan?.price || 0,
-          provider: 'paypal',
-          isRecurring: true,
-          currency: 'USD',
-          subscriptionId,
-        });
-        trackSubscriptionActivatedServer(userId, {
-          planId: plan?.id || 'monthly',
-          provider: 'paypal',
-          subscriptionId,
-        });
+          await supabase
+            .from('profiles')
+            .update({ role: 'pro' })
+            .eq('id', userId);
+
+          // Track analytics
+          trackPaymentCompleted(userId, {
+            planId: plan?.id || 'monthly',
+            amount: plan?.price || 0,
+            provider: 'paypal',
+            isRecurring: true,
+            currency: 'USD',
+            subscriptionId,
+          });
+          trackSubscriptionActivatedServer(userId, {
+            planId: plan?.id || 'monthly',
+            provider: 'paypal',
+            subscriptionId,
+          });
+        }
         break;
       }
 

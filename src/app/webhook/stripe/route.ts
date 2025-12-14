@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleStripeWebhook } from '@/lib/payments/stripe';
 
+// Disable body parsing, we need the raw body for signature verification
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /webhook/stripe
  * 

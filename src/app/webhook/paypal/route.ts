@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handlePayPalWebhook, verifyWebhookSignature } from '@/lib/payments/paypal';
 
+// Disable body parsing, we need the raw body for signature verification
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 interface PayPalEvent {
   id: string;
   event_type: string;
@@ -14,6 +18,7 @@ interface PayPalEvent {
  * POST /webhook/paypal
  * 
  * Handles PayPal webhook events for:
+ * - BILLING.SUBSCRIPTION.CREATED
  * - BILLING.SUBSCRIPTION.ACTIVATED
  * - BILLING.SUBSCRIPTION.CANCELLED
  * - BILLING.SUBSCRIPTION.SUSPENDED
