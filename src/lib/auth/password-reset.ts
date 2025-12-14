@@ -133,7 +133,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   const supabase = await createAdminClient();
 
   // Validate token
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('password_reset_tokens')
     .select('*')
     .eq('token', token)
