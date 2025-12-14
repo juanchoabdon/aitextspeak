@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { TopLoader } from "@/components/ui/TopLoader";
 import { AmplitudeProvider } from "@/components/analytics/AmplitudeProvider";
 import { FirstPromoterScripts } from "@/components/analytics/FirstPromoter";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import "./globals.css";
 
 const inter = Inter({
@@ -103,6 +104,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-slate-950 text-white`}>
+        <GoogleAnalytics />
         <FirstPromoterScripts />
         <Suspense fallback={null}>
           <TopLoader />
