@@ -110,10 +110,8 @@ export default async function DashboardPage() {
           </div>
 
           {/* Affiliate Program */}
-          <a
-            href="https://affiliates.aitextspeak.com"
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href="/affiliates"
             className="block rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-600/10 p-6 hover:border-amber-500/60 transition-colors mb-8"
           >
             <div className="flex items-center justify-between gap-6">
@@ -124,10 +122,10 @@ export default async function DashboardPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap">
-                Open →
+                Learn More →
               </div>
             </div>
-          </a>
+          </Link>
 
           {/* Recent Projects */}
           {recentProjects.length > 0 && (
