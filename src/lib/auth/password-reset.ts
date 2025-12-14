@@ -21,19 +21,45 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
 
     console.log('[Password Reset] Starting password reset request for:', normalizedEmail);
 
-    // Find user
-    const { data: users, error: listUsersError } = await supabase.auth.admin.listUsers();
+    // Find user by email (handle pagination since listUsers is paginated)
+    let user = null;
+    let page = 1;
+    const perPage = 1000;
     
-    if (listUsersError) {
-      console.error('[Password Reset] Error listing users:', listUsersError);
-      return { success: false, error: 'Something went wrong. Please try again.' };
-    }
+    while (true) {
+      const { data, error: listUsersError } = await supabase.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      
+      if (listUsersError) {
+        console.error('[Password Reset] Error listing users:', listUsersError);
+        return { success: false, error: 'Something went wrong. Please try again.' };
+      }
 
-    const user = users?.users.find(u => u.email?.toLowerCase() === normalizedEmail);
+      if (!data.users || data.users.length === 0) {
+        break; // No more users
+      }
+
+      // Search for user in this page
+      const foundUser = data.users.find(u => u.email?.toLowerCase() === normalizedEmail);
+      if (foundUser) {
+        user = foundUser;
+        break; // Found the user
+      }
+
+      // If we got fewer users than perPage, we've reached the end
+      if (data.users.length < perPage) {
+        break;
+      }
+
+      page++;
+    }
     
     if (!user) {
       // Don't reveal if user exists - always say success (security best practice)
       console.log('[Password Reset] User not found for email:', normalizedEmail);
+      console.log('[Password Reset] Searched through', page, 'page(s) of users');
       return { success: true };
     }
 
