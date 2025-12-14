@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { HeroTTSDemo } from '@/components/home/HeroTTSDemo';
 import { TrustStats } from '@/components/home/TrustStats';
+import { OAuthCallbackRedirect } from '@/components/home/OAuthCallbackRedirect';
 import { OrganizationJsonLd, WebsiteJsonLd, SoftwareApplicationJsonLd, FAQJsonLd } from '@/components/seo/JsonLd';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
@@ -94,6 +96,11 @@ const homeFAQs = [
 export default function HomePage() {
   return (
     <>
+      {/* Handle OAuth callback codes that land on home page (fallback) */}
+      <Suspense fallback={null}>
+        <OAuthCallbackRedirect />
+      </Suspense>
+
       {/* Structured Data */}
       <OrganizationJsonLd />
       <WebsiteJsonLd />
