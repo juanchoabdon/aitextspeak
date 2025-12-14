@@ -215,7 +215,7 @@ async function migrateAllUsers() {
         country: user.country,
         phone: user.phone,
         role_ids: user.role_ids,
-        email_verified: user.email_verified === 1 || user.email_verified === true,
+        email_verified: !!user.email_verified,
         affiliate_id: user.affiliate_id,
         referred_by: user.referred_by,
         legacy_created_time: user.legacy_created_time,
@@ -240,7 +240,7 @@ async function migrateAllUsers() {
         phone: user.phone,
         is_legacy_user: true,
         legacy_user_id: user.legacy_id,
-        email_verified: user.email_verified === 1 || user.email_verified === true,
+        email_verified: !!user.email_verified,
       });
   }
 
