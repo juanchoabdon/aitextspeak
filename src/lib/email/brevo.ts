@@ -10,17 +10,38 @@ interface SendEmailParams {
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
-  console.log('[Brevo] Attempting to send email to:', params.to);
+  console.log('[Brevo] Attempting to send email to:', JSON.stringify(params.to, null, 2));
   
   if (!BREVO_API_KEY) {
     console.error('[Brevo] API key not configured');
     return { success: false, error: 'Email service not configured' };
   }
 
+  if (!params.to || params.to.length === 0) {
+    console.error('[Brevo] No recipients provided');
+    return { success: false, error: 'No email recipients provided' };
+  }
+
+  // Validate email addresses
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  for (const recipient of params.to) {
+    if (!emailRegex.test(recipient.email)) {
+      console.error('[Brevo] Invalid email address:', recipient.email);
+      return { success: false, error: `Invalid email address: ${recipient.email}` };
+    }
+  }
+
   console.log('[Brevo] API key present, length:', BREVO_API_KEY.length);
 
+  const sender = params.sender || { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' };
+  
+  if (!emailRegex.test(sender.email)) {
+    console.error('[Brevo] Invalid sender email:', sender.email);
+    return { success: false, error: `Invalid sender email: ${sender.email}` };
+  }
+
   const payload: Record<string, unknown> = {
-    sender: params.sender || { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' },
+    sender: sender,
     to: params.to,
     subject: params.subject,
     htmlContent: params.htmlContent,
@@ -28,11 +49,17 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
 
   // Add replyTo if provided
   if (params.replyTo) {
+    if (!emailRegex.test(params.replyTo.email)) {
+      console.error('[Brevo] Invalid replyTo email:', params.replyTo.email);
+      return { success: false, error: `Invalid replyTo email: ${params.replyTo.email}` };
+    }
     payload.replyTo = params.replyTo;
   }
 
-  console.log('[Brevo] Sender:', payload.sender);
-  if (params.replyTo) console.log('[Brevo] Reply-To:', params.replyTo);
+  console.log('[Brevo] Sender:', JSON.stringify(payload.sender, null, 2));
+  console.log('[Brevo] To:', JSON.stringify(payload.to, null, 2));
+  console.log('[Brevo] Subject:', payload.subject);
+  if (params.replyTo) console.log('[Brevo] Reply-To:', JSON.stringify(params.replyTo, null, 2));
 
   try {
     const response = await fetch(BREVO_API_URL, {
@@ -45,20 +72,39 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
-    console.log('[Brevo] Response status:', response.status);
-    console.log('[Brevo] Response data:', JSON.stringify(data));
-
-    if (!response.ok) {
-      console.error('[Brevo] Error:', data);
-      return { success: false, error: data.message || 'Failed to send email' };
+    let data;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('[Brevo] Non-JSON response:', text);
+      return { success: false, error: `Unexpected response: ${text.substring(0, 100)}` };
     }
 
+    console.log('[Brevo] Response status:', response.status);
+    console.log('[Brevo] Response data:', JSON.stringify(data, null, 2));
+
+    if (!response.ok) {
+      const errorMessage = data.message || data.error || `HTTP ${response.status}: ${JSON.stringify(data)}`;
+      console.error('[Brevo] Error response:', errorMessage);
+      return { success: false, error: errorMessage };
+    }
+
+    // Brevo returns messageId on success
+    if (data.messageId) {
+      console.log('[Brevo] Email sent successfully! Message ID:', data.messageId);
+      return { success: true };
+    }
+
+    // Some successful responses might not have messageId
     console.log('[Brevo] Email sent successfully!');
     return { success: true };
   } catch (error) {
-    console.error('[Brevo] Error:', error);
-    return { success: false, error: 'Failed to send email' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Brevo] Exception:', errorMessage, error);
+    return { success: false, error: `Failed to send email: ${errorMessage}` };
   }
 }
 

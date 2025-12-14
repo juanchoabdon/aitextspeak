@@ -63,20 +63,29 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
 
   // Send email via Brevo
   const resetLink = `${SITE_URL}/auth/reset-password?token=${token}`;
+  
+  console.log('[Password Reset] Attempting to send email to:', normalizedEmail);
+  console.log('[Password Reset] Reset link:', resetLink);
+  
   const emailResult = await sendEmail({
     to: [{ email: normalizedEmail, name: profile?.first_name }],
     subject: 'Reset Your AI TextSpeak Password',
     htmlContent: getPasswordResetEmailHtml(resetLink, profile?.first_name),
   });
 
+  console.log('[Password Reset] Email result:', emailResult);
+
   if (!emailResult.success) {
+    console.error('[Password Reset] Email failed:', emailResult.error);
     // Clean up token if email fails
     await (supabase as AnySupabaseClient)
       .from('password_reset_tokens')
       .delete()
       .eq('token', token);
-    return { success: false, error: 'Failed to send email. Please try again.' };
+    return { success: false, error: emailResult.error || 'Failed to send email. Please try again.' };
   }
+
+  console.log('[Password Reset] Email sent successfully to:', normalizedEmail);
 
   return { success: true };
 }
