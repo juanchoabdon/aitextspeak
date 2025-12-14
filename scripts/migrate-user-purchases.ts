@@ -148,8 +148,8 @@ async function migrateUserPurchases() {
 
   const dataPath = candidatePaths.find(p => fs.existsSync(p));
 
-  if (!fs.existsSync(dataPath)) {
-    console.error(`❌ File not found: ${dataPath}`);
+  if (!dataPath) {
+    console.error(`❌ File not found in any of the candidate paths`);
     console.log('\nTo migrate user purchases:');
     console.log('1. Export ait_payment_purchased from MySQL to JSON');
     console.log('2. Save it as scripts/data/legacy_payment_purchased.json');
