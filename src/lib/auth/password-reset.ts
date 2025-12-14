@@ -38,13 +38,14 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
   // Delete existing tokens for this user (using admin client to bypass RLS)
-  await supabase
+  // Type assertion needed because password_reset_tokens is not in the generated types
+  await (supabase as any)
     .from('password_reset_tokens')
     .delete()
     .eq('user_id', user.id);
 
   // Store new token (using admin client to bypass RLS)
-  const { error: tokenError } = await supabase
+  const { error: tokenError } = await (supabase as any)
     .from('password_reset_tokens')
     .insert({
       user_id: user.id,
@@ -79,7 +80,7 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
   if (!emailResult.success) {
     console.error('[Password Reset] Email failed:', emailResult.error);
     // Clean up token if email fails (using admin client)
-    await supabase
+    await (supabase as any)
       .from('password_reset_tokens')
       .delete()
       .eq('token', token);
@@ -99,7 +100,7 @@ export async function validateResetToken(token: string): Promise<{ valid: boolea
 
   const supabase = await createAdminClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('password_reset_tokens')
     .select('*')
     .eq('token', token)
@@ -162,7 +163,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   }
 
   // Mark token as used
-  await supabase
+  await (supabase as any)
     .from('password_reset_tokens')
     .update({ used_at: new Date().toISOString() })
     .eq('token', token);
