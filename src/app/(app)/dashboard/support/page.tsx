@@ -75,7 +75,7 @@ export default async function DashboardSupportPage() {
               </a>
 
               <a
-                href="mailto:info@aitextspeak.com"
+                href="mailto:support@aitextspeak.com"
                 className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 hover:border-amber-500/50 transition-all"
               >
                 <div className="flex items-center gap-4">
@@ -86,7 +86,7 @@ export default async function DashboardSupportPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-white group-hover:text-amber-500 transition-colors">Email Us</h3>
-                    <p className="text-sm text-slate-400">info@aitextspeak.com</p>
+                    <p className="text-sm text-slate-400">support@aitextspeak.com</p>
                   </div>
                 </div>
               </a>
