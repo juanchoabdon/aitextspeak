@@ -120,6 +120,24 @@ export async function getUserActiveSubscription(
         }
       }
 
+      // Self-heal: legacy paid users may not have profiles.role updated to 'pro'.
+      // Role isn't used for entitlements (subscriptions are), but we keep it in sync for UI/admin visibility.
+      if ((sub.is_legacy || !sub.plan_id) && planId !== 'free') {
+        try {
+          await supabase
+            .from('profiles')
+            .update({ role: 'pro' })
+            .eq('id', userId)
+            .neq('role', 'admin');
+        } catch (e) {
+          console.warn('Failed to backfill profiles.role for paid user', {
+            userId,
+            planId,
+            error: e,
+          });
+        }
+      }
+
       return {
         isActive: true,
         provider: sub.provider as 'stripe' | 'paypal' | 'paypal_legacy',
