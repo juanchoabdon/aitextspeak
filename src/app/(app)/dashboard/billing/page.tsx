@@ -52,6 +52,13 @@ export default async function BillingPage({
     .single();
 
   const currentPlan = PLANS[subscription.planId] || PLANS.free;
+  const billingLabel =
+    subscription.planId === 'lifetime' || currentPlan.interval === 'one_time'
+      ? 'One-time (Lifetime)'
+      : subscription.isAnnual
+        ? 'Annually'
+        : 'Monthly';
+  const nextBillingLabel = subscription.isAnnual ? 'Renewal date:' : 'Next billing date:';
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -111,13 +118,13 @@ export default async function BillingPage({
                   <p>
                     <span className="text-slate-500">Billing:</span>{' '}
                     <span className="text-white capitalize">
-                      {subscription.isAnnual ? 'Annually' : 'Monthly'}
+                      {billingLabel}
                     </span>
                   </p>
                   {subscription.expiresAt && (
                     <p>
                       <span className="text-slate-500">
-                        {subscription.isAnnual ? 'Renewal date:' : 'Next billing date:'}
+                        {nextBillingLabel}
                       </span>{' '}
                       <span className="text-white">
                         {new Date(subscription.expiresAt).toLocaleDateString()}

@@ -135,7 +135,11 @@ export default async function PricingPage() {
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700">
               <span className="text-slate-400">Your current plan:</span>
               <span className="font-semibold text-amber-400 capitalize">
-                {currentPlanId === 'monthly_pro' ? 'Monthly Pro' : currentPlanId}
+                {currentPlanId === 'monthly_pro'
+                  ? 'Monthly Pro'
+                  : currentPlanId === 'lifetime'
+                    ? 'Lifetime'
+                    : currentPlanId}
               </span>
             </div>
           )}
