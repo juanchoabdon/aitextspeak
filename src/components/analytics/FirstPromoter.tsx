@@ -1,35 +1,59 @@
 'use client';
 
-import Script from 'next/script';
+import { useEffect } from 'react';
 
 declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fpr?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    __aitextspeak_fpr_loaded__?: any;
   }
 }
 
 export function FirstPromoterScripts() {
   const cid = process.env.NEXT_PUBLIC_FIRSTPROMOTER_CID || 'dsfm605n';
 
-  return (
-    <>
-      <Script
-        id="firstpromoter-init"
-        strategy="beforeInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `(function(w){w.fpr=w.fpr||function(){w.fpr.q=w.fpr.q||[];w.fpr.q[arguments[0]=='set'?'unshift':'push'](arguments);};})(window);
-fpr("init",{cid:"${cid}"}); 
-fpr("click");`,
-        }}
-      />
-      <Script
-        id="firstpromoter-script"
-        strategy="beforeInteractive"
-        src="https://cdn.firstpromoter.com/fpr.js"
-      />
-    </>
-  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.__aitextspeak_fpr_loaded__) return;
+    window.__aitextspeak_fpr_loaded__ = true;
+
+    // Initialize queueing function
+    (function (w: Window) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (w as any).fpr =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (w as any).fpr ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        function (...args: any[]) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const f: any = (w as any).fpr;
+          f.q = f.q || [];
+          f.q[args[0] === 'set' ? 'unshift' : 'push'](args);
+        };
+    })(window);
+
+    // Init + click tracking
+    try {
+      window.fpr?.('init', { cid });
+      window.fpr?.('click');
+    } catch {
+      // no-op
+    }
+
+    // Load FirstPromoter script
+    const existing = document.getElementById('firstpromoter-script');
+    if (existing) return;
+
+    const script = document.createElement('script');
+    script.id = 'firstpromoter-script';
+    script.async = true;
+    script.src = 'https://cdn.firstpromoter.com/fpr.js';
+    document.head.appendChild(script);
+  }, [cid]);
+
+  return null;
 }
 
 
