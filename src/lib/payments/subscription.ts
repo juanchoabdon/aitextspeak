@@ -9,7 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { syncLegacySubscriptionStatus } from './paypal-legacy';
-import { PLANS, getPlanByName, type PlanId, type AllPlanId } from './plans';
+import { PLANS, type AllPlanId } from './plans';
 
 export interface UserSubscription {
   isActive: boolean;
@@ -101,6 +101,24 @@ export async function getUserActiveSubscription(
       const planId = (sub.plan_id as AllPlanId) || mapLegacyPlanName(sub.plan_name);
       const plan = PLANS[planId] || PLANS.monthly;
       const isAnnual = plan.interval === 'year' || (sub.plan_name || '').toLowerCase().includes('annual');
+
+      // Self-heal: if plan_id is missing but we can infer it, write it back.
+      // Prevents users from being treated as "free" due to incomplete subscription rows.
+      if (!sub.plan_id && planId && (sub.plan_name || '').length > 0) {
+        try {
+          await supabase
+            .from('subscriptions')
+            .update({ plan_id: planId })
+            .eq('id', sub.id);
+        } catch (e) {
+          console.warn('Failed to backfill subscriptions.plan_id', {
+            subscriptionId: sub.id,
+            userId,
+            planId,
+            error: e,
+          });
+        }
+      }
 
       return {
         isActive: true,
