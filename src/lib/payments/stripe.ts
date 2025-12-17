@@ -177,7 +177,8 @@ export async function handleStripeWebhook(
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             is_legacy: false,
           }, {
-            onConflict: 'user_id,provider',
+            // Use guaranteed unique constraint (provider, provider_subscription_id)
+            onConflict: 'provider,provider_subscription_id',
           });
 
           // Save transaction to payment_history
@@ -235,7 +236,8 @@ export async function handleStripeWebhook(
             billing_interval: null,
             is_legacy: false,
           }, {
-            onConflict: 'user_id,provider',
+            // Use guaranteed unique constraint (provider, provider_subscription_id)
+            onConflict: 'provider,provider_subscription_id',
           });
 
           // Save transaction to payment_history

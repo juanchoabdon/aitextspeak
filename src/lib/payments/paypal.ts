@@ -475,7 +475,8 @@ export async function handlePayPalWebhook(
           current_period_end: resource.billing_info?.next_billing_time || null,
           is_legacy: false,
         }, {
-          onConflict: 'user_id,provider',
+          // Use guaranteed unique constraint (provider, provider_subscription_id)
+          onConflict: 'provider,provider_subscription_id',
         });
 
         // Only create payment_history and update role when subscription is activated
@@ -654,7 +655,8 @@ export async function handlePayPalWebhook(
               billing_interval: null,
               is_legacy: false,
             }, {
-              onConflict: 'user_id,provider',
+              // Use guaranteed unique constraint (provider, provider_subscription_id)
+              onConflict: 'provider,provider_subscription_id',
             });
 
             await supabase.from('payment_history').insert({

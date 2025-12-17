@@ -61,7 +61,8 @@ export async function GET(request: NextRequest) {
       billing_interval: null,
       is_legacy: false,
     }, {
-      onConflict: 'user_id,provider',
+      // Use guaranteed unique constraint (provider, provider_subscription_id)
+      onConflict: 'provider,provider_subscription_id',
     });
 
     // Save transaction to payment_history
