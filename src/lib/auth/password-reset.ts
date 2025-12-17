@@ -2,9 +2,19 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendEmail, getPasswordResetEmailHtml } from '@/lib/email/brevo';
-import crypto from 'crypto';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+function generateSecureTokenHex(bytes: number = 32): string {
+  // Use Web Crypto API (works in Node 18+ and Edge runtime)
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj?.getRandomValues) {
+    throw new Error('Secure crypto not available in this runtime');
+  }
+  const arr = new Uint8Array(bytes);
+  cryptoObj.getRandomValues(arr);
+  return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 /**
  * Request password reset - sends email via Brevo API
@@ -73,7 +83,7 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
       .single();
 
     // Generate secure token
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = generateSecureTokenHex(32);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     // Delete existing tokens for this user (using admin client to bypass RLS)
