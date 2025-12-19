@@ -357,8 +357,39 @@ export async function verifyWebhookSignature(
   body: string
 ): Promise<boolean> {
   try {
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+    
+    // Log configuration for debugging
+    console.log('[PayPal Webhook] Verification attempt:', {
+      hasWebhookId: !!webhookId,
+      webhookIdLength: webhookId?.length || 0,
+      paypalMode: process.env.PAYPAL_MODE || 'live',
+      apiBase: PAYPAL_API_BASE,
+      headers: {
+        authAlgo: headers['paypal-auth-algo'] || 'MISSING',
+        certUrl: headers['paypal-cert-url']?.substring(0, 50) || 'MISSING',
+        transmissionId: headers['paypal-transmission-id'] || 'MISSING',
+        transmissionSig: headers['paypal-transmission-sig']?.substring(0, 20) || 'MISSING',
+        transmissionTime: headers['paypal-transmission-time'] || 'MISSING',
+      },
+    });
+
+    if (!webhookId) {
+      console.error('[PayPal Webhook] PAYPAL_WEBHOOK_ID environment variable is not set!');
+      return false;
+    }
+
     const accessToken = await getAccessToken();
-    const webhookId = process.env.PAYPAL_WEBHOOK_ID!;
+
+    const verifyPayload = {
+      auth_algo: headers['paypal-auth-algo'],
+      cert_url: headers['paypal-cert-url'],
+      transmission_id: headers['paypal-transmission-id'],
+      transmission_sig: headers['paypal-transmission-sig'],
+      transmission_time: headers['paypal-transmission-time'],
+      webhook_id: webhookId,
+      webhook_event: JSON.parse(body),
+    };
 
     const response = await fetch(
       `${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`,
@@ -368,26 +399,27 @@ export async function verifyWebhookSignature(
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          auth_algo: headers['paypal-auth-algo'],
-          cert_url: headers['paypal-cert-url'],
-          transmission_id: headers['paypal-transmission-id'],
-          transmission_sig: headers['paypal-transmission-sig'],
-          transmission_time: headers['paypal-transmission-time'],
-          webhook_id: webhookId,
-          webhook_event: JSON.parse(body),
-        }),
+        body: JSON.stringify(verifyPayload),
       }
     );
 
+    const result = await response.json();
+    
+    console.log('[PayPal Webhook] Verification response:', {
+      status: response.status,
+      ok: response.ok,
+      verificationStatus: result.verification_status,
+      error: result.error || result.message || null,
+    });
+
     if (!response.ok) {
+      console.error('[PayPal Webhook] Verification API error:', result);
       return false;
     }
 
-    const result = await response.json();
     return result.verification_status === 'SUCCESS';
   } catch (error) {
-    console.error('Webhook verification error:', error);
+    console.error('[PayPal Webhook] Verification exception:', error);
     return false;
   }
 }
