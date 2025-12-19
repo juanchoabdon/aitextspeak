@@ -5,6 +5,10 @@ import { handlePayPalWebhook, verifyWebhookSignature } from '@/lib/payments/payp
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// TEMPORARY: Set to true to skip signature verification for debugging
+// REMOVE THIS IN PRODUCTION once webhooks are working
+const SKIP_VERIFICATION = process.env.PAYPAL_SKIP_WEBHOOK_VERIFICATION === 'true';
+
 interface PayPalEvent {
   id: string;
   event_type: string;
@@ -38,19 +42,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     headers['paypal-transmission-sig'] = request.headers.get('paypal-transmission-sig') || '';
     headers['paypal-transmission-time'] = request.headers.get('paypal-transmission-time') || '';
 
+    console.log('[PayPal Webhook] Incoming request:', {
+      skipVerification: SKIP_VERIFICATION,
+      hasTransmissionId: !!headers['paypal-transmission-id'],
+      hasTransmissionSig: !!headers['paypal-transmission-sig'],
+      bodyLength: body.length,
+    });
+
     if (!headers['paypal-transmission-id'] || !headers['paypal-transmission-sig']) {
-      console.error('PayPal webhook: Missing verification headers');
+      console.error('[PayPal Webhook] Missing verification headers');
       return NextResponse.json(
         { error: 'Missing PayPal verification headers' },
         { status: 400 }
       );
     }
 
-    // Verify webhook signature
-    const isValid = await verifyWebhookSignature(headers, body);
+    // Verify webhook signature (can be skipped for debugging)
+    let isValid = false;
+    if (SKIP_VERIFICATION) {
+      console.warn('[PayPal Webhook] ⚠️ SIGNATURE VERIFICATION SKIPPED - Remove PAYPAL_SKIP_WEBHOOK_VERIFICATION in production!');
+      isValid = true;
+    } else {
+      isValid = await verifyWebhookSignature(headers, body);
+    }
     
     if (!isValid) {
-      console.error('PayPal webhook: Invalid signature');
+      console.error('[PayPal Webhook] Invalid signature - check PAYPAL_WEBHOOK_ID and PAYPAL_MODE');
       return NextResponse.json(
         { error: 'Invalid webhook signature' },
         { status: 400 }
@@ -59,10 +76,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const event: PayPalEvent = JSON.parse(body);
 
-    console.log('PayPal webhook received:', {
+    console.log('[PayPal Webhook] ✅ Received valid event:', {
       id: event.id,
       type: event.event_type,
       created: event.create_time,
+      resourceId: event.resource?.id || 'N/A',
     });
 
     const result = await handlePayPalWebhook({
@@ -71,15 +89,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     if (!result.success) {
+      console.error('[PayPal Webhook] Handler failed:', result.error);
       return NextResponse.json(
         { error: result.error || 'Webhook handler failed' },
         { status: 500 }
       );
     }
 
+    console.log('[PayPal Webhook] ✅ Event processed successfully');
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('PayPal webhook error:', error);
+    console.error('[PayPal Webhook] Error:', error);
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
