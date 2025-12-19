@@ -123,6 +123,14 @@ export async function handleStripeWebhook(
 ): Promise<{ success: boolean; error?: string }> {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+  function unixSecondsToIso(value: unknown): string | null {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    const d = new Date(value * 1000);
+    const t = d.getTime();
+    if (!Number.isFinite(t)) return null;
+    return d.toISOString();
+  }
+
   let event: Stripe.Event;
 
   try {
@@ -194,8 +202,8 @@ export async function handleStripeWebhook(
             price_amount: (subscription.items.data[0].price.unit_amount || 0) / 100,
             price_currency: subscription.currency.toUpperCase(),
             billing_interval: subscription.items.data[0].price.recurring?.interval as 'month' | 'year',
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: unixSecondsToIso(subscription.current_period_start),
+            current_period_end: unixSecondsToIso(subscription.current_period_end),
             is_legacy: false,
           }, {
             // Use guaranteed unique constraint (provider, provider_subscription_id)
@@ -368,14 +376,10 @@ export async function handleStripeWebhook(
           .from('subscriptions')
           .update({
             status: subData.status as 'active' | 'canceled',
-            current_period_start: new Date(subData.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subData.current_period_end * 1000).toISOString(),
-            cancel_at: subData.cancel_at 
-              ? new Date(subData.cancel_at * 1000).toISOString() 
-              : null,
-            canceled_at: subData.canceled_at 
-              ? new Date(subData.canceled_at * 1000).toISOString() 
-              : null,
+            current_period_start: unixSecondsToIso(subData.current_period_start),
+            current_period_end: unixSecondsToIso(subData.current_period_end),
+            cancel_at: unixSecondsToIso(subData.cancel_at),
+            canceled_at: unixSecondsToIso(subData.canceled_at),
           })
           .eq('provider_subscription_id', subData.id);
         break;
