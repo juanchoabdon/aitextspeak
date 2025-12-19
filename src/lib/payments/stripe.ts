@@ -131,6 +131,12 @@ export async function handleStripeWebhook(
     return d.toISOString();
   }
 
+  // subscriptions.price_amount is stored as INTEGER cents in the DB
+  function toCents(amount: unknown): number {
+    if (typeof amount === 'number' && Number.isFinite(amount)) return Math.round(amount);
+    return 0;
+  }
+
   let event: Stripe.Event;
 
   try {
@@ -199,7 +205,8 @@ export async function handleStripeWebhook(
             status: subscription.status as 'active' | 'canceled',
             plan_id: planId,
             plan_name: getPlanByStripePrice(subscription.items.data[0].price.id)?.name || planId,
-            price_amount: (subscription.items.data[0].price.unit_amount || 0) / 100,
+            // Stripe unit_amount is already in cents
+            price_amount: toCents(subscription.items.data[0].price.unit_amount || 0),
             price_currency: subscription.currency.toUpperCase(),
             billing_interval: subscription.items.data[0].price.recurring?.interval as 'month' | 'year',
             current_period_start: unixSecondsToIso(subscription.current_period_start),
@@ -287,7 +294,8 @@ export async function handleStripeWebhook(
             status: 'active',
             plan_id: 'lifetime',
             plan_name: 'Lifetime',
-            price_amount: session.amount_total! / 100,
+            // Stripe amount_total is already in cents
+            price_amount: toCents(session.amount_total),
             price_currency: session.currency!.toUpperCase(),
             billing_interval: null,
             is_legacy: false,

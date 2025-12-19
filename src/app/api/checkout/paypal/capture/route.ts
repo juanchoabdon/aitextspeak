@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
       status: 'active',
       plan_id: 'lifetime',
       plan_name: 'Lifetime',
-      price_amount: plan.price,
+      // subscriptions.price_amount is stored as INTEGER cents in the DB
+      price_amount: Math.round(plan.price * 100),
       price_currency: 'USD',
       billing_interval: null,
       is_legacy: false,

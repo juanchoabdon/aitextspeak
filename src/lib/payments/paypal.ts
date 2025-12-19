@@ -468,7 +468,8 @@ export async function handlePayPalWebhook(
           status: dbStatus,
           plan_id: plan?.id || 'monthly',
           plan_name: plan?.name || 'Monthly',
-          price_amount: plan?.price || 0,
+          // subscriptions.price_amount is stored as INTEGER cents in the DB
+          price_amount: Math.round((plan?.price || 0) * 100),
           price_currency: 'USD',
           billing_interval: plan?.interval as 'month' | 'year' | null,
           current_period_start: resource.start_time || null,
@@ -650,7 +651,8 @@ export async function handlePayPalWebhook(
               status: 'active',
               plan_id: 'lifetime',
               plan_name: 'Lifetime',
-              price_amount: amount,
+              // subscriptions.price_amount is stored as INTEGER cents in the DB
+              price_amount: Math.round(amount * 100),
               price_currency: 'USD',
               billing_interval: null,
               is_legacy: false,
