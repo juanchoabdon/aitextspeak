@@ -143,16 +143,33 @@ export async function handleStripeWebhook(
 
         if (!userId) {
           console.error('No userId in session metadata');
-          break;
+          return { success: false, error: 'Missing userId in session metadata' };
         }
 
         const plan = planId ? getPlanByStripePrice(PLANS[planId]?.stripePriceId || '') || PLANS[planId] : null;
 
         if (session.mode === 'subscription') {
+          if (!session.subscription) {
+            return { success: false, error: 'Missing session.subscription for subscription checkout' };
+          }
+
           // Handle subscription
-          const subscriptionResponse = await stripe.subscriptions.retrieve(
-            session.subscription as string
-          );
+          let subscriptionResponse: unknown;
+          try {
+            subscriptionResponse = await stripe.subscriptions.retrieve(session.subscription as string);
+          } catch (e) {
+            console.error('[Stripe Webhook] Failed to retrieve subscription', {
+              eventId: event.id,
+              userId,
+              planId,
+              subscriptionId: session.subscription,
+              error: e instanceof Error ? { message: e.message, name: e.name, stack: e.stack } : e,
+            });
+            return {
+              success: false,
+              error: e instanceof Error ? `Stripe API error retrieving subscription: ${e.message}` : 'Stripe API error retrieving subscription',
+            };
+          }
           const subscription = subscriptionResponse as unknown as {
             id: string;
             status: string;
@@ -162,7 +179,11 @@ export async function handleStripeWebhook(
             items: { data: Array<{ price: { id: string; unit_amount: number | null; recurring?: { interval: string } } }> };
           };
 
-          await supabase.from('subscriptions').upsert({
+          if (!subscription?.items?.data?.[0]?.price?.id) {
+            return { success: false, error: 'Stripe subscription missing price data' };
+          }
+
+          const { error: upsertSubError } = await supabase.from('subscriptions').upsert({
             user_id: userId,
             provider: 'stripe',
             provider_subscription_id: subscription.id,
@@ -180,9 +201,18 @@ export async function handleStripeWebhook(
             // Use guaranteed unique constraint (provider, provider_subscription_id)
             onConflict: 'provider,provider_subscription_id',
           });
+          if (upsertSubError) {
+            console.error('[Stripe Webhook] Failed to upsert subscription row', {
+              eventId: event.id,
+              userId,
+              planId,
+              error: upsertSubError,
+            });
+            return { success: false, error: `DB error upserting subscription: ${upsertSubError.message}` };
+          }
 
           // Save transaction to payment_history
-          await supabase.from('payment_history').insert({
+          const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
             user_id: userId,
             transaction_type: 'subscription',
             gateway: 'stripe',
@@ -200,12 +230,30 @@ export async function handleStripeWebhook(
               customer_id: typeof session.customer === 'string' ? session.customer : null,
             },
           });
+          if (paymentHistoryError) {
+            console.error('[Stripe Webhook] Failed to insert payment_history row', {
+              eventId: event.id,
+              userId,
+              planId,
+              error: paymentHistoryError,
+            });
+            return { success: false, error: `DB error inserting payment history: ${paymentHistoryError.message}` };
+          }
 
           // Update user role to 'pro'
-          await supabase
+          const { error: roleUpdateError } = await supabase
             .from('profiles')
             .update({ role: 'pro' })
             .eq('id', userId);
+          if (roleUpdateError) {
+            console.error('[Stripe Webhook] Failed to update profile role', {
+              eventId: event.id,
+              userId,
+              planId,
+              error: roleUpdateError,
+            });
+            return { success: false, error: `DB error updating profile role: ${roleUpdateError.message}` };
+          }
 
           // Track analytics
           trackPaymentCompleted(userId, {
@@ -223,7 +271,7 @@ export async function handleStripeWebhook(
           });
         } else {
           // Handle one-time payment (lifetime)
-          await supabase.from('subscriptions').upsert({
+          const { error: upsertLifetimeError } = await supabase.from('subscriptions').upsert({
             user_id: userId,
             provider: 'stripe',
             provider_subscription_id: session.payment_intent as string,
@@ -239,9 +287,17 @@ export async function handleStripeWebhook(
             // Use guaranteed unique constraint (provider, provider_subscription_id)
             onConflict: 'provider,provider_subscription_id',
           });
+          if (upsertLifetimeError) {
+            console.error('[Stripe Webhook] Failed to upsert lifetime subscription row', {
+              eventId: event.id,
+              userId,
+              error: upsertLifetimeError,
+            });
+            return { success: false, error: `DB error upserting lifetime subscription: ${upsertLifetimeError.message}` };
+          }
 
           // Save transaction to payment_history
-          await supabase.from('payment_history').insert({
+          const { error: lifetimePaymentHistoryError } = await supabase.from('payment_history').insert({
             user_id: userId,
             transaction_type: 'one_time',
             gateway: 'stripe',
@@ -259,12 +315,28 @@ export async function handleStripeWebhook(
               customer_id: typeof session.customer === 'string' ? session.customer : null,
             },
           });
+          if (lifetimePaymentHistoryError) {
+            console.error('[Stripe Webhook] Failed to insert lifetime payment_history row', {
+              eventId: event.id,
+              userId,
+              error: lifetimePaymentHistoryError,
+            });
+            return { success: false, error: `DB error inserting lifetime payment history: ${lifetimePaymentHistoryError.message}` };
+          }
 
           // Update user role to 'pro'
-          await supabase
+          const { error: lifetimeRoleError } = await supabase
             .from('profiles')
             .update({ role: 'pro' })
             .eq('id', userId);
+          if (lifetimeRoleError) {
+            console.error('[Stripe Webhook] Failed to update profile role (lifetime)', {
+              eventId: event.id,
+              userId,
+              error: lifetimeRoleError,
+            });
+            return { success: false, error: `DB error updating profile role (lifetime): ${lifetimeRoleError.message}` };
+          }
 
           // Track analytics for lifetime purchase
           trackPaymentCompleted(userId, {
@@ -505,8 +577,12 @@ export async function handleStripeWebhook(
     
     return { success: true };
   } catch (error) {
-    console.error('Webhook handler error:', error);
-    return { success: false, error: 'Webhook handler failed' };
+    console.error('[Stripe Webhook] Handler error:', {
+      eventId: event.id,
+      eventType: event.type,
+      error: error instanceof Error ? { message: error.message, name: error.name, stack: error.stack } : error,
+    });
+    return { success: false, error: error instanceof Error ? error.message : 'Webhook handler failed' };
   }
 }
 
