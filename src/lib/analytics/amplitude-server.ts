@@ -13,10 +13,16 @@ let isInitialized = false;
  * Initialize Amplitude for server-side tracking
  */
 function initAmplitudeServer() {
-  if (isInitialized || !AMPLITUDE_API_KEY) {
+  if (isInitialized) {
     return;
   }
 
+  if (!AMPLITUDE_API_KEY) {
+    console.warn('[Amplitude Server] NEXT_PUBLIC_AMPLITUDE_API_KEY not set, tracking disabled');
+    return;
+  }
+
+  console.log('[Amplitude Server] Initializing with API key length:', AMPLITUDE_API_KEY.length);
   amplitude.init(AMPLITUDE_API_KEY);
   isInitialized = true;
 }
@@ -36,6 +42,7 @@ export function trackServerEvent(
     return;
   }
 
+  console.log('[Amplitude Server] Tracking event:', eventName, 'for user:', userId);
   amplitude.track(eventName, eventProperties, { user_id: userId });
 }
 
@@ -58,6 +65,13 @@ export function trackServerRevenue(
     console.warn('[Amplitude Server] Not initialized, skipping revenue event');
     return;
   }
+
+  console.log('[Amplitude Server] Tracking revenue:', {
+    userId,
+    productId: properties.productId,
+    price: properties.price,
+    revenueType: properties.revenueType,
+  });
 
   const revenue = new amplitude.Revenue()
     .setProductId(properties.productId)
@@ -95,7 +109,7 @@ export function identifyServerUser(
 }
 
 /**
- * Track payment completed (for webhooks)
+ * Track payment completed (for webhooks and immediate activation)
  */
 export function trackPaymentCompleted(
   userId: string,
@@ -108,6 +122,14 @@ export function trackPaymentCompleted(
     subscriptionId?: string;
   }
 ) {
+  console.log('[Amplitude Server] trackPaymentCompleted called:', {
+    userId,
+    planId: properties.planId,
+    amount: properties.amount,
+    provider: properties.provider,
+    isRecurring: properties.isRecurring,
+  });
+
   // Track revenue
   trackServerRevenue(userId, {
     productId: properties.planId,
@@ -121,7 +143,26 @@ export function trackPaymentCompleted(
     },
   });
 
-  // Track custom event
+  // Track specific event based on plan type
+  if (properties.planId === 'lifetime') {
+    // Lifetime purchase
+    trackServerEvent(userId, 'Lifetime Purchased', {
+      amount: properties.amount,
+      payment_provider: properties.provider,
+      currency: properties.currency || 'USD',
+    });
+  } else if (properties.isRecurring) {
+    // Subscription started
+    trackServerEvent(userId, 'Subscription Started', {
+      plan_id: properties.planId,
+      amount: properties.amount,
+      payment_provider: properties.provider,
+      currency: properties.currency || 'USD',
+      subscription_id: properties.subscriptionId,
+    });
+  }
+
+  // Also track generic Payment Completed for all payments
   trackServerEvent(userId, 'Payment Completed', {
     plan_id: properties.planId,
     amount: properties.amount,
@@ -134,6 +175,7 @@ export function trackPaymentCompleted(
   // Update user properties
   identifyServerUser(userId, {
     plan: properties.planId,
+    is_lifetime: properties.planId === 'lifetime',
     payment_provider: properties.provider,
     last_payment_date: new Date().toISOString(),
   });
@@ -212,7 +254,11 @@ export function trackPaymentFailedServer(
 // Flush events before process exits (important for serverless)
 export async function flushAmplitude() {
   if (isInitialized) {
+    console.log('[Amplitude Server] Flushing events...');
     await amplitude.flush();
+    console.log('[Amplitude Server] Events flushed');
+  } else {
+    console.log('[Amplitude Server] Not initialized, nothing to flush');
   }
 }
 
