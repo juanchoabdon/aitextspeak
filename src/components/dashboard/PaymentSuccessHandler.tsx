@@ -18,7 +18,6 @@ export function PaymentSuccessHandler({ userId }: PaymentSuccessHandlerProps) {
 
     const payment = searchParams.get('payment');
     const sessionId = searchParams.get('session_id');
-    const provider = searchParams.get('provider');
 
     if (payment === 'success') {
       hasHandled.current = true;
@@ -29,9 +28,8 @@ export function PaymentSuccessHandler({ userId }: PaymentSuccessHandlerProps) {
       }
 
       // Show success toast
-      const providerName = provider === 'paypal' ? 'PayPal' : 'Stripe';
       toast.success('Payment Successful! 🎉', {
-        description: `Your subscription has been activated via ${providerName}. You now have access to all Pro features.`,
+        description: 'Your subscription has been activated. You now have access to all Pro features.',
         duration: 6000,
       });
 
