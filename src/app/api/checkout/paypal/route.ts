@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
       email: user.email!,
       planId,
       paypalPlanId: plan.paypalPlanId,
-      successUrl: `${baseUrl}/dashboard/billing?success=true&provider=paypal`,
+      // Pass subscription_id so we can verify and activate on redirect
+      successUrl: `${baseUrl}/api/checkout/paypal/subscription-callback?user_id=${user.id}&plan_id=${planId}`,
       cancelUrl: `${baseUrl}/pricing?canceled=true`,
     });
 

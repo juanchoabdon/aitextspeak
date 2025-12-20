@@ -120,6 +120,7 @@ export async function createPayPalSubscription({
 interface PayPalSubscriptionDetails {
   id: string;
   plan_id: string;
+  status: string; // ACTIVE, APPROVAL_PENDING, APPROVED, SUSPENDED, CANCELLED, EXPIRED
   start_time: string;
   billing_info?: {
     next_billing_time?: string;
