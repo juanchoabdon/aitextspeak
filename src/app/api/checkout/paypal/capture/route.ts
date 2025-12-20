@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { capturePayPalOrder, getPayPalOrder } from '@/lib/payments/paypal';
 import { PLANS } from '@/lib/payments/plans';
+import {
+  trackPaymentCompleted,
+  flushAmplitude,
+} from '@/lib/analytics/amplitude-server';
 
 /**
  * GET /api/checkout/paypal/capture
@@ -90,6 +94,18 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .update({ role: 'pro' })
       .eq('id', orderUserId);
+
+    // Track in Amplitude
+    trackPaymentCompleted(orderUserId, {
+      planId: 'lifetime',
+      amount: plan.price,
+      provider: 'paypal',
+      isRecurring: false,
+      currency: 'USD',
+      subscriptionId: token,
+    });
+
+    await flushAmplitude();
 
     // Redirect to projects page with success toast
     return NextResponse.redirect(`${baseUrl}/dashboard/projects?payment=success&provider=paypal`);

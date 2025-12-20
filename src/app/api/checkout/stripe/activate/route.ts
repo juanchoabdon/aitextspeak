@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/payments/stripe';
 import { getPlanByStripePrice } from '@/lib/payments/plans';
+import {
+  trackPaymentCompleted,
+  trackSubscriptionActivatedServer,
+  flushAmplitude,
+} from '@/lib/analytics/amplitude-server';
 
 /**
  * POST /api/checkout/stripe/activate
@@ -71,6 +76,11 @@ export async function POST(request: NextRequest) {
     console.log('[Stripe Activate] Activating user:', userId);
 
     // Handle subscription vs one-time payment
+    let planId = 'monthly';
+    let amount = 0;
+    let subscriptionId = '';
+    let isRecurring = true;
+
     if (session.mode === 'subscription' && session.subscription) {
       const subscriptionData = typeof session.subscription === 'string'
         ? await stripe.subscriptions.retrieve(session.subscription)
@@ -82,7 +92,10 @@ export async function POST(request: NextRequest) {
       };
 
       const plan = getPlanByStripePrice(subscription.items.data[0].price.id);
-      const planId = session.metadata?.planId || plan?.id || 'monthly';
+      planId = session.metadata?.planId || plan?.id || 'monthly';
+      amount = (subscription.items.data[0].price.unit_amount || 0) / 100;
+      subscriptionId = subscription.id;
+      isRecurring = true;
 
       await adminClient.from('subscriptions').upsert({
         user_id: userId,
@@ -107,6 +120,11 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // One-time payment (lifetime)
+      planId = 'lifetime';
+      amount = (session.amount_total || 0) / 100;
+      subscriptionId = session.payment_intent as string;
+      isRecurring = false;
+
       await adminClient.from('subscriptions').upsert({
         user_id: userId,
         provider: 'stripe',
@@ -129,6 +147,26 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .update({ role: 'pro' })
       .eq('id', userId);
+
+    // Track in Amplitude
+    trackPaymentCompleted(userId, {
+      planId,
+      amount,
+      provider: 'stripe',
+      isRecurring,
+      currency: session.currency?.toUpperCase() || 'USD',
+      subscriptionId,
+    });
+
+    if (isRecurring) {
+      trackSubscriptionActivatedServer(userId, {
+        planId,
+        provider: 'stripe',
+        subscriptionId,
+      });
+    }
+
+    await flushAmplitude();
 
     console.log('[Stripe Activate] ✅ User activated');
 

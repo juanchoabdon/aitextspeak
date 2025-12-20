@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPayPalSubscription } from '@/lib/payments/paypal';
 import { PLANS, type PlanId } from '@/lib/payments/plans';
+import {
+  trackPaymentCompleted,
+  trackSubscriptionActivatedServer,
+  flushAmplitude,
+} from '@/lib/analytics/amplitude-server';
 
 /**
  * GET /api/checkout/paypal/subscription-callback
@@ -99,6 +104,24 @@ export async function GET(request: NextRequest) {
         .from('profiles')
         .update({ role: 'pro' })
         .eq('id', userId);
+
+      // Track in Amplitude
+      trackPaymentCompleted(userId, {
+        planId: planId || 'monthly',
+        amount: plan.price,
+        provider: 'paypal',
+        isRecurring: true,
+        currency: 'USD',
+        subscriptionId,
+      });
+
+      trackSubscriptionActivatedServer(userId, {
+        planId: planId || 'monthly',
+        provider: 'paypal',
+        subscriptionId,
+      });
+
+      await flushAmplitude();
 
       console.log('[PayPal Subscription Callback] ✅ User activated immediately');
     } else {
