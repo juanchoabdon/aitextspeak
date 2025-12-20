@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
+import { Toaster } from "sonner";
 import { TopLoader } from "@/components/ui/TopLoader";
 import { AmplitudeProvider } from "@/components/analytics/AmplitudeProvider";
 import { FirstPromoterScripts } from "@/components/analytics/FirstPromoter";
@@ -106,6 +107,18 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-slate-950 text-white`}>
         <GoogleAnalytics />
         <FirstPromoterScripts />
+        <Toaster 
+          position="top-center" 
+          richColors 
+          theme="dark"
+          toastOptions={{
+            style: {
+              background: '#1e293b',
+              border: '1px solid #334155',
+              color: '#f1f5f9',
+            },
+          }}
+        />
         <Suspense fallback={null}>
           <TopLoader />
         </Suspense>

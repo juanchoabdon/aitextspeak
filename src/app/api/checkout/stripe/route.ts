@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       email: user.email!,
       priceId: plan.stripePriceId,
       planId,
-      successUrl: `${baseUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      successUrl: `${baseUrl}/dashboard/projects?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${baseUrl}/pricing?canceled=true`,
     });
 

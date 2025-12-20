@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { getUser } from '@/lib/supabase/server';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
+import { PaymentSuccessHandler } from '@/components/dashboard/PaymentSuccessHandler';
 import { getUserProjects, getProjectTypeIcon, getProjectTypeLabel } from '@/lib/projects/db';
 
 export const metadata: Metadata = {
@@ -34,6 +36,11 @@ export default async function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
+      {/* Handle payment success redirects */}
+      <Suspense fallback={null}>
+        <PaymentSuccessHandler userId={user.id} />
+      </Suspense>
+
       <DashboardHeader email={user.email!} />
       
       <div className="flex">

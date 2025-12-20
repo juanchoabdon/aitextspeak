@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
       .update({ role: 'pro' })
       .eq('id', orderUserId);
 
-    // Redirect to billing page with success
-    return NextResponse.redirect(`${baseUrl}/dashboard/billing?success=true&provider=paypal`);
+    // Redirect to projects page with success toast
+    return NextResponse.redirect(`${baseUrl}/dashboard/projects?payment=success&provider=paypal`);
   } catch (error) {
     console.error('PayPal capture error:', error);
     return NextResponse.redirect(`${baseUrl}/pricing?error=capture_error`);

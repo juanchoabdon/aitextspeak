@@ -1,12 +1,11 @@
 import { redirect } from 'next/navigation';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
-import { PLANS, getPlanByStripePrice } from '@/lib/payments/plans';
+import { PLANS } from '@/lib/payments/plans';
 import { BillingClient } from '@/components/billing/BillingClient';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { getCurrentUsage } from '@/lib/usage';
-import { stripe } from '@/lib/payments/stripe';
 
 export const metadata = {
   title: 'Billing - AI TextSpeak',
@@ -21,119 +20,10 @@ const userNavItems = [
   { name: 'Support', href: '/dashboard/support', icon: 'support' as const },
 ];
 
-/**
- * Immediately activate Stripe subscription on redirect (don't wait for webhook)
- */
-async function activateStripeSessionIfNeeded(sessionId: string, userId: string) {
-  if (!sessionId) return;
-
-  try {
-    // Retrieve the checkout session
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription'],
-    });
-
-    // Verify this session belongs to this user
-    if (session.metadata?.userId !== userId) {
-      console.log('[Billing] Session userId mismatch, skipping immediate activation');
-      return;
-    }
-
-    // Check if payment was successful
-    if (session.payment_status !== 'paid') {
-      console.log('[Billing] Payment not yet paid, skipping immediate activation');
-      return;
-    }
-
-    const adminClient = createAdminClient();
-
-    // Check if user is already pro (webhook might have already processed)
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (profile?.role === 'pro') {
-      console.log('[Billing] User already pro, skipping');
-      return;
-    }
-
-    console.log('[Billing] Immediately activating user from Stripe session:', sessionId);
-
-    // Handle subscription vs one-time payment
-    if (session.mode === 'subscription' && session.subscription) {
-      const subscriptionData = typeof session.subscription === 'string'
-        ? await stripe.subscriptions.retrieve(session.subscription)
-        : session.subscription;
-
-      // Cast to access period dates (Stripe types don't always include these)
-      const subscription = subscriptionData as typeof subscriptionData & {
-        current_period_start?: number;
-        current_period_end?: number;
-      };
-
-      const plan = getPlanByStripePrice(subscription.items.data[0].price.id);
-      const planId = session.metadata?.planId || plan?.id || 'monthly';
-
-      // Upsert subscription record
-      await adminClient.from('subscriptions').upsert({
-        user_id: userId,
-        provider: 'stripe',
-        provider_subscription_id: subscription.id,
-        provider_customer_id: session.customer as string,
-        status: 'active',
-        plan_id: planId,
-        plan_name: plan?.name || planId,
-        price_amount: subscription.items.data[0].price.unit_amount || 0,
-        price_currency: subscription.currency.toUpperCase(),
-        billing_interval: subscription.items.data[0].price.recurring?.interval as 'month' | 'year',
-        current_period_start: subscription.current_period_start 
-          ? new Date(subscription.current_period_start * 1000).toISOString() 
-          : null,
-        current_period_end: subscription.current_period_end
-          ? new Date(subscription.current_period_end * 1000).toISOString()
-          : null,
-        is_legacy: false,
-      }, {
-        onConflict: 'provider,provider_subscription_id',
-      });
-    } else {
-      // One-time payment (lifetime)
-      await adminClient.from('subscriptions').upsert({
-        user_id: userId,
-        provider: 'stripe',
-        provider_subscription_id: session.payment_intent as string,
-        provider_customer_id: session.customer as string,
-        status: 'active',
-        plan_id: 'lifetime',
-        plan_name: 'Lifetime',
-        price_amount: session.amount_total || 0,
-        price_currency: session.currency?.toUpperCase() || 'USD',
-        billing_interval: null,
-        is_legacy: false,
-      }, {
-        onConflict: 'provider,provider_subscription_id',
-      });
-    }
-
-    // Update user role to pro
-    await adminClient
-      .from('profiles')
-      .update({ role: 'pro' })
-      .eq('id', userId);
-
-    console.log('[Billing] ✅ User activated immediately from Stripe redirect');
-  } catch (error) {
-    // Don't fail the page load if this errors - webhook will still work
-    console.error('[Billing] Error activating from Stripe session:', error);
-  }
-}
-
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string; session_id?: string }>;
+  searchParams: Promise<{ canceled?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -143,12 +33,6 @@ export default async function BillingPage({
   }
 
   const params = await searchParams;
-
-  // Immediately activate Stripe session if coming from successful checkout
-  if (params.success && params.session_id) {
-    await activateStripeSessionIfNeeded(params.session_id, user.id);
-  }
-
   const subscription = await getUserActiveSubscription(user.id);
   const usage = await getCurrentUsage(user.id);
 
@@ -185,17 +69,6 @@ export default async function BillingPage({
         
         <main className="flex-1 p-8">
           <h1 className="text-3xl font-bold text-white mb-8">Billing & Subscription</h1>
-
-          {params.success && (
-            <div className="mb-6 rounded-xl border border-green-500/50 bg-green-500/10 p-4 text-green-400">
-              <div className="flex items-center gap-2">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Your subscription has been activated successfully!</span>
-              </div>
-            </div>
-          )}
 
           {params.canceled && (
             <div className="mb-6 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-amber-400">

@@ -105,8 +105,8 @@ export async function GET(request: NextRequest) {
       console.log('[PayPal Subscription Callback] Subscription not yet ACTIVE, webhook will handle activation');
     }
 
-    // Redirect to billing page with success
-    return NextResponse.redirect(`${baseUrl}/dashboard/billing?success=true&provider=paypal`);
+    // Redirect to projects page with success toast
+    return NextResponse.redirect(`${baseUrl}/dashboard/projects?payment=success&provider=paypal`);
   } catch (error) {
     console.error('[PayPal Subscription Callback] Error:', error);
     return NextResponse.redirect(`${baseUrl}/pricing?error=callback_error`);
