@@ -23,7 +23,12 @@ function initAmplitudeServer() {
   }
 
   console.log('[Amplitude Server] Initializing with API key length:', AMPLITUDE_API_KEY.length);
-  amplitude.init(AMPLITUDE_API_KEY);
+  
+  // Configure for EU Data Center (must match client-side config)
+  amplitude.init(AMPLITUDE_API_KEY, {
+    serverZone: 'EU',
+  });
+  
   isInitialized = true;
 }
 
