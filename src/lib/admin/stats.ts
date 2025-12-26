@@ -10,6 +10,7 @@ export interface AdminStats {
   freeUsers: number;
   activeSubscribersLegacy: number;
   activeSubscribersNew: number;
+  churnedLast30Days: number;
   totalProjects: number;
   totalAudioGenerated: number;
 }
@@ -21,6 +22,10 @@ export async function getAdminStats(): Promise<AdminStats> {
 
   const supabase = createAdminClient();
   const now = new Date().toISOString();
+  
+  // Calculate 30 days ago for churn metric
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   // Run all queries in parallel for performance
   const [
@@ -29,6 +34,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     newUsersResult,
     activeSubsLegacyResult,
     activeSubsNewResult,
+    churnedResult,
     totalProjectsResult,
     totalAudioResult,
   ] = await Promise.all([
@@ -59,6 +65,13 @@ export async function getAdminStats(): Promise<AdminStats> {
       .eq('is_legacy', false)
       .or(`current_period_end.gt.${now},current_period_end.is.null`),
 
+    // Churned subscriptions in last 30 days (canceled or expired)
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'canceled')
+      .gte('canceled_at', thirtyDaysAgo.toISOString()),
+
     // Total projects
     supabase.from('projects').select('id', { count: 'exact', head: true }),
 
@@ -70,6 +83,7 @@ export async function getAdminStats(): Promise<AdminStats> {
   const activeSubscribersLegacy = activeSubsLegacyResult.count || 0;
   const activeSubscribersNew = activeSubsNewResult.count || 0;
   const totalPaidUsers = activeSubscribersLegacy + activeSubscribersNew;
+  const churnedLast30Days = churnedResult.count || 0;
 
   return {
     totalUsers,
@@ -78,6 +92,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     freeUsers: totalUsers - totalPaidUsers,
     activeSubscribersLegacy,
     activeSubscribersNew,
+    churnedLast30Days,
     totalProjects: totalProjectsResult.count || 0,
     totalAudioGenerated: totalAudioResult.count || 0,
   };

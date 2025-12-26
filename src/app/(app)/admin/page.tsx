@@ -31,7 +31,7 @@ function StatCard({
   label: string; 
   value: number | string; 
   subValue?: string;
-  color?: 'slate' | 'amber' | 'green' | 'blue' | 'purple';
+  color?: 'slate' | 'amber' | 'green' | 'blue' | 'purple' | 'red';
 }) {
   const colorClasses = {
     slate: 'border-slate-800',
@@ -39,6 +39,7 @@ function StatCard({
     green: 'border-green-500/30 bg-green-500/5',
     blue: 'border-blue-500/30 bg-blue-500/5',
     purple: 'border-purple-500/30 bg-purple-500/5',
+    red: 'border-red-500/30 bg-red-500/5',
   };
 
   return (
@@ -136,13 +137,10 @@ export default async function AdminDashboardPage() {
                 color="purple"
               />
               <StatCard 
-                label="Conversion Rate" 
-                value={stats.totalUsers > 0 
-                  ? `${(((stats.activeSubscribersLegacy + stats.activeSubscribersNew) / stats.totalUsers) * 100).toFixed(1)}%`
-                  : '0%'
-                }
-                subValue="Active subs / Total users"
-                color="blue"
+                label="Churned (30 days)" 
+                value={stats.churnedLast30Days}
+                subValue="Cancelled subscriptions"
+                color="red"
               />
             </div>
           </div>
