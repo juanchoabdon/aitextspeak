@@ -103,32 +103,58 @@ export async function GET(request: NextRequest) {
     try {
       const stripeSub = await stripe.subscriptions.retrieve(sub.provider_subscription_id) as Stripe.Subscription;
       
-      if (!['active', 'trialing'].includes(stripeSub.status)) {
-        // Subscription is no longer active
+      // Extract Stripe data with proper typing
+      const stripeData = stripeSub as unknown as { 
+        status: string;
+        current_period_end?: number;
+        cancel_at?: number | null;
+        canceled_at?: number | null;
+      };
+      
+      if (!['active', 'trialing'].includes(stripeData.status)) {
+        // Subscription is no longer active in Stripe
+        // Update our record with all the details
         await supabase
           .from('subscriptions')
           .update({ 
             status: 'canceled',
-            canceled_at: new Date().toISOString(),
+            canceled_at: stripeData.canceled_at 
+              ? new Date(stripeData.canceled_at * 1000).toISOString()
+              : new Date().toISOString(),
+            cancel_at: stripeData.cancel_at
+              ? new Date(stripeData.cancel_at * 1000).toISOString()
+              : null,
+            current_period_end: stripeData.current_period_end
+              ? new Date(stripeData.current_period_end * 1000).toISOString()
+              : null,
           })
           .eq('id', sub.id);
 
-        await supabase
-          .from('profiles')
-          .update({ role: 'user' })
-          .eq('id', sub.user_id)
-          .neq('role', 'admin');
+        // Only downgrade user if grace period has ended
+        const periodEnd = stripeData.current_period_end 
+          ? new Date(stripeData.current_period_end * 1000) 
+          : new Date();
+        
+        if (new Date() > periodEnd) {
+          // Grace period ended - revoke access
+          await supabase
+            .from('profiles')
+            .update({ role: 'user' })
+            .eq('id', sub.user_id)
+            .neq('role', 'admin');
+          
+          results.cancelled.push(sub.user_id);
+        }
+        // If still in grace period, keep pro access
 
         results.stripe.synced++;
-        results.cancelled.push(sub.user_id);
       } else {
-        // Update period end - use 'any' to handle Stripe SDK type variations
-        const periodEnd = (stripeSub as unknown as { current_period_end?: number }).current_period_end;
-        if (periodEnd) {
+        // Active subscription - update period end
+        if (stripeData.current_period_end) {
           await supabase
             .from('subscriptions')
             .update({
-              current_period_end: new Date(periodEnd * 1000).toISOString(),
+              current_period_end: new Date(stripeData.current_period_end * 1000).toISOString(),
             })
             .eq('id', sub.id);
         }
@@ -136,20 +162,37 @@ export async function GET(request: NextRequest) {
     } catch (error: unknown) {
       const stripeError = error as { code?: string };
       if (stripeError.code === 'resource_missing') {
-        // Subscription not found - mark as canceled
+        // Subscription not found in Stripe - mark as canceled
         await supabase
           .from('subscriptions')
           .update({ status: 'canceled', canceled_at: new Date().toISOString() })
           .eq('id', sub.id);
 
-        await supabase
-          .from('profiles')
-          .update({ role: 'user' })
-          .eq('id', sub.user_id)
-          .neq('role', 'admin');
+        // Check if there's a grace period before downgrading
+        if (sub.status === 'active') {
+          // No grace period info available, check current_period_end from our DB
+          const { data: dbSub } = await supabase
+            .from('subscriptions')
+            .select('current_period_end')
+            .eq('id', sub.id)
+            .single();
+          
+          const periodEnd = dbSub?.current_period_end 
+            ? new Date(dbSub.current_period_end) 
+            : new Date();
+          
+          if (new Date() > periodEnd) {
+            await supabase
+              .from('profiles')
+              .update({ role: 'user' })
+              .eq('id', sub.user_id)
+              .neq('role', 'admin');
+            
+            results.cancelled.push(sub.user_id);
+          }
+        }
 
         results.stripe.synced++;
-        results.cancelled.push(sub.user_id);
       } else {
         results.stripe.errors++;
       }
@@ -169,26 +212,43 @@ export async function GET(request: NextRequest) {
     results.paypal.checked++;
     
     try {
-      const paypalSub = await getPayPalSubscription(sub.provider_subscription_id);
+      const paypalSub = await getPayPalSubscription(sub.provider_subscription_id) as {
+        status: string;
+        billing_info?: { next_billing_time?: string };
+      } | null;
       
       if (!paypalSub || paypalSub.status !== 'ACTIVE') {
-        // Subscription is no longer active
+        // Subscription is no longer active in PayPal
+        // Get the next billing time as the grace period end
+        const periodEnd = paypalSub?.billing_info?.next_billing_time 
+          ? new Date(paypalSub.billing_info.next_billing_time)
+          : null;
+        
         await supabase
           .from('subscriptions')
           .update({ 
             status: 'canceled',
             canceled_at: new Date().toISOString(),
+            // Preserve current_period_end for grace period
+            ...(periodEnd && { current_period_end: periodEnd.toISOString() }),
           })
           .eq('id', sub.id);
 
-        await supabase
-          .from('profiles')
-          .update({ role: 'user' })
-          .eq('id', sub.user_id)
-          .neq('role', 'admin');
+        // Only downgrade user if grace period has ended (or no grace period)
+        const shouldRevoke = !periodEnd || new Date() > periodEnd;
+        
+        if (shouldRevoke) {
+          await supabase
+            .from('profiles')
+            .update({ role: 'user' })
+            .eq('id', sub.user_id)
+            .neq('role', 'admin');
+          
+          results.cancelled.push(sub.user_id);
+        }
+        // If still in grace period, keep pro access
 
         results.paypal.synced++;
-        results.cancelled.push(sub.user_id);
       }
     } catch {
       results.paypal.errors++;
