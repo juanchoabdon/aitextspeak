@@ -176,6 +176,7 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
     projectsResult,
     audioResult,
     usageResult,
+    audioCharsResult,
     transactionsResult,
   ] = await Promise.all([
     // Active subscription
@@ -200,14 +201,17 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId),
     
-    // Current usage (most recent period)
+    // All usage records (to sum total usage)
     supabase
       .from('usage_tracking')
-      .select('*')
-      .eq('user_id', userId)
-      .order('period_start', { ascending: false })
-      .limit(1)
-      .single(),
+      .select('characters_used, characters_preview_used, characters_production_used')
+      .eq('user_id', userId),
+    
+    // Fallback: Sum characters from project_audio records
+    supabase
+      .from('project_audio')
+      .select('characters_count')
+      .eq('user_id', userId),
     
     // Transactions
     supabase
@@ -222,15 +226,28 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
   const subscription = subscriptionResult.data;
   const projectsCount = projectsResult.count || 0;
   const audioCount = audioResult.count || 0;
-  const usage = usageResult.data;
+  const usageRecords = usageResult.data || [];
+  const audioCharRecords = audioCharsResult.data || [];
   const transactions = transactionsResult.data || [];
   
-  // Calculate characters used and limit
+  // Calculate total characters used across all periods
   let charactersUsed = 0;
   let charactersLimit: number | null = null;
   
-  if (usage) {
-    charactersUsed = (usage.characters_preview_used || 0) + (usage.characters_production_used || 0);
+  // Method 1: Sum from usage_tracking table
+  for (const usage of usageRecords) {
+    // characters_used is the main field tracked by recordUsage()
+    // characters_preview_used and characters_production_used are legacy fields
+    charactersUsed += (usage.characters_used || 0) + 
+                      (usage.characters_preview_used || 0) + 
+                      (usage.characters_production_used || 0);
+  }
+  
+  // Method 2: Fallback - if no usage_tracking, calculate from project_audio
+  if (charactersUsed === 0 && audioCharRecords.length > 0) {
+    for (const audio of audioCharRecords) {
+      charactersUsed += audio.characters_count || 0;
+    }
   }
   
   // Determine character limit based on plan
