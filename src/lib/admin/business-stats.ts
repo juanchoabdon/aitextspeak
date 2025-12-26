@@ -170,12 +170,12 @@ export async function getMRRStats(): Promise<MRRStats> {
 
   // Run queries in parallel
   const [activeSubsResult, cancelledSubsResult] = await Promise.all([
-    // Get all REALLY active subscriptions (status=active AND period hasn't ended)
+    // Get all REALLY active subscriptions (status=active AND (period hasn't ended OR lifetime))
     supabase
       .from('subscriptions')
       .select('plan_name, price_amount, plan_id')
       .eq('status', 'active')
-      .gt('current_period_end', now),
+      .or(`current_period_end.gt.${now},current_period_end.is.null`),
     
     // Get subscriptions canceled in last 30 days
     supabase

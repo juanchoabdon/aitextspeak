@@ -41,21 +41,23 @@ export async function getAdminStats(): Promise<AdminStats> {
     // New users (not legacy)
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_legacy_user', false),
 
-    // Active subscriptions from legacy users (status=active AND period not ended)
+    // Active subscriptions from legacy users
+    // Include: status=active AND (period not ended OR lifetime with null period_end)
     supabase
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active')
       .eq('is_legacy', true)
-      .gt('current_period_end', now),
+      .or(`current_period_end.gt.${now},current_period_end.is.null`),
 
-    // Active subscriptions from new users (status=active AND period not ended)
+    // Active subscriptions from new users
+    // Include: status=active AND (period not ended OR lifetime with null period_end)
     supabase
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active')
       .eq('is_legacy', false)
-      .gt('current_period_end', now),
+      .or(`current_period_end.gt.${now},current_period_end.is.null`),
 
     // Total projects
     supabase.from('projects').select('id', { count: 'exact', head: true }),
