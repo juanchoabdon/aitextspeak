@@ -342,13 +342,17 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
           }`}>
             {user.is_legacy_user ? 'Legacy User' : 'New User'}
           </span>
-          {user.subscription && (
+          {user.subscription ? (
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
               user.subscription.status === 'active'
                 ? 'bg-green-500/20 text-green-400'
                 : 'bg-red-500/20 text-red-400'
             }`}>
               Subscription: {user.subscription.status}
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-slate-500/20 text-slate-400">
+              Free User
             </span>
           )}
         </div>
@@ -366,9 +370,9 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
         </div>
         
         {/* Subscription Details */}
-        {user.subscription && (
-          <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="text-lg font-semibold text-white mb-3">Subscription</h3>
+        <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+          <h3 className="text-lg font-semibold text-white mb-3">Subscription</h3>
+          {user.subscription ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <p className="text-slate-400">Plan</p>
@@ -407,8 +411,10 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
                 </div>
               )}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-slate-400 text-sm">No active subscription - Free user</p>
+          )}
+        </div>
         
         {/* Character Usage */}
         <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
