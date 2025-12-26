@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
+import { verifySubscription } from '@/lib/payments/subscription-verify';
 import { PLANS } from '@/lib/payments/plans';
 import { BillingClient } from '@/components/billing/BillingClient';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -33,6 +34,11 @@ export default async function BillingPage({
   }
 
   const params = await searchParams;
+  
+  // Real-time verification with payment provider (forceSync = true)
+  // This catches cancellations made directly on Stripe/PayPal portals
+  const verification = await verifySubscription(user.id, true);
+  
   const subscription = await getUserActiveSubscription(user.id);
   const usage = await getCurrentUsage(user.id);
 
@@ -43,13 +49,20 @@ export default async function BillingPage({
     .eq('id', user.id)
     .single();
 
-  // Also get raw subscription data for billing details
+  // Get raw subscription data for billing details (include canceled with grace period)
   const { data: subscriptionData } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', user.id)
-    .eq('status', 'active')
+    .in('status', ['active', 'canceled'])
+    .order('created_at', { ascending: false })
+    .limit(1)
     .single();
+
+  // Check if in grace period (canceled but period not ended)
+  const isInGracePeriod = subscriptionData?.status === 'canceled' && 
+    subscriptionData?.current_period_end && 
+    new Date(subscriptionData.current_period_end) > new Date();
 
   const currentPlan = PLANS[subscription.planId] || PLANS.free;
   const billingLabel =
@@ -81,6 +94,22 @@ export default async function BillingPage({
             </div>
           )}
 
+          {isInGracePeriod && (
+            <div className="mb-6 rounded-xl border border-orange-500/50 bg-orange-500/10 p-4 text-orange-400">
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <span className="font-semibold">Subscription Canceled</span>
+                  <span className="ml-2">
+                    You have access until {new Date(subscriptionData.current_period_end!).toLocaleDateString()}.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Current Plan */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
@@ -90,11 +119,17 @@ export default async function BillingPage({
                   <h2 className="text-2xl font-bold text-white">{subscription.planName}</h2>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  subscription.isActive && subscription.provider !== 'free'
+                  isInGracePeriod
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : subscription.isActive && subscription.provider !== 'free'
                     ? 'bg-green-500/20 text-green-400'
                     : 'bg-slate-700 text-slate-400'
                 }`}>
-                  {subscription.isActive && subscription.provider !== 'free' ? 'Active' : 'Free Plan'}
+                  {isInGracePeriod 
+                    ? 'Canceled (Grace Period)' 
+                    : subscription.isActive && subscription.provider !== 'free' 
+                    ? 'Active' 
+                    : 'Free Plan'}
                 </div>
               </div>
 
