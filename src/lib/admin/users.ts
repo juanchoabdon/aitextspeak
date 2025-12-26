@@ -68,20 +68,28 @@ export interface UserDetailData {
   }[];
 }
 
+export type UserFilter = 'all' | 'paying' | 'free';
+
 /**
- * Fetch paginated users with optional search
+ * Fetch paginated users with optional search and filter
  */
 export async function getPaginatedUsers(
   page: number = 1,
   pageSize: number = 20,
-  search: string = ''
+  search: string = '',
+  filter: UserFilter = 'all'
 ): Promise<PaginatedUsersResult> {
   noStore();
   
   const supabase = createAdminClient();
   const offset = (page - 1) * pageSize;
   
-  // Build base query
+  // For 'paying' filter, we need to get user IDs from subscriptions first
+  if (filter === 'paying') {
+    return await getPaginatedPayingUsers(page, pageSize, search);
+  }
+  
+  // Build base query for 'all' or 'free' users
   let query = supabase
     .from('profiles')
     .select('id, email, username, first_name, last_name, role, is_legacy_user, created_at', { count: 'exact' });
@@ -141,6 +149,92 @@ export async function getPaginatedUsers(
     }
   }
 
+  // For 'free' filter, we need to filter out paying users
+  if (filter === 'free') {
+    const freeUsers = users.filter(u => u.billing_provider === 'free');
+    return {
+      users: freeUsers,
+      totalCount: freeUsers.length,
+      page,
+      pageSize,
+      totalPages: Math.ceil(freeUsers.length / pageSize),
+    };
+  }
+
+  return {
+    users,
+    totalCount,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
+  };
+}
+
+/**
+ * Fetch paginated users who have active subscriptions
+ */
+async function getPaginatedPayingUsers(
+  page: number,
+  pageSize: number,
+  search: string
+): Promise<PaginatedUsersResult> {
+  const supabase = createAdminClient();
+  const offset = (page - 1) * pageSize;
+  
+  // Get all active subscription user IDs
+  const { data: subsData, error: subsError } = await supabase
+    .from('subscriptions')
+    .select('user_id, provider')
+    .eq('status', 'active');
+  
+  if (subsError) {
+    console.error('Error fetching subscriptions:', subsError);
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Create a map of user_id -> provider
+  const userProviderMap = new Map<string, UserListItem['billing_provider']>();
+  for (const sub of subsData || []) {
+    if (!userProviderMap.has(sub.user_id)) {
+      userProviderMap.set(sub.user_id, sub.provider as UserListItem['billing_provider']);
+    }
+  }
+  
+  const payingUserIds = [...userProviderMap.keys()];
+  
+  if (payingUserIds.length === 0) {
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Now fetch profiles for these paying users
+  let query = supabase
+    .from('profiles')
+    .select('id, email, username, first_name, last_name, role, is_legacy_user, created_at', { count: 'exact' })
+    .in('id', payingUserIds);
+  
+  // Apply search filter
+  if (search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    query = query.or(`email.ilike.${searchTerm},first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},username.ilike.${searchTerm}`);
+  }
+  
+  // Apply pagination and ordering
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
+  
+  if (error) {
+    console.error('Error fetching paying users:', error);
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  const users = (data || []).map(u => ({
+    ...u,
+    billing_provider: userProviderMap.get(u.id) || 'free',
+  })) as UserListItem[];
+  
+  const totalCount = count || 0;
+  
   return {
     users,
     totalCount,

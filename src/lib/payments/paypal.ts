@@ -127,6 +127,7 @@ interface PayPalSubscriptionDetails {
   };
   subscriber?: {
     payer_id?: string;
+    email_address?: string;
   };
 }
 

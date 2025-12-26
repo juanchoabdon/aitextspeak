@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useTransition, useRef } from 'react';
-import { getPaginatedUsers, getUserDetail, type UserListItem, type PaginatedUsersResult, type UserDetailData } from '@/lib/admin/users';
+import { getPaginatedUsers, getUserDetail, type UserListItem, type PaginatedUsersResult, type UserDetailData, type UserFilter } from '@/lib/admin/users';
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -23,6 +23,7 @@ function useDebounce<T>(value: T, delay: number): T {
 export function AdminUsersClient() {
   const [data, setData] = useState<PaginatedUsersResult | null>(null);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<UserFilter>('paying'); // Default to paying users
   const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
   const [selectedUser, setSelectedUser] = useState<UserDetailData | null>(null);
@@ -35,19 +36,19 @@ export function AdminUsersClient() {
   
   const fetchUsers = useCallback(async () => {
     startTransition(async () => {
-      const result = await getPaginatedUsers(page, pageSize, debouncedSearch);
+      const result = await getPaginatedUsers(page, pageSize, debouncedSearch, filter);
       setData(result);
     });
-  }, [page, pageSize, debouncedSearch]);
+  }, [page, pageSize, debouncedSearch, filter]);
   
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
   
-  // Reset page when search changes
+  // Reset page when search or filter changes
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, filter]);
   
   // Scroll to top when page changes (skip initial render)
   useEffect(() => {
@@ -73,8 +74,8 @@ export function AdminUsersClient() {
   
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="flex items-center gap-4">
+      {/* Search Bar and Filter */}
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-md">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
@@ -97,6 +98,21 @@ export function AdminUsersClient() {
             className="w-full rounded-xl border border-slate-700 bg-slate-800/50 pl-10 pr-4 py-2.5 text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none"
           />
         </div>
+        
+        {/* Filter Dropdown */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-slate-400">Show:</label>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as UserFilter)}
+            className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm min-w-[160px]"
+          >
+            <option value="paying">Paying Subscribers</option>
+            <option value="all">All Users</option>
+            <option value="free">Free Users Only</option>
+          </select>
+        </div>
+        
         {isPending && (
           <div className="flex items-center gap-2 text-slate-400">
             <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -111,7 +127,7 @@ export function AdminUsersClient() {
       {/* Results count */}
       {data && (
         <p className="text-sm text-slate-400">
-          Showing {data.users.length} of {data.totalCount.toLocaleString()} users
+          Showing {data.users.length} of {data.totalCount.toLocaleString()} {filter === 'paying' ? 'paying subscribers' : filter === 'free' ? 'free users' : 'users'}
           {debouncedSearch && ` matching "${debouncedSearch}"`}
         </p>
       )}

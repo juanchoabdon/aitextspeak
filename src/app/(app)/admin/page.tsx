@@ -120,8 +120,9 @@ export default async function AdminDashboardPage() {
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard 
-                label="Total Active" 
-                value={stats.activeSubscribersLegacy + stats.activeSubscribersNew}
+                label="Total Active Subscribers" 
+                value={stats.totalActiveSubscribers}
+                subValue="Synced with Stripe/PayPal"
                 color="green"
               />
               <StatCard 

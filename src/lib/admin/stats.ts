@@ -10,6 +10,7 @@ export interface AdminStats {
   freeUsers: number;
   activeSubscribersLegacy: number;
   activeSubscribersNew: number;
+  totalActiveSubscribers: number;
   totalChurned: number;
   totalProjects: number;
   totalAudioGenerated: number;
@@ -30,6 +31,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     newUsersResult,
     activeSubsLegacyResult,
     activeSubsNewResult,
+    totalActiveResult,
     churnedResult,
     totalProjectsResult,
     totalAudioResult,
@@ -61,6 +63,12 @@ export async function getAdminStats(): Promise<AdminStats> {
       .eq('is_legacy', false)
       .or(`current_period_end.gt.${now},current_period_end.is.null`),
 
+    // Total active subscribers (all providers)
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active'),
+
     // Total churned subscriptions (all time)
     supabase
       .from('subscriptions')
@@ -77,16 +85,17 @@ export async function getAdminStats(): Promise<AdminStats> {
   const totalUsers = totalUsersResult.count || 0;
   const activeSubscribersLegacy = activeSubsLegacyResult.count || 0;
   const activeSubscribersNew = activeSubsNewResult.count || 0;
-  const totalPaidUsers = activeSubscribersLegacy + activeSubscribersNew;
+  const totalActiveSubscribers = totalActiveResult.count || 0;
   const totalChurned = churnedResult.count || 0;
 
   return {
     totalUsers,
     legacyUsersMigrated: legacyMigratedResult.count || 0,
     newUsers: newUsersResult.count || 0,
-    freeUsers: totalUsers - totalPaidUsers,
+    freeUsers: totalUsers - totalActiveSubscribers,
     activeSubscribersLegacy,
     activeSubscribersNew,
+    totalActiveSubscribers,
     totalChurned,
     totalProjects: totalProjectsResult.count || 0,
     totalAudioGenerated: totalAudioResult.count || 0,

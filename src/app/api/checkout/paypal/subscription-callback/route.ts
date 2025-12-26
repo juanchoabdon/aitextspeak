@@ -14,6 +14,8 @@ import {
  * This is called after the user approves a PayPal subscription.
  * PayPal redirects here with the subscription_id.
  * We verify the subscription status and activate the user immediately.
+ * 
+ * LAYER 1 OF 3: Immediate activation on redirect
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -24,30 +26,42 @@ export async function GET(request: NextRequest) {
 
   console.log('[PayPal Subscription Callback] Received:', { subscriptionId, userId, planId });
 
+  // Log all params for debugging
+  const allParams = Object.fromEntries(searchParams.entries());
+  console.log('[PayPal Subscription Callback] All URL params:', allParams);
+
   if (!subscriptionId || !userId) {
-    console.error('[PayPal Subscription Callback] Missing required params');
-    return NextResponse.redirect(`${baseUrl}/pricing?error=missing_params`);
+    console.error('[PayPal Subscription Callback] ❌ Missing required params:', { subscriptionId, userId });
+    // Still redirect to dashboard - user might have paid but we don't have the subscription_id
+    return NextResponse.redirect(`${baseUrl}/dashboard/projects?payment=pending&error=missing_subscription_id`);
   }
+
+  const supabase = createAdminClient();
 
   try {
     // Get subscription details from PayPal API
     const subscription = await getPayPalSubscription(subscriptionId);
     
     if (!subscription) {
-      console.error('[PayPal Subscription Callback] Subscription not found:', subscriptionId);
+      console.error('[PayPal Subscription Callback] ❌ Subscription not found in PayPal:', subscriptionId);
       return NextResponse.redirect(`${baseUrl}/pricing?error=subscription_not_found`);
     }
 
-    console.log('[PayPal Subscription Callback] PayPal status:', subscription.status);
+    console.log('[PayPal Subscription Callback] PayPal response:', {
+      status: subscription.status,
+      email: subscription.subscriber?.email_address,
+      payerId: subscription.subscriber?.payer_id,
+      startTime: subscription.start_time,
+      nextBilling: subscription.billing_info?.next_billing_time,
+    });
 
-    const supabase = createAdminClient();
     const plan = planId && PLANS[planId] ? PLANS[planId] : PLANS.monthly;
 
     // Determine DB status based on PayPal status
     const dbStatus = subscription.status === 'ACTIVE' ? 'active' : 'incomplete';
 
     // Create/update subscription record in database
-    await supabase.from('subscriptions').upsert({
+    const { error: upsertError } = await supabase.from('subscriptions').upsert({
       user_id: userId,
       provider: 'paypal',
       provider_subscription_id: subscriptionId,
@@ -55,7 +69,6 @@ export async function GET(request: NextRequest) {
       status: dbStatus,
       plan_id: planId || 'monthly',
       plan_name: plan.name,
-      // subscriptions.price_amount is stored as INTEGER cents in the DB
       price_amount: Math.round(plan.price * 100),
       price_currency: 'USD',
       billing_interval: plan.interval as 'month' | 'year' | null,
@@ -65,6 +78,13 @@ export async function GET(request: NextRequest) {
     }, {
       onConflict: 'provider,provider_subscription_id',
     });
+
+    if (upsertError) {
+      console.error('[PayPal Subscription Callback] ❌ Database upsert error:', upsertError);
+      // Continue - don't fail the user experience
+    } else {
+      console.log('[PayPal Subscription Callback] ✅ Subscription record created/updated');
+    }
 
     // If subscription is ACTIVE, update user role immediately
     if (subscription.status === 'ACTIVE') {
@@ -81,7 +101,7 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (!existingPayment) {
-        await supabase.from('payment_history').insert({
+        const { error: paymentError } = await supabase.from('payment_history').insert({
           user_id: userId,
           transaction_type: 'subscription',
           gateway: 'paypal',
@@ -97,13 +117,23 @@ export async function GET(request: NextRequest) {
             payer_id: subscription.subscriber?.payer_id,
           },
         });
+
+        if (paymentError) {
+          console.error('[PayPal Subscription Callback] ❌ Payment history error:', paymentError);
+        }
       }
 
       // Update user role to pro
-      await supabase
+      const { error: roleError } = await supabase
         .from('profiles')
         .update({ role: 'pro' })
         .eq('id', userId);
+
+      if (roleError) {
+        console.error('[PayPal Subscription Callback] ❌ Role update error:', roleError);
+      } else {
+        console.log('[PayPal Subscription Callback] ✅ User role set to pro');
+      }
 
       // Track in Amplitude
       trackPaymentCompleted(userId, {
@@ -125,14 +155,15 @@ export async function GET(request: NextRequest) {
 
       console.log('[PayPal Subscription Callback] ✅ User activated immediately');
     } else {
-      console.log('[PayPal Subscription Callback] Subscription not yet ACTIVE, webhook will handle activation');
+      console.log('[PayPal Subscription Callback] ⏳ Subscription status:', subscription.status, '- webhook will handle activation');
     }
 
     // Redirect to projects page with success toast
     return NextResponse.redirect(`${baseUrl}/dashboard/projects?payment=success&provider=paypal`);
   } catch (error) {
-    console.error('[PayPal Subscription Callback] Error:', error);
-    return NextResponse.redirect(`${baseUrl}/pricing?error=callback_error`);
+    console.error('[PayPal Subscription Callback] ❌ Exception:', error);
+    // Still redirect - don't leave user hanging
+    return NextResponse.redirect(`${baseUrl}/dashboard/projects?payment=pending&error=processing`);
   }
 }
 
