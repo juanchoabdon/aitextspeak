@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition, useRef } from 'react';
 import { getPaginatedUsers, getUserDetail, type UserListItem, type PaginatedUsersResult, type UserDetailData } from '@/lib/admin/users';
 
 // Debounce hook
@@ -28,6 +28,7 @@ export function AdminUsersClient() {
   const [selectedUser, setSelectedUser] = useState<UserDetailData | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const isFirstRender = useRef(true);
   
   const debouncedSearch = useDebounce(search, 300);
   const pageSize = 20;
@@ -48,8 +49,12 @@ export function AdminUsersClient() {
     setPage(1);
   }, [debouncedSearch]);
   
-  // Scroll to top when page changes
+  // Scroll to top when page changes (skip initial render)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
   
