@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getUser, getUserProfile } from '@/lib/supabase/server';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { AdminUsersList } from '@/components/admin/AdminUsersList';
+import { AdminUsersClient } from '@/components/admin/AdminUsersClient';
 import { getAdminStats } from '@/lib/admin/stats';
 
 export const metadata: Metadata = {
@@ -173,9 +173,9 @@ export default async function AdminDashboardPage() {
               <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>
-              Recent Users
+              All Users
             </h2>
-            <AdminUsersList />
+            <AdminUsersClient />
           </div>
         </main>
       </div>
