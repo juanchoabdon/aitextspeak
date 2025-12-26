@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
 
   const results = {
-    stripe: { checked: 0, synced: 0, errors: 0 },
+    stripe: { checked: 0, synced: 0, errors: 0, pastDue: 0 },
     paypal: { checked: 0, synced: 0, errors: 0 },
     healed: { created: 0, activated: 0 },
     cancelled: [] as string[],

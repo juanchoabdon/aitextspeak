@@ -30,7 +30,8 @@ export interface UserSubscription {
 export interface SubscriptionCheck {
   hasAccess: boolean;
   subscription: UserSubscription | null;
-  reason: 'active' | 'lifetime' | 'admin' | 'no_subscription' | 'expired' | 'canceled';
+  reason: 'active' | 'lifetime' | 'admin' | 'no_subscription' | 'expired' | 'canceled' | 'past_due_grace';
+  isPastDue?: boolean; // Flag to show payment warning
 }
 
 /**
@@ -58,12 +59,14 @@ export async function checkSubscription(userId: string): Promise<SubscriptionChe
     };
   }
 
-  // Get the user's active subscription
+  // Get the user's subscription (active or past_due)
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
-    .eq('status', 'active')
+    .in('status', ['active', 'past_due'])
+    .order('created_at', { ascending: false })
+    .limit(1)
     .single();
 
   if (!subscription) {
@@ -71,6 +74,49 @@ export async function checkSubscription(userId: string): Promise<SubscriptionChe
       hasAccess: false,
       subscription: null,
       reason: 'no_subscription',
+    };
+  }
+
+  // Check if subscription is past_due (payment failed)
+  const isPastDue = subscription.status === 'past_due';
+  
+  // For past_due, give them a 7-day grace period from when it became past_due
+  // Stripe will retry payments during this time
+  if (isPastDue) {
+    // If current_period_end is set, check if we're still in grace period
+    if (subscription.current_period_end) {
+      const periodEnd = new Date(subscription.current_period_end);
+      const gracePeriodEnd = new Date(periodEnd.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days grace
+      const now = new Date();
+      
+      if (now > gracePeriodEnd) {
+        // Grace period expired - cancel the subscription
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'canceled', canceled_at: now.toISOString() })
+          .eq('id', subscription.id);
+
+        await supabase
+          .from('profiles')
+          .update({ role: 'user' })
+          .eq('id', userId)
+          .neq('role', 'admin');
+
+        return {
+          hasAccess: false,
+          subscription: mapSubscription({ ...subscription, status: 'canceled' }),
+          reason: 'expired',
+          isPastDue: false,
+        };
+      }
+    }
+    
+    // Still in grace period - allow access but flag as past_due
+    return {
+      hasAccess: true,
+      subscription: mapSubscription(subscription),
+      reason: 'past_due_grace',
+      isPastDue: true,
     };
   }
 

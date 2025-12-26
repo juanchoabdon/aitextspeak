@@ -145,6 +145,12 @@ export default async function AdminDashboardPage() {
                 color="orange"
               />
               <StatCard 
+                label="Past Due" 
+                value={stats.pastDueSubscriptions}
+                subValue="Payment failed"
+                color="amber"
+              />
+              <StatCard 
                 label="Total Churned" 
                 value={stats.totalChurned}
                 subValue="Fully cancelled"

@@ -12,6 +12,7 @@ export interface AdminStats {
   activeSubscribersNew: number;
   totalActiveSubscribers: number;
   scheduledCancellations: number; // Users in grace period (canceled but still have access)
+  pastDueSubscriptions: number; // Payment failed, Stripe is retrying
   totalChurned: number;
   totalProjects: number;
   totalAudioGenerated: number;
@@ -34,6 +35,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     activeSubsNewResult,
     totalActiveResult,
     scheduledCancellationsResult,
+    pastDueResult,
     churnedResult,
     totalProjectsResult,
     totalAudioResult,
@@ -78,6 +80,12 @@ export async function getAdminStats(): Promise<AdminStats> {
       .eq('status', 'active')
       .not('cancel_at', 'is', null),
 
+    // Past due subscriptions (payment failed, Stripe retrying)
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'past_due'),
+
     // Total churned subscriptions (all time)
     supabase
       .from('subscriptions')
@@ -96,6 +104,7 @@ export async function getAdminStats(): Promise<AdminStats> {
   const activeSubscribersNew = activeSubsNewResult.count || 0;
   const totalActiveSubscribers = totalActiveResult.count || 0;
   const scheduledCancellations = scheduledCancellationsResult.count || 0;
+  const pastDueSubscriptions = pastDueResult.count || 0;
   const totalChurned = churnedResult.count || 0;
 
   return {
@@ -107,6 +116,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     activeSubscribersNew,
     totalActiveSubscribers,
     scheduledCancellations, // Users who canceled but still have access until period end
+    pastDueSubscriptions, // Payment failed, Stripe is retrying
     totalChurned,
     totalProjects: totalProjectsResult.count || 0,
     totalAudioGenerated: totalAudioResult.count || 0,
