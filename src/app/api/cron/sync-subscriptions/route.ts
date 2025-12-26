@@ -109,7 +109,34 @@ export async function GET(request: NextRequest) {
         current_period_end?: number;
         cancel_at?: number | null;
         canceled_at?: number | null;
+        cancel_at_period_end?: boolean;
       };
+      
+      // Check for scheduled cancellations (user canceled but still has access)
+      if (stripeData.cancel_at_period_end || stripeData.cancel_at) {
+        // User has scheduled cancellation - update our DB with this info
+        const updates: Record<string, string | null> = {};
+        
+        if (stripeData.cancel_at) {
+          updates.cancel_at = new Date(stripeData.cancel_at * 1000).toISOString();
+        }
+        if (stripeData.canceled_at) {
+          updates.canceled_at = new Date(stripeData.canceled_at * 1000).toISOString();
+        }
+        if (stripeData.current_period_end) {
+          updates.current_period_end = new Date(stripeData.current_period_end * 1000).toISOString();
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          await supabase
+            .from('subscriptions')
+            .update(updates)
+            .eq('id', sub.id);
+        }
+        
+        // Don't count as synced/canceled - they're still active in grace period
+        continue;
+      }
       
       if (!['active', 'trialing'].includes(stripeData.status)) {
         // Subscription is no longer active in Stripe

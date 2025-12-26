@@ -11,6 +11,7 @@ export interface AdminStats {
   activeSubscribersLegacy: number;
   activeSubscribersNew: number;
   totalActiveSubscribers: number;
+  scheduledCancellations: number; // Users in grace period (canceled but still have access)
   totalChurned: number;
   totalProjects: number;
   totalAudioGenerated: number;
@@ -32,6 +33,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     activeSubsLegacyResult,
     activeSubsNewResult,
     totalActiveResult,
+    scheduledCancellationsResult,
     churnedResult,
     totalProjectsResult,
     totalAudioResult,
@@ -69,6 +71,13 @@ export async function getAdminStats(): Promise<AdminStats> {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active'),
 
+    // Scheduled cancellations (status=active but cancel_at is set = in grace period)
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .not('cancel_at', 'is', null),
+
     // Total churned subscriptions (all time)
     supabase
       .from('subscriptions')
@@ -86,6 +95,7 @@ export async function getAdminStats(): Promise<AdminStats> {
   const activeSubscribersLegacy = activeSubsLegacyResult.count || 0;
   const activeSubscribersNew = activeSubsNewResult.count || 0;
   const totalActiveSubscribers = totalActiveResult.count || 0;
+  const scheduledCancellations = scheduledCancellationsResult.count || 0;
   const totalChurned = churnedResult.count || 0;
 
   return {
@@ -96,6 +106,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     activeSubscribersLegacy,
     activeSubscribersNew,
     totalActiveSubscribers,
+    scheduledCancellations, // Users who canceled but still have access until period end
     totalChurned,
     totalProjects: totalProjectsResult.count || 0,
     totalAudioGenerated: totalAudioResult.count || 0,

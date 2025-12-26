@@ -31,7 +31,7 @@ function StatCard({
   label: string; 
   value: number | string; 
   subValue?: string;
-  color?: 'slate' | 'amber' | 'green' | 'blue' | 'purple' | 'red';
+  color?: 'slate' | 'amber' | 'green' | 'blue' | 'purple' | 'red' | 'orange';
 }) {
   const colorClasses = {
     slate: 'border-slate-800',
@@ -40,6 +40,7 @@ function StatCard({
     blue: 'border-blue-500/30 bg-blue-500/5',
     purple: 'border-purple-500/30 bg-purple-500/5',
     red: 'border-red-500/30 bg-red-500/5',
+    orange: 'border-orange-500/30 bg-orange-500/5',
   };
 
   return (
@@ -138,9 +139,15 @@ export default async function AdminDashboardPage() {
                 color="purple"
               />
               <StatCard 
+                label="Scheduled Cancellations" 
+                value={stats.scheduledCancellations}
+                subValue="In grace period"
+                color="orange"
+              />
+              <StatCard 
                 label="Total Churned" 
                 value={stats.totalChurned}
-                subValue="All cancelled subscriptions"
+                subValue="Fully cancelled"
                 color="red"
               />
             </div>
