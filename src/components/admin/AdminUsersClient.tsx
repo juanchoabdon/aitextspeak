@@ -48,6 +48,11 @@ export function AdminUsersClient() {
     setPage(1);
   }, [debouncedSearch]);
   
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
+  
   const handleUserClick = async (userId: string) => {
     setIsLoadingUser(true);
     setIsModalOpen(true);
