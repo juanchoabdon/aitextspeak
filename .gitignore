@@ -42,3 +42,4 @@ next-env.d.ts
 
 # migration data (contains sensitive user data)
 scripts/data/*.json
+*.log
