@@ -352,7 +352,7 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
             </span>
           ) : (
             <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-slate-500/20 text-slate-400">
-              Free User
+              Free
             </span>
           )}
         </div>
@@ -412,7 +412,7 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
               )}
             </div>
           ) : (
-            <p className="text-slate-400 text-sm">No active subscription - Free user</p>
+            <p className="text-slate-400 text-sm">No active subscription</p>
           )}
         </div>
         
