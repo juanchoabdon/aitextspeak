@@ -13,6 +13,10 @@ export interface UserListItem {
   is_legacy_user: boolean;
   created_at: string;
   billing_provider?: 'stripe' | 'paypal' | 'paypal_legacy' | 'free';
+  // Subscription status info (for canceled/past_due filters)
+  subscription_status?: 'active' | 'canceled' | 'past_due' | null;
+  canceled_at?: string | null;
+  current_period_end?: string | null;
 }
 
 export interface PaginatedUsersResult {
@@ -40,11 +44,15 @@ export interface UserDetailData {
     plan_id: string | null;
     plan_name: string | null;
     provider: string;
+    provider_subscription_id: string | null;
     current_period_start: string | null;
     current_period_end: string | null;
     is_legacy: boolean;
     price_amount: number | null;
     billing_interval: string | null;
+    // Cancellation details
+    canceled_at: string | null;
+    cancel_at: string | null;
   } | null;
   
   // Usage stats
@@ -68,7 +76,7 @@ export interface UserDetailData {
   }[];
 }
 
-export type UserFilter = 'all' | 'paying' | 'free';
+export type UserFilter = 'all' | 'paying' | 'free' | 'canceled' | 'past_due';
 
 /**
  * Fetch paginated users with optional search and filter
@@ -87,6 +95,11 @@ export async function getPaginatedUsers(
   // For 'paying' filter, we need to get user IDs from subscriptions first
   if (filter === 'paying') {
     return await getPaginatedPayingUsers(page, pageSize, search);
+  }
+  
+  // For 'canceled' or 'past_due' filter, use subscription-based query
+  if (filter === 'canceled' || filter === 'past_due') {
+    return await getPaginatedSubscriptionStatusUsers(page, pageSize, search, filter);
   }
   
   // Build base query for 'all' or 'free' users
@@ -245,6 +258,97 @@ async function getPaginatedPayingUsers(
 }
 
 /**
+ * Fetch paginated users by subscription status (canceled or past_due)
+ */
+async function getPaginatedSubscriptionStatusUsers(
+  page: number,
+  pageSize: number,
+  search: string,
+  status: 'canceled' | 'past_due'
+): Promise<PaginatedUsersResult> {
+  const supabase = createAdminClient();
+  const offset = (page - 1) * pageSize;
+  
+  // Get subscriptions with the specified status
+  const { data: subsData, error: subsError } = await supabase
+    .from('subscriptions')
+    .select('user_id, provider, status, canceled_at, current_period_end')
+    .eq('status', status)
+    .order('canceled_at', { ascending: false, nullsFirst: false });
+  
+  if (subsError) {
+    console.error('Error fetching subscriptions:', subsError);
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Create maps for subscription info
+  const userSubMap = new Map<string, {
+    provider: UserListItem['billing_provider'];
+    canceled_at: string | null;
+    current_period_end: string | null;
+  }>();
+  
+  for (const sub of subsData || []) {
+    if (!userSubMap.has(sub.user_id)) {
+      userSubMap.set(sub.user_id, {
+        provider: sub.provider as UserListItem['billing_provider'],
+        canceled_at: sub.canceled_at,
+        current_period_end: sub.current_period_end,
+      });
+    }
+  }
+  
+  const userIds = [...userSubMap.keys()];
+  
+  if (userIds.length === 0) {
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Fetch profiles for these users
+  let query = supabase
+    .from('profiles')
+    .select('id, email, username, first_name, last_name, role, is_legacy_user, created_at', { count: 'exact' })
+    .in('id', userIds);
+  
+  // Apply search filter
+  if (search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    query = query.or(`email.ilike.${searchTerm},first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},username.ilike.${searchTerm}`);
+  }
+  
+  // Apply pagination and ordering
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
+  
+  if (error) {
+    console.error('Error fetching users:', error);
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  const users = (data || []).map(u => {
+    const subInfo = userSubMap.get(u.id);
+    return {
+      ...u,
+      billing_provider: subInfo?.provider || 'free',
+      subscription_status: status,
+      canceled_at: subInfo?.canceled_at || null,
+      current_period_end: subInfo?.current_period_end || null,
+    };
+  }) as UserListItem[];
+  
+  const totalCount = count || 0;
+  
+  return {
+    users,
+    totalCount,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
+  };
+}
+
+/**
  * Get detailed information about a specific user
  */
 export async function getUserDetail(userId: string): Promise<UserDetailData | null> {
@@ -273,12 +377,11 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
     audioCharsResult,
     transactionsResult,
   ] = await Promise.all([
-    // Active subscription
+    // Get most recent subscription (including canceled/past_due)
     supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
       .single(),
@@ -373,11 +476,14 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
       plan_id: subscription.plan_id,
       plan_name: subscription.plan_name,
       provider: subscription.provider || 'unknown',
+      provider_subscription_id: subscription.provider_subscription_id,
       current_period_start: subscription.current_period_start,
       current_period_end: subscription.current_period_end,
       is_legacy: subscription.is_legacy || false,
       price_amount: subscription.price_amount,
       billing_interval: subscription.billing_interval,
+      canceled_at: subscription.canceled_at,
+      cancel_at: subscription.cancel_at,
     } : null,
     
     projectsCount,

@@ -105,11 +105,13 @@ export function AdminUsersClient() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as UserFilter)}
-            className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm min-w-[160px]"
+            className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm min-w-[180px]"
           >
             <option value="paying">Paying Subscribers</option>
             <option value="all">All Users</option>
             <option value="free">Free Users Only</option>
+            <option value="canceled">Churned (Canceled)</option>
+            <option value="past_due">Past Due (Payment Failed)</option>
           </select>
         </div>
         
@@ -127,7 +129,13 @@ export function AdminUsersClient() {
       {/* Results count */}
       {data && (
         <p className="text-sm text-slate-400">
-          Showing {data.users.length} of {data.totalCount.toLocaleString()} {filter === 'paying' ? 'paying subscribers' : filter === 'free' ? 'free users' : 'users'}
+          Showing {data.users.length} of {data.totalCount.toLocaleString()} {
+            filter === 'paying' ? 'paying subscribers' : 
+            filter === 'free' ? 'free users' : 
+            filter === 'canceled' ? 'churned users' :
+            filter === 'past_due' ? 'past due users' :
+            'users'
+          }
           {debouncedSearch && ` matching "${debouncedSearch}"`}
         </p>
       )}
@@ -142,11 +150,16 @@ export function AdminUsersClient() {
                   User
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Role
+                  {filter === 'canceled' || filter === 'past_due' ? 'Status' : 'Role'}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Billing Provider
                 </th>
+                {(filter === 'canceled' || filter === 'past_due') && (
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    {filter === 'canceled' ? 'Canceled Date' : 'Period End'}
+                  </th>
+                )}
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Type
                 </th>
@@ -173,15 +186,29 @@ export function AdminUsersClient() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      user.role === 'admin' 
-                        ? 'bg-red-500/20 text-red-400'
-                        : user.role === 'pro'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-slate-500/20 text-slate-400'
-                    }`}>
-                      {user.role}
-                    </span>
+                    {filter === 'canceled' || filter === 'past_due' ? (
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        user.subscription_status === 'canceled'
+                          ? 'bg-red-500/20 text-red-400'
+                          : user.subscription_status === 'past_due'
+                          ? 'bg-orange-500/20 text-orange-400'
+                          : 'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {user.subscription_status === 'canceled' ? 'Canceled' : 
+                         user.subscription_status === 'past_due' ? 'Payment Failed' : 
+                         user.role}
+                      </span>
+                    ) : (
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        user.role === 'admin' 
+                          ? 'bg-red-500/20 text-red-400'
+                          : user.role === 'pro'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {user.role}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -198,6 +225,27 @@ export function AdminUsersClient() {
                         : user.billing_provider}
                     </span>
                   </td>
+                  {(filter === 'canceled' || filter === 'past_due') && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                      {filter === 'canceled' && user.canceled_at ? (
+                        new Date(user.canceled_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      ) : filter === 'past_due' && user.current_period_end ? (
+                        <span className="text-orange-400">
+                          Ended: {new Date(user.current_period_end).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       user.is_legacy_user 
@@ -218,7 +266,7 @@ export function AdminUsersClient() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={filter === 'canceled' || filter === 'past_due' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
                     No users found{debouncedSearch ? ` matching "${debouncedSearch}"` : ''}.
                   </td>
                 </tr>
@@ -367,9 +415,16 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
               user.subscription.status === 'active'
                 ? 'bg-green-500/20 text-green-400'
-                : 'bg-red-500/20 text-red-400'
+                : user.subscription.status === 'past_due'
+                ? 'bg-orange-500/20 text-orange-400'
+                : user.subscription.status === 'canceled'
+                ? 'bg-red-500/20 text-red-400'
+                : 'bg-slate-500/20 text-slate-400'
             }`}>
-              Subscription: {user.subscription.status}
+              {user.subscription.status === 'active' ? 'Active' :
+               user.subscription.status === 'past_due' ? '⚠️ Payment Failed' :
+               user.subscription.status === 'canceled' ? '❌ Canceled' :
+               user.subscription.status}
             </span>
           ) : (
             <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-slate-500/20 text-slate-400">
@@ -391,49 +446,125 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
         </div>
         
         {/* Subscription Details */}
-        <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+        <div className={`rounded-xl border p-4 ${
+          user.subscription?.status === 'canceled' 
+            ? 'border-red-500/50 bg-red-500/5' 
+            : user.subscription?.status === 'past_due'
+            ? 'border-orange-500/50 bg-orange-500/5'
+            : 'border-slate-700 bg-slate-800/50'
+        }`}>
           <h3 className="text-lg font-semibold text-white mb-3">Subscription</h3>
           {user.subscription ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-slate-400">Plan</p>
-                <p className="text-white font-medium">{user.subscription.plan_name || user.subscription.plan_id || 'Unknown'}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Provider</p>
-                <p className="text-white font-medium capitalize">{user.subscription.provider}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Type</p>
-                <p className="text-white font-medium">{user.subscription.is_legacy ? 'Legacy' : 'New'}</p>
-              </div>
-              {user.subscription.billing_interval && (
-                <div>
-                  <p className="text-slate-400">Billing</p>
-                  <p className="text-white font-medium capitalize">{user.subscription.billing_interval}ly</p>
-                </div>
-              )}
-              {user.subscription.price_amount !== null && (
-                <div>
-                  <p className="text-slate-400">Price</p>
-                  <p className="text-white font-medium">${(user.subscription.price_amount / 100).toFixed(2)}</p>
-                </div>
-              )}
-              {user.subscription.current_period_end && (
-                <div>
-                  <p className="text-slate-400">Renews</p>
-                  <p className="text-white font-medium">
-                    {new Date(user.subscription.current_period_end).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+            <>
+              {/* Alert for canceled/past_due */}
+              {user.subscription.status === 'canceled' && (
+                <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                  <p className="text-red-400 text-sm font-medium">
+                    ❌ This subscription has been canceled
+                    {user.subscription.canceled_at && (
+                      <span className="text-red-300 font-normal ml-1">
+                        on {new Date(user.subscription.canceled_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
-            </div>
+              {user.subscription.status === 'past_due' && (
+                <div className="mb-4 p-3 rounded-lg bg-orange-500/10 border border-orange-500/30">
+                  <p className="text-orange-400 text-sm font-medium">
+                    ⚠️ Payment failed - Stripe is retrying
+                  </p>
+                  <p className="text-orange-300 text-xs mt-1">
+                    The user still has access during the grace period while payment is being retried.
+                  </p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-400">Status</p>
+                  <p className={`font-medium ${
+                    user.subscription.status === 'active' ? 'text-green-400' :
+                    user.subscription.status === 'past_due' ? 'text-orange-400' :
+                    user.subscription.status === 'canceled' ? 'text-red-400' :
+                    'text-white'
+                  }`}>
+                    {user.subscription.status === 'active' ? 'Active' :
+                     user.subscription.status === 'past_due' ? 'Past Due' :
+                     user.subscription.status === 'canceled' ? 'Canceled' :
+                     user.subscription.status}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-400">Plan</p>
+                  <p className="text-white font-medium">{user.subscription.plan_name || user.subscription.plan_id || 'Unknown'}</p>
+                </div>
+                <div>
+                  <p className="text-slate-400">Provider</p>
+                  <p className="text-white font-medium capitalize">{user.subscription.provider.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <p className="text-slate-400">Type</p>
+                  <p className="text-white font-medium">{user.subscription.is_legacy ? 'Legacy' : 'New'}</p>
+                </div>
+                {user.subscription.billing_interval && (
+                  <div>
+                    <p className="text-slate-400">Billing</p>
+                    <p className="text-white font-medium capitalize">{user.subscription.billing_interval}ly</p>
+                  </div>
+                )}
+                {user.subscription.price_amount !== null && (
+                  <div>
+                    <p className="text-slate-400">Price</p>
+                    <p className="text-white font-medium">${(user.subscription.price_amount / 100).toFixed(2)}</p>
+                  </div>
+                )}
+                {user.subscription.current_period_end && (
+                  <div>
+                    <p className="text-slate-400">
+                      {user.subscription.status === 'canceled' ? 'Had Access Until' : 
+                       user.subscription.status === 'past_due' ? 'Period Ended' :
+                       'Renews'}
+                    </p>
+                    <p className={`font-medium ${
+                      user.subscription.status === 'canceled' || user.subscription.status === 'past_due' 
+                        ? 'text-slate-300' 
+                        : 'text-white'
+                    }`}>
+                      {new Date(user.subscription.current_period_end).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                )}
+                {user.subscription.canceled_at && (
+                  <div>
+                    <p className="text-slate-400">Canceled On</p>
+                    <p className="text-red-400 font-medium">
+                      {new Date(user.subscription.canceled_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                )}
+                {user.subscription.provider_subscription_id && (
+                  <div className="col-span-2">
+                    <p className="text-slate-400">Subscription ID</p>
+                    <p className="text-slate-300 font-mono text-xs">{user.subscription.provider_subscription_id}</p>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
-            <p className="text-slate-400 text-sm">No active subscription</p>
+            <p className="text-slate-400 text-sm">No subscription found</p>
           )}
         </div>
         
