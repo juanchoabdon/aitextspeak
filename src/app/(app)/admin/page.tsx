@@ -137,9 +137,9 @@ export default async function AdminDashboardPage() {
                 color="purple"
               />
               <StatCard 
-                label="Churned (30 days)" 
-                value={stats.churnedLast30Days}
-                subValue="Cancelled subscriptions"
+                label="Total Churned" 
+                value={stats.totalChurned}
+                subValue="All cancelled subscriptions"
                 color="red"
               />
             </div>
