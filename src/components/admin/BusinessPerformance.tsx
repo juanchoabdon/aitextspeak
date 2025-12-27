@@ -112,14 +112,39 @@ export function BusinessPerformance() {
           )}
         </div>
         
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-amber-500/20">
+        {/* Provider Breakdown */}
+        {!mrrLoading && mrrStats && (
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-amber-500/20">
+            <div className="text-center p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+              <p className="text-xl font-semibold text-purple-400">
+                ${mrrStats.stripeMRR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-slate-400">Stripe MRR</p>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <p className="text-xl font-semibold text-blue-400">
+                ${mrrStats.paypalMRR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-slate-400">PayPal MRR</p>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+              <p className="text-xl font-semibold text-orange-400">
+                ${mrrStats.paypalLegacyMRR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-slate-400">PayPal Legacy MRR</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Subscription Counts */}
+        <div className="grid grid-cols-3 gap-4 pt-4 mt-4 border-t border-amber-500/20">
           <div className="text-center">
             <p className="text-2xl font-semibold text-white">{mrrLoading ? '-' : mrrStats?.activeSubscriptions ?? 0}</p>
             <p className="text-xs text-slate-400">Active Subs</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-semibold text-green-400">{mrrLoading ? '-' : mrrStats?.monthlySubscriptions ?? 0}</p>
-            <p className="text-xs text-slate-400">Monthly</p>
+            <p className="text-xs text-slate-400">Recurring</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-semibold text-purple-400">{mrrLoading ? '-' : mrrStats?.lifetimeSubscriptions ?? 0}</p>
@@ -149,6 +174,134 @@ export function BusinessPerformance() {
           </div>
         </div>
       </div>
+
+      {/* Plan Breakdown */}
+      {!mrrLoading && mrrStats && mrrStats.byPlan.length > 0 && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            MRR by Plan
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-800">
+                  <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">Plan</th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">Provider</th>
+                  <th className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">Subscribers</th>
+                  <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">MRR</th>
+                  <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">% of Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {mrrStats.byPlan.filter(p => p.mrr > 0).map((plan, idx) => (
+                  <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-white">{plan.planName}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        plan.provider === 'stripe' 
+                          ? 'bg-purple-500/20 text-purple-400' 
+                          : plan.provider === 'paypal_legacy'
+                            ? 'bg-orange-500/20 text-orange-400'
+                            : 'bg-blue-500/20 text-blue-400'
+                      }`}>
+                        {plan.provider === 'paypal_legacy' ? 'PayPal Legacy' : plan.provider === 'paypal' ? 'PayPal' : 'Stripe'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="text-sm text-slate-300">{plan.count}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-sm font-semibold text-green-400">
+                        ${plan.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-sm text-slate-400">
+                        {mrrStats.mrr > 0 ? ((plan.mrr / mrrStats.mrr) * 100).toFixed(1) : '0.0'}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Lifetime Plans (no MRR) */}
+          {mrrStats.byPlan.filter(p => p.mrr === 0).length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-800">
+              <p className="text-xs text-slate-500 mb-2">Lifetime Plans (no recurring revenue)</p>
+              <div className="flex flex-wrap gap-2">
+                {mrrStats.byPlan.filter(p => p.mrr === 0).map((plan, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs bg-slate-800 text-slate-400">
+                    {plan.planName}
+                    <span className="text-purple-400">({plan.count})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Provider Breakdown Table */}
+      {!mrrLoading && mrrStats && mrrStats.byProvider.length > 0 && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            Revenue by Payment Provider
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {mrrStats.byProvider.map((provider, idx) => {
+              const percentage = mrrStats.mrr > 0 ? (provider.mrr / mrrStats.mrr) * 100 : 0;
+              const colorClass = provider.provider === 'stripe' 
+                ? 'border-purple-500/30 bg-purple-500/5' 
+                : provider.provider === 'paypal_legacy'
+                  ? 'border-orange-500/30 bg-orange-500/5'
+                  : 'border-blue-500/30 bg-blue-500/5';
+              const textColor = provider.provider === 'stripe' 
+                ? 'text-purple-400' 
+                : provider.provider === 'paypal_legacy'
+                  ? 'text-orange-400'
+                  : 'text-blue-400';
+              
+              return (
+                <div key={idx} className={`rounded-xl border p-4 ${colorClass}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-medium ${textColor}`}>
+                      {provider.provider === 'paypal_legacy' ? 'PayPal Legacy' : provider.provider === 'paypal' ? 'PayPal' : 'Stripe'}
+                    </span>
+                    <span className="text-xs text-slate-500">{percentage.toFixed(1)}%</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    ${provider.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">{provider.count} subscribers</p>
+                  {/* Progress bar */}
+                  <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        provider.provider === 'stripe' 
+                          ? 'bg-purple-500' 
+                          : provider.provider === 'paypal_legacy'
+                            ? 'bg-orange-500'
+                            : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Period-Based Stats */}
       <div>

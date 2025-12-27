@@ -15,13 +15,33 @@ export interface BusinessStats {
   };
 }
 
+export interface PlanBreakdown {
+  planId: string;
+  planName: string;
+  count: number;
+  mrr: number;
+  provider: string;
+}
+
+export interface ProviderBreakdown {
+  provider: string;
+  count: number;
+  mrr: number;
+}
+
 export interface MRRStats {
   mrr: number;
   activeSubscriptions: number;
   monthlySubscriptions: number;
   lifetimeSubscriptions: number;
-  churnRate: number; // Percentage of subscriptions cancelled in last 30 days
+  churnRate: number;
   cancelledLast30Days: number;
+  // New breakdown fields
+  byPlan: PlanBreakdown[];
+  byProvider: ProviderBreakdown[];
+  stripeMRR: number;
+  paypalMRR: number;
+  paypalLegacyMRR: number;
 }
 
 function getDateRange(period: DatePeriod, customStart?: string, customEnd?: string): { start: Date; end: Date } {
@@ -173,7 +193,7 @@ export async function getMRRStats(): Promise<MRRStats> {
     // Get all REALLY active subscriptions (status=active AND (period hasn't ended OR lifetime))
     supabase
       .from('subscriptions')
-      .select('plan_name, price_amount, plan_id')
+      .select('plan_name, price_amount, plan_id, provider, billing_interval')
       .eq('status', 'active')
       .or(`current_period_end.gt.${now},current_period_end.is.null`),
     
@@ -188,20 +208,40 @@ export async function getMRRStats(): Promise<MRRStats> {
   const subs = activeSubsResult.data || [];
   const cancelledLast30Days = cancelledSubsResult.count || 0;
   
-  // Calculate MRR - only from recurring subscriptions (monthly plans)
-  // Lifetime plans don't contribute to MRR
-  let mrr = 0;
+  // Initialize tracking
+  let totalMrr = 0;
   let monthlyCount = 0;
   let lifetimeCount = 0;
+  
+  // Provider breakdown
+  const providerStats: Record<string, { count: number; mrr: number }> = {
+    stripe: { count: 0, mrr: 0 },
+    paypal: { count: 0, mrr: 0 },
+    paypal_legacy: { count: 0, mrr: 0 },
+  };
+  
+  // Plan breakdown
+  const planStats: Record<string, { planName: string; count: number; mrr: number; provider: string }> = {};
 
   for (const sub of subs) {
-    const planName = (sub.plan_name || '').toLowerCase();
-    const planId = (sub.plan_id || '').toLowerCase();
+    const planName = (sub.plan_name || 'Unknown').toLowerCase();
+    const planId = (sub.plan_id || 'unknown').toLowerCase();
+    const provider = sub.provider || 'unknown';
+    const displayPlanName = sub.plan_name || sub.plan_id || 'Unknown Plan';
     
     // Check if it's a lifetime plan (doesn't count towards MRR)
-    if (planName.includes('lifetime') || planId.includes('lifetime') || 
-        planName.includes('one_time') || planName.includes('one-time')) {
+    const isLifetime = planName.includes('lifetime') || planId.includes('lifetime') || 
+        planName.includes('one_time') || planName.includes('one-time') ||
+        sub.billing_interval === null;
+    
+    if (isLifetime) {
       lifetimeCount++;
+      // Track in plan stats but with 0 MRR
+      const key = `${planId}_${provider}`;
+      if (!planStats[key]) {
+        planStats[key] = { planName: displayPlanName, count: 0, mrr: 0, provider };
+      }
+      planStats[key].count++;
     } else {
       // It's a recurring subscription
       monthlyCount++;
@@ -209,40 +249,86 @@ export async function getMRRStats(): Promise<MRRStats> {
       // Check if it's a multi-month plan (annual, 6-month, etc.)
       const multiMonthPlan = MULTI_MONTH_PLANS[planName] || MULTI_MONTH_PLANS[planId];
       
-      // Get price - use price_amount if set, otherwise look up from plan name/id
-      let price = sub.price_amount || 0;
+      // Get price - price_amount is stored in CENTS, convert to dollars
+      let priceInDollars = sub.price_amount ? sub.price_amount / 100 : 0;
       
-      if (price === 0) {
+      if (priceInDollars === 0) {
         if (multiMonthPlan) {
           // Multi-month plans - divide total by months
-          price = multiMonthPlan.price / multiMonthPlan.months;
+          priceInDollars = multiMonthPlan.price / multiMonthPlan.months;
         } else {
           // Monthly plans - use monthly price directly
-          price = MONTHLY_PLAN_PRICES[planName] || MONTHLY_PLAN_PRICES[planId] || 9.99;
+          priceInDollars = MONTHLY_PLAN_PRICES[planName] || MONTHLY_PLAN_PRICES[planId] || 9.99;
         }
       } else if (multiMonthPlan) {
         // If price_amount is set but it's multi-month, divide by months
-        price = price / multiMonthPlan.months;
+        priceInDollars = priceInDollars / multiMonthPlan.months;
       }
       
-      mrr += price;
+      // Handle billing interval for non-monthly
+      if (sub.billing_interval === 'year') {
+        priceInDollars = priceInDollars / 12;
+      } else if (sub.billing_interval === 'week') {
+        priceInDollars = priceInDollars * 4; // ~4 weeks per month
+      }
+      
+      totalMrr += priceInDollars;
+      
+      // Track by provider
+      if (providerStats[provider]) {
+        providerStats[provider].count++;
+        providerStats[provider].mrr += priceInDollars;
+      }
+      
+      // Track by plan
+      const key = `${planId}_${provider}`;
+      if (!planStats[key]) {
+        planStats[key] = { planName: displayPlanName, count: 0, mrr: 0, provider };
+      }
+      planStats[key].count++;
+      planStats[key].mrr += priceInDollars;
     }
   }
 
   // Calculate churn rate: cancelled / (active + cancelled) * 100
-  // This gives us the % of customers who cancelled out of total customers we had
   const totalCustomersInPeriod = subs.length + cancelledLast30Days;
   const churnRate = totalCustomersInPeriod > 0 
     ? (cancelledLast30Days / totalCustomersInPeriod) * 100 
     : 0;
 
+  // Convert plan stats to array and sort by MRR
+  const byPlan: PlanBreakdown[] = Object.entries(planStats)
+    .map(([key, stats]) => ({
+      planId: key.split('_')[0],
+      planName: stats.planName,
+      count: stats.count,
+      mrr: stats.mrr,
+      provider: stats.provider,
+    }))
+    .sort((a, b) => b.mrr - a.mrr);
+
+  // Convert provider stats to array
+  const byProvider: ProviderBreakdown[] = Object.entries(providerStats)
+    .filter(([_, stats]) => stats.count > 0)
+    .map(([provider, stats]) => ({
+      provider,
+      count: stats.count,
+      mrr: stats.mrr,
+    }))
+    .sort((a, b) => b.mrr - a.mrr);
+
   return {
-    mrr,
+    mrr: totalMrr,
     activeSubscriptions: subs.length,
     monthlySubscriptions: monthlyCount,
     lifetimeSubscriptions: lifetimeCount,
     churnRate,
     cancelledLast30Days,
+    byPlan,
+    byProvider,
+    stripeMRR: providerStats.stripe.mrr,
+    paypalMRR: providerStats.paypal.mrr,
+    paypalLegacyMRR: providerStats.paypal_legacy.mrr,
   };
 }
 
