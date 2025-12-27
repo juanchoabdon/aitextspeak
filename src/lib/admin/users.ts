@@ -13,10 +13,11 @@ export interface UserListItem {
   is_legacy_user: boolean;
   created_at: string;
   billing_provider?: 'stripe' | 'paypal' | 'paypal_legacy' | 'free';
-  // Subscription status info (for canceled/past_due filters)
-  subscription_status?: 'active' | 'canceled' | 'past_due' | null;
+  // Subscription status info (for canceled/past_due/grace_period filters)
+  subscription_status?: 'active' | 'canceled' | 'past_due' | 'grace_period' | null;
   canceled_at?: string | null;
   current_period_end?: string | null;
+  cancel_at?: string | null;
   cancellation_reason?: string | null;
 }
 
@@ -80,7 +81,7 @@ export interface UserDetailData {
   }[];
 }
 
-export type UserFilter = 'all' | 'paying' | 'free' | 'canceled' | 'past_due';
+export type UserFilter = 'all' | 'paying' | 'free' | 'canceled' | 'past_due' | 'grace_period';
 
 /**
  * Fetch paginated users with optional search and filter
@@ -101,8 +102,8 @@ export async function getPaginatedUsers(
     return await getPaginatedPayingUsers(page, pageSize, search);
   }
   
-  // For 'canceled' or 'past_due' filter, use subscription-based query
-  if (filter === 'canceled' || filter === 'past_due') {
+  // For 'canceled', 'past_due', or 'grace_period' filter, use subscription-based query
+  if (filter === 'canceled' || filter === 'past_due' || filter === 'grace_period') {
     return await getPaginatedSubscriptionStatusUsers(page, pageSize, search, filter);
   }
   
@@ -262,34 +263,53 @@ async function getPaginatedPayingUsers(
 }
 
 /**
- * Fetch paginated users by subscription status (canceled or past_due)
+ * Fetch paginated users by subscription status (canceled, past_due, or grace_period)
  * Uses paginated subscription query to avoid URL length issues
  */
 async function getPaginatedSubscriptionStatusUsers(
   page: number,
   pageSize: number,
   search: string,
-  status: 'canceled' | 'past_due'
+  status: 'canceled' | 'past_due' | 'grace_period'
 ): Promise<PaginatedUsersResult> {
   const supabase = createAdminClient();
   const offset = (page - 1) * pageSize;
+  const now = new Date().toISOString();
   
-  // First, get total count of subscriptions with this status
-  const { count: totalSubsCount } = await supabase
-    .from('subscriptions')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', status);
+  // Build query based on status type
+  let countQuery = supabase.from('subscriptions').select('id', { count: 'exact', head: true });
+  
+  if (status === 'grace_period') {
+    // Grace period: active subscriptions with scheduled cancellation
+    countQuery = countQuery
+      .eq('status', 'active')
+      .or(`cancel_at_period_end.eq.true,cancel_at.gt.${now}`);
+  } else {
+    countQuery = countQuery.eq('status', status);
+  }
+  
+  const { count: totalSubsCount } = await countQuery;
   
   if (!totalSubsCount || totalSubsCount === 0) {
     return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
   }
   
-  // Get paginated subscriptions (order by canceled_at for canceled, created_at for past_due)
+  // Get paginated subscriptions
   const orderColumn = status === 'canceled' ? 'canceled_at' : 'created_at';
-  const { data: subsData, error: subsError } = await supabase
+  
+  let subsQuery = supabase
     .from('subscriptions')
-    .select('user_id, provider, status, canceled_at, current_period_end, cancellation_reason')
-    .eq('status', status)
+    .select('user_id, provider, status, canceled_at, current_period_end, cancel_at, cancel_at_period_end, cancellation_reason');
+  
+  if (status === 'grace_period') {
+    subsQuery = subsQuery
+      .eq('status', 'active')
+      .or(`cancel_at_period_end.eq.true,cancel_at.gt.${now}`);
+  } else {
+    subsQuery = subsQuery.eq('status', status);
+  }
+  
+  const { data: subsData, error: subsError } = await subsQuery
     .order(orderColumn, { ascending: false, nullsFirst: false })
     .range(offset, offset + pageSize - 1) as { data: Array<{
       user_id: string;
@@ -297,6 +317,8 @@ async function getPaginatedSubscriptionStatusUsers(
       status: string;
       canceled_at: string | null;
       current_period_end: string | null;
+      cancel_at: string | null;
+      cancel_at_period_end: boolean | null;
       cancellation_reason: string | null;
     }> | null; error: any };
   
@@ -314,6 +336,7 @@ async function getPaginatedSubscriptionStatusUsers(
     provider: UserListItem['billing_provider'];
     canceled_at: string | null;
     current_period_end: string | null;
+    cancel_at: string | null;
     cancellation_reason: string | null;
   }>();
   
@@ -322,6 +345,7 @@ async function getPaginatedSubscriptionStatusUsers(
       provider: sub.provider as UserListItem['billing_provider'],
       canceled_at: sub.canceled_at,
       current_period_end: sub.current_period_end,
+      cancel_at: sub.cancel_at,
       cancellation_reason: sub.cancellation_reason,
     });
   }
@@ -378,9 +402,10 @@ async function getPaginatedSubscriptionStatusUsers(
         is_legacy_user: profile.is_legacy_user || false,
         created_at: profile.created_at || new Date().toISOString(),
         billing_provider: subInfo?.provider || 'free',
-        subscription_status: status,
+        subscription_status: status === 'grace_period' ? 'grace_period' : status,
         canceled_at: subInfo?.canceled_at || null,
         current_period_end: subInfo?.current_period_end || null,
+        cancel_at: subInfo?.cancel_at || null,
         cancellation_reason: subInfo?.cancellation_reason || null,
       });
     }

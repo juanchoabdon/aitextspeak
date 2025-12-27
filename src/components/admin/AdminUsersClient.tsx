@@ -110,6 +110,7 @@ export function AdminUsersClient() {
             <option value="paying">Paying Subscribers</option>
             <option value="all">All Users</option>
             <option value="free">Free Users Only</option>
+            <option value="grace_period">Grace Period (Canceling Soon)</option>
             <option value="canceled">Churned (Canceled)</option>
             <option value="past_due">Past Due (Payment Failed)</option>
           </select>
@@ -132,6 +133,7 @@ export function AdminUsersClient() {
           Showing {data.users.length} of {data.totalCount.toLocaleString()} {
             filter === 'paying' ? 'paying subscribers' : 
             filter === 'free' ? 'free users' : 
+            filter === 'grace_period' ? 'users in grace period' :
             filter === 'canceled' ? 'churned users' :
             filter === 'past_due' ? 'past due users' :
             'users'
@@ -150,7 +152,7 @@ export function AdminUsersClient() {
                   User
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  {filter === 'canceled' || filter === 'past_due' ? 'Status' : 'Role'}
+                  {filter === 'canceled' || filter === 'past_due' || filter === 'grace_period' ? 'Status' : 'Role'}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Billing Provider
@@ -168,6 +170,11 @@ export function AdminUsersClient() {
                 {filter === 'past_due' && (
                   <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Period End
+                  </th>
+                )}
+                {filter === 'grace_period' && (
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Access Ends
                   </th>
                 )}
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -196,16 +203,19 @@ export function AdminUsersClient() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {filter === 'canceled' || filter === 'past_due' ? (
+                    {filter === 'canceled' || filter === 'past_due' || filter === 'grace_period' ? (
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         user.subscription_status === 'canceled'
                           ? 'bg-red-500/20 text-red-400'
                           : user.subscription_status === 'past_due'
                           ? 'bg-orange-500/20 text-orange-400'
+                          : user.subscription_status === 'grace_period'
+                          ? 'bg-yellow-500/20 text-yellow-400'
                           : 'bg-slate-500/20 text-slate-400'
                       }`}>
                         {user.subscription_status === 'canceled' ? 'Canceled' : 
                          user.subscription_status === 'past_due' ? 'Payment Failed' : 
+                         user.subscription_status === 'grace_period' ? 'Canceling Soon' :
                          user.role}
                       </span>
                     ) : (
@@ -278,6 +288,21 @@ export function AdminUsersClient() {
                       )}
                     </td>
                   )}
+                  {filter === 'grace_period' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {(user.cancel_at || user.current_period_end) ? (
+                        <span className="text-yellow-400">
+                          {new Date(user.cancel_at || user.current_period_end!).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       user.is_legacy_user 
@@ -298,7 +323,7 @@ export function AdminUsersClient() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={filter === 'canceled' ? 7 : filter === 'past_due' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={filter === 'canceled' ? 7 : (filter === 'past_due' || filter === 'grace_period') ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
                     No users found{debouncedSearch ? ` matching "${debouncedSearch}"` : ''}.
                   </td>
                 </tr>
