@@ -5,7 +5,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 
 export interface Transaction {
   id: string;
-  user_id: string;
+  user_id: string | null;
   user_email?: string;
   transaction_type: string;
   gateway: string;
@@ -123,7 +123,7 @@ export async function getTransactions(
   // Enrich transactions with user emails
   const enrichedTransactions: Transaction[] = (transactions || []).map(t => ({
     ...t,
-    user_email: userEmails.get(t.user_id) || undefined,
+    user_email: t.user_id ? userEmails.get(t.user_id) : undefined,
   }));
 
   // Calculate stats (separate queries for accurate totals)
