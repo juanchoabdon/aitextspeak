@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/payments/stripe';
+import Stripe from 'stripe';
 import type { CancellationReason } from '@/components/billing/CancellationModal';
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID!;
@@ -61,7 +62,7 @@ export async function cancelSubscription(
 
     if (subscription.provider === 'stripe') {
       // Cancel Stripe subscription at period end
-      const stripeSub = await stripe.subscriptions.update(
+      const stripeSub: Stripe.Subscription = await stripe.subscriptions.update(
         subscription.provider_subscription_id,
         {
           cancel_at_period_end: true,
