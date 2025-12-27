@@ -475,7 +475,11 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
       .limit(50),
   ]);
   
-  const subscription = subscriptionResult.data;
+  const subscription = subscriptionResult.data as (typeof subscriptionResult.data & {
+    cancellation_reason?: string | null;
+    cancellation_feedback?: string | null;
+    cancellation_comment?: string | null;
+  }) | null;
   const projectsCount = projectsResult.count || 0;
   const audioCount = audioResult.count || 0;
   const usageRecords = usageResult.data || [];
