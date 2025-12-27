@@ -265,11 +265,12 @@ export async function getDailyStats(days: number = 30): Promise<{
   // Use UTC dates to match database timestamps
   const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days));
   
-  // Fetch all data for the period
+  // Fetch all data for the period (exclude legacy migrated users)
   const [signupsResult, paymentsResult] = await Promise.all([
     supabase
       .from('profiles')
       .select('created_at')
+      .eq('is_legacy_user', false) // Only count new signups, not migrated users
       .gte('created_at', startDate.toISOString()),
     
     supabase
