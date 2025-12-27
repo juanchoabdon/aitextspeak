@@ -259,6 +259,7 @@ async function getPaginatedPayingUsers(
 
 /**
  * Fetch paginated users by subscription status (canceled or past_due)
+ * Uses paginated subscription query to avoid URL length issues
  */
 async function getPaginatedSubscriptionStatusUsers(
   page: number,
@@ -269,75 +270,108 @@ async function getPaginatedSubscriptionStatusUsers(
   const supabase = createAdminClient();
   const offset = (page - 1) * pageSize;
   
-  // Get subscriptions with the specified status
+  // First, get total count of subscriptions with this status
+  const { count: totalSubsCount } = await supabase
+    .from('subscriptions')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', status);
+  
+  if (!totalSubsCount || totalSubsCount === 0) {
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Get paginated subscriptions (order by canceled_at for canceled, created_at for past_due)
+  const orderColumn = status === 'canceled' ? 'canceled_at' : 'created_at';
   const { data: subsData, error: subsError } = await supabase
     .from('subscriptions')
     .select('user_id, provider, status, canceled_at, current_period_end')
     .eq('status', status)
-    .order('canceled_at', { ascending: false, nullsFirst: false });
+    .order(orderColumn, { ascending: false, nullsFirst: false })
+    .range(offset, offset + pageSize - 1);
   
   if (subsError) {
     console.error('Error fetching subscriptions:', subsError);
     return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
   }
   
-  // Create maps for subscription info
+  if (!subsData || subsData.length === 0) {
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Create map for subscription info
   const userSubMap = new Map<string, {
     provider: UserListItem['billing_provider'];
     canceled_at: string | null;
     current_period_end: string | null;
   }>();
   
-  for (const sub of subsData || []) {
-    if (!userSubMap.has(sub.user_id)) {
-      userSubMap.set(sub.user_id, {
-        provider: sub.provider as UserListItem['billing_provider'],
-        canceled_at: sub.canceled_at,
-        current_period_end: sub.current_period_end,
-      });
-    }
+  for (const sub of subsData) {
+    userSubMap.set(sub.user_id, {
+      provider: sub.provider as UserListItem['billing_provider'],
+      canceled_at: sub.canceled_at,
+      current_period_end: sub.current_period_end,
+    });
   }
   
   const userIds = [...userSubMap.keys()];
   
-  if (userIds.length === 0) {
-    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
-  }
-  
-  // Fetch profiles for these users
+  // Fetch profiles for just these users (small batch, safe for .in())
   let query = supabase
     .from('profiles')
-    .select('id, email, username, first_name, last_name, role, is_legacy_user, created_at', { count: 'exact' })
+    .select('id, email, username, first_name, last_name, role, is_legacy_user, created_at')
     .in('id', userIds);
   
-  // Apply search filter
+  // Apply search filter if provided
   if (search.trim()) {
     const searchTerm = `%${search.trim()}%`;
     query = query.or(`email.ilike.${searchTerm},first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},username.ilike.${searchTerm}`);
   }
   
-  // Apply pagination and ordering
-  const { data, count, error } = await query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + pageSize - 1);
+  const { data: profilesData, error: profilesError } = await query;
   
-  if (error) {
-    console.error('Error fetching users:', error);
+  if (profilesError) {
+    console.error('Error fetching profiles:', profilesError);
     return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
   }
   
-  const users = (data || []).map(u => {
-    const subInfo = userSubMap.get(u.id);
-    return {
-      ...u,
-      billing_provider: subInfo?.provider || 'free',
-      subscription_status: status,
-      canceled_at: subInfo?.canceled_at || null,
-      current_period_end: subInfo?.current_period_end || null,
-    };
-  }) as UserListItem[];
+  // Create a profile map for quick lookup
+  const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
   
-  const totalCount = count || 0;
+  // Build users list in the same order as subscriptions
+  const users: UserListItem[] = [];
+  for (const sub of subsData) {
+    const profile = profileMap.get(sub.user_id);
+    if (profile) {
+      // Check if search matches (if search provided)
+      if (search.trim()) {
+        const searchLower = search.trim().toLowerCase();
+        const matches = 
+          profile.email?.toLowerCase().includes(searchLower) ||
+          profile.first_name?.toLowerCase().includes(searchLower) ||
+          profile.last_name?.toLowerCase().includes(searchLower) ||
+          profile.username?.toLowerCase().includes(searchLower);
+        
+        if (!matches) continue;
+      }
+      
+      const subInfo = userSubMap.get(sub.user_id);
+      users.push({
+        ...profile,
+        billing_provider: subInfo?.provider || 'free',
+        subscription_status: status,
+        canceled_at: subInfo?.canceled_at || null,
+        current_period_end: subInfo?.current_period_end || null,
+      });
+    }
+  }
+  
+  // For search, we need to re-query to get accurate total count
+  let totalCount = totalSubsCount;
+  if (search.trim()) {
+    // When searching, the total count is just the filtered results
+    // This is an approximation - for full search we'd need a different approach
+    totalCount = users.length;
+  }
   
   return {
     users,
