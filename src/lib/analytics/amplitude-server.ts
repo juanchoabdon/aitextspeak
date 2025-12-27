@@ -4,6 +4,7 @@
  */
 
 import * as amplitude from '@amplitude/analytics-node';
+import { Types } from '@amplitude/analytics-node';
 
 const AMPLITUDE_API_KEY = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '';
 
@@ -22,14 +23,17 @@ function initAmplitudeServer() {
     return;
   }
 
-  console.log('[Amplitude Server] Initializing with API key length:', AMPLITUDE_API_KEY.length);
+  console.log('[Amplitude Server] Initializing with API key:', AMPLITUDE_API_KEY.substring(0, 8) + '...');
   
   // Configure for EU Data Center (must match client-side config)
+  // Use the proper Types enum for server zone
   amplitude.init(AMPLITUDE_API_KEY, {
-    serverZone: 'EU',
+    serverZone: Types.ServerZone.EU,
+    logLevel: Types.LogLevel.Warn, // Enable warnings for debugging
   });
   
   isInitialized = true;
+  console.log('[Amplitude Server] ✅ Initialized successfully for EU data center');
 }
 
 /**
@@ -47,8 +51,14 @@ export function trackServerEvent(
     return;
   }
 
-  console.log('[Amplitude Server] Tracking event:', eventName, 'for user:', userId);
-  amplitude.track(eventName, eventProperties, { user_id: userId });
+  console.log('[Amplitude Server] 📊 Tracking event:', eventName, 'for user:', userId.substring(0, 8) + '...');
+  
+  try {
+    amplitude.track(eventName, eventProperties, { user_id: userId });
+    console.log('[Amplitude Server] ✅ Event queued:', eventName);
+  } catch (error) {
+    console.error('[Amplitude Server] ❌ Error tracking event:', eventName, error);
+  }
 }
 
 /**
@@ -71,27 +81,32 @@ export function trackServerRevenue(
     return;
   }
 
-  console.log('[Amplitude Server] Tracking revenue:', {
-    userId,
+  console.log('[Amplitude Server] 💰 Tracking revenue:', {
+    userId: userId.substring(0, 8) + '...',
     productId: properties.productId,
     price: properties.price,
     revenueType: properties.revenueType,
   });
 
-  const revenue = new amplitude.Revenue()
-    .setProductId(properties.productId)
-    .setPrice(properties.price)
-    .setQuantity(properties.quantity || 1);
+  try {
+    const revenue = new amplitude.Revenue()
+      .setProductId(properties.productId)
+      .setPrice(properties.price)
+      .setQuantity(properties.quantity || 1);
 
-  if (properties.revenueType) {
-    revenue.setRevenueType(properties.revenueType);
+    if (properties.revenueType) {
+      revenue.setRevenueType(properties.revenueType);
+    }
+
+    if (properties.eventProperties) {
+      revenue.setEventProperties(properties.eventProperties as Record<string, string | number | boolean | string[]>);
+    }
+
+    amplitude.revenue(revenue, { user_id: userId });
+    console.log('[Amplitude Server] ✅ Revenue event queued: $' + properties.price);
+  } catch (error) {
+    console.error('[Amplitude Server] ❌ Error tracking revenue:', error);
   }
-
-  if (properties.eventProperties) {
-    revenue.setEventProperties(properties.eventProperties as Record<string, string | number | boolean | string[]>);
-  }
-
-  amplitude.revenue(revenue, { user_id: userId });
 }
 
 /**
@@ -302,11 +317,15 @@ export function trackSubscriptionRenewalServer(
 // Flush events before process exits (important for serverless)
 export async function flushAmplitude() {
   if (isInitialized) {
-    console.log('[Amplitude Server] Flushing events...');
-    await amplitude.flush();
-    console.log('[Amplitude Server] Events flushed');
+    console.log('[Amplitude Server] 🔄 Flushing events...');
+    try {
+      await amplitude.flush();
+      console.log('[Amplitude Server] ✅ Events flushed successfully');
+    } catch (error) {
+      console.error('[Amplitude Server] ❌ Error flushing events:', error);
+    }
   } else {
-    console.log('[Amplitude Server] Not initialized, nothing to flush');
+    console.log('[Amplitude Server] ⚠️ Not initialized, nothing to flush');
   }
 }
 
