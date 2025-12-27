@@ -262,7 +262,8 @@ export async function getDailyStats(days: number = 30): Promise<{
   const now = new Date();
   const dailyData: { date: string; newSignups: number; newPaidUsers: number; revenue: number }[] = [];
   
-  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  // Use UTC dates to match database timestamps
+  const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days));
   
   // Fetch all data for the period
   const [signupsResult, paymentsResult] = await Promise.all([
@@ -282,10 +283,11 @@ export async function getDailyStats(days: number = 30): Promise<{
   const signups = signupsResult.data || [];
   const payments = paymentsResult.data || [];
   
-  // Group by day
+  // Group by day using UTC
   for (let i = days - 1; i >= 0; i--) {
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+    // Create day boundaries in UTC
+    const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i, 0, 0, 0, 0));
+    const dayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i, 23, 59, 59, 999));
     const dateStr = dayStart.toISOString().split('T')[0];
     
     const daySignups = signups.filter(s => {
