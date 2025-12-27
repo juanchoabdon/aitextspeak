@@ -80,44 +80,6 @@ export function AdminTransactionsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      {data?.stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div className="rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Total Revenue</p>
-            <p className="text-2xl font-bold text-green-400">{formatCurrency(data.stats.totalRevenue)}</p>
-            <p className="text-xs text-slate-500">{data.stats.totalTransactions} transactions</p>
-          </div>
-          
-          <div className="rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Last 30 Days</p>
-            <p className="text-2xl font-bold text-amber-400">{formatCurrency(data.stats.last30DaysRevenue)}</p>
-          </div>
-          
-          <div className="rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Stripe</p>
-            <p className="text-2xl font-bold text-purple-400">{formatCurrency(data.stats.stripeRevenue)}</p>
-            <p className="text-xs text-slate-500">{data.stats.stripeCount} payments</p>
-          </div>
-          
-          <div className="rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">PayPal</p>
-            <p className="text-2xl font-bold text-blue-400">{formatCurrency(data.stats.paypalRevenue)}</p>
-            <p className="text-xs text-slate-500">{data.stats.paypalCount} payments</p>
-          </div>
-          
-          <div className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">New Subs</p>
-            <p className="text-2xl font-bold text-white">{data.stats.newSubscriptions}</p>
-          </div>
-          
-          <div className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Renewals</p>
-            <p className="text-2xl font-bold text-white">{data.stats.renewals}</p>
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="flex items-center gap-4 flex-wrap">
         <select
