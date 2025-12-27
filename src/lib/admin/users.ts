@@ -17,7 +17,6 @@ export interface UserListItem {
   subscription_status?: 'active' | 'canceled' | 'past_due' | null;
   canceled_at?: string | null;
   current_period_end?: string | null;
-  cancellation_reason?: string | null;
 }
 
 export interface PaginatedUsersResult {
@@ -288,7 +287,7 @@ async function getPaginatedSubscriptionStatusUsers(
   const orderColumn = status === 'canceled' ? 'canceled_at' : 'created_at';
   const { data: subsData, error: subsError } = await supabase
     .from('subscriptions')
-    .select('user_id, provider, status, canceled_at, current_period_end, cancellation_reason')
+    .select('user_id, provider, status, canceled_at, current_period_end')
     .eq('status', status)
     .order(orderColumn, { ascending: false, nullsFirst: false })
     .range(offset, offset + pageSize - 1);
@@ -307,7 +306,6 @@ async function getPaginatedSubscriptionStatusUsers(
     provider: UserListItem['billing_provider'];
     canceled_at: string | null;
     current_period_end: string | null;
-    cancellation_reason: string | null;
   }>();
   
   for (const sub of subsData) {
@@ -315,7 +313,6 @@ async function getPaginatedSubscriptionStatusUsers(
       provider: sub.provider as UserListItem['billing_provider'],
       canceled_at: sub.canceled_at,
       current_period_end: sub.current_period_end,
-      cancellation_reason: sub.cancellation_reason,
     });
   }
   
@@ -374,7 +371,6 @@ async function getPaginatedSubscriptionStatusUsers(
         subscription_status: status,
         canceled_at: subInfo?.canceled_at || null,
         current_period_end: subInfo?.current_period_end || null,
-        cancellation_reason: subInfo?.cancellation_reason || null,
       });
     }
   }

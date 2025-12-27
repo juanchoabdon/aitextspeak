@@ -156,14 +156,9 @@ export function AdminUsersClient() {
                   Billing Provider
                 </th>
                 {filter === 'canceled' && (
-                  <>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Reason
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Canceled Date
-                    </th>
-                  </>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Canceled Date
+                  </th>
                 )}
                 {filter === 'past_due' && (
                   <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -236,26 +231,17 @@ export function AdminUsersClient() {
                     </span>
                   </td>
                   {filter === 'canceled' && (
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.cancellation_reason ? (
-                          <CancellationReasonBadge reason={user.cancellation_reason} />
-                        ) : (
-                          <span className="text-slate-500 text-sm">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                        {user.canceled_at ? (
-                          new Date(user.canceled_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })
-                        ) : (
-                          <span className="text-slate-500">—</span>
-                        )}
-                      </td>
-                    </>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                      {user.canceled_at ? (
+                        new Date(user.canceled_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </td>
                   )}
                   {filter === 'past_due' && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -292,7 +278,7 @@ export function AdminUsersClient() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={filter === 'canceled' ? 7 : filter === 'past_due' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={filter === 'canceled' || filter === 'past_due' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
                     No users found{debouncedSearch ? ` matching "${debouncedSearch}"` : ''}.
                   </td>
                 </tr>
