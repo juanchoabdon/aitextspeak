@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { UserSubscription } from '@/lib/payments/subscription';
+import { CancellationModal, type CancellationReason } from './CancellationModal';
+import { cancelSubscription } from '@/lib/billing/actions';
+import { toast } from 'sonner';
 
 interface BillingClientProps {
   subscription: {
@@ -10,8 +14,10 @@ interface BillingClientProps {
     provider_customer_id?: string | null;
     provider_subscription_id?: string | null;
     status?: string | null;
+    current_period_end?: string | null;
+    plan_name?: string | null;
   } | null;
-  profile: {
+  profile?: {
     id?: string;
     email?: string | null;
     role?: string | null;
@@ -19,8 +25,10 @@ interface BillingClientProps {
   userSubscription?: UserSubscription;
 }
 
-export function BillingClient({ subscription, profile, userSubscription }: BillingClientProps) {
+export function BillingClient({ subscription, userSubscription }: BillingClientProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const router = useRouter();
 
   const handleManageStripeSubscription = async () => {
     setIsLoading(true);
@@ -54,66 +62,110 @@ export function BillingClient({ subscription, profile, userSubscription }: Billi
     }
   };
 
+  const handleCancelSubscription = async (reason: CancellationReason, comment: string) => {
+    const result = await cancelSubscription(reason, comment);
+    
+    if (result.success) {
+      setShowCancelModal(false);
+      
+      if (result.periodEnd) {
+        toast.success(
+          `Subscription cancelled. You'll have access until ${new Date(result.periodEnd).toLocaleDateString()}.`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.success('Subscription cancelled successfully.', { duration: 5000 });
+      }
+      
+      router.refresh();
+    } else {
+      throw new Error(result.error || 'Failed to cancel subscription');
+    }
+  };
+
   const isActive = userSubscription?.isActive && userSubscription?.provider !== 'free';
   const provider = userSubscription?.provider || subscription?.provider;
   const hadPreviousSubscription = userSubscription?.hadPreviousSubscription;
   const status = userSubscription?.status;
 
+  // Check if it's a lifetime subscription (can't cancel)
+  const isLifetime = userSubscription?.planId === 'lifetime' || !subscription?.current_period_end;
+
   // Active subscription
   if (isActive) {
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Stripe Management */}
-          {provider === 'stripe' && (
-            <button
-              onClick={handleManageStripeSubscription}
-              disabled={isLoading}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-3 px-6 font-semibold text-white hover:bg-slate-700 transition-colors disabled:opacity-50"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Loading...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
-                  </svg>
-                  Manage Subscription
-                </span>
-              )}
-            </button>
-          )}
+      <>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Stripe Management - for payment method updates */}
+            {provider === 'stripe' && (
+              <button
+                onClick={handleManageStripeSubscription}
+                disabled={isLoading}
+                className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-3 px-6 font-semibold text-white hover:bg-slate-700 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Loading...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Update Payment
+                  </span>
+                )}
+              </button>
+            )}
 
-          {/* PayPal Management */}
-          {(provider === 'paypal' || provider === 'paypal_legacy') && (
-            <button
-              onClick={handleManagePayPalSubscription}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-3 px-6 font-semibold text-white hover:bg-slate-700 transition-colors"
+            {/* PayPal Management - for payment method updates */}
+            {(provider === 'paypal' || provider === 'paypal_legacy') && (
+              <button
+                onClick={handleManagePayPalSubscription}
+                className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-3 px-6 font-semibold text-white hover:bg-slate-700 transition-colors"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Update Payment
+                </span>
+              </button>
+            )}
+            
+            <Link
+              href="/pricing"
+              className="flex-1 rounded-xl border border-amber-500/50 bg-transparent py-3 px-6 font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-center"
             >
-              <span className="flex items-center justify-center gap-2">
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797H9.603a.925.925 0 0 0-.913.77l-.823 5.23-.183 1.16a.64.64 0 0 1-.632.548l.024-.002z" />
-                  <path d="M20.563 6.147c-.04.258-.09.524-.15.8-1.232 6.32-5.449 8.514-10.84 8.514H7.097a1.15 1.15 0 0 0-1.136.977l-1.192 7.558a.57.57 0 0 0 .564.66h3.956c.42 0 .776-.308.84-.725l.034-.18.667-4.227.043-.233a.85.85 0 0 1 .84-.725h.528c3.428 0 6.114-1.393 6.899-5.423.328-1.683.158-3.086-.71-4.073a3.4 3.4 0 0 0-.867-.703z" />
-                </svg>
-                Manage on PayPal
-              </span>
+              Change Plan
+            </Link>
+          </div>
+
+          {/* Cancel button - only show for recurring subscriptions, not lifetime */}
+          {!isLifetime && (
+            <button
+              onClick={() => setShowCancelModal(true)}
+              className="w-full text-sm text-slate-500 hover:text-red-400 transition-colors py-2"
+            >
+              Cancel subscription
             </button>
           )}
-          
-          <Link
-            href="/pricing"
-            className="flex-1 rounded-xl border border-amber-500/50 bg-transparent py-3 px-6 font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-center"
-          >
-            Change Plan
-          </Link>
         </div>
-      </div>
+
+        {/* Cancellation Modal */}
+        <CancellationModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelSubscription}
+          planName={subscription?.plan_name || userSubscription?.planName || 'your plan'}
+          periodEnd={subscription?.current_period_end}
+        />
+      </>
     );
   }
 
