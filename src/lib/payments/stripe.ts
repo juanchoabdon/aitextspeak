@@ -397,14 +397,23 @@ export async function handleStripeWebhook(
         const subData = event.data.object as unknown as {
           id: string;
           metadata?: { userId?: string };
+          cancellation_details?: {
+            reason?: string;
+            feedback?: string;
+            comment?: string;
+          };
         };
         const userId = subData.metadata?.userId;
+        const cancellationDetails = subData.cancellation_details;
 
         await supabase
           .from('subscriptions')
           .update({
             status: 'canceled',
             canceled_at: new Date().toISOString(),
+            cancellation_reason: cancellationDetails?.reason || null,
+            cancellation_feedback: cancellationDetails?.feedback || null,
+            cancellation_comment: cancellationDetails?.comment || null,
           })
           .eq('provider_subscription_id', subData.id);
 
@@ -426,6 +435,7 @@ export async function handleStripeWebhook(
             planId: cancelledSub?.plan_id || 'unknown',
             provider: 'stripe',
             subscriptionId: subData.id,
+            reason: cancellationDetails?.reason,
           });
         }
         break;

@@ -575,6 +575,14 @@ export async function handlePayPalWebhook(
       case 'BILLING.SUBSCRIPTION.SUSPENDED': {
         const subscriptionId = resource.id;
         const userId = resource.custom_id;
+        
+        // Map PayPal event types to cancellation reasons
+        const cancellationReasonMap: Record<string, string> = {
+          'BILLING.SUBSCRIPTION.CANCELLED': 'user_cancelled',
+          'BILLING.SUBSCRIPTION.EXPIRED': 'subscription_expired',
+          'BILLING.SUBSCRIPTION.SUSPENDED': 'payment_failed',
+        };
+        const cancellationReason = cancellationReasonMap[event.event_type] || event.event_type;
 
         if (subscriptionId) {
           await supabase
@@ -582,6 +590,7 @@ export async function handlePayPalWebhook(
             .update({
               status: 'canceled',
               canceled_at: new Date().toISOString(),
+              cancellation_reason: cancellationReason,
             })
             .eq('provider_subscription_id', subscriptionId);
         }

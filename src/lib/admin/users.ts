@@ -17,6 +17,7 @@ export interface UserListItem {
   subscription_status?: 'active' | 'canceled' | 'past_due' | null;
   canceled_at?: string | null;
   current_period_end?: string | null;
+  cancellation_reason?: string | null;
 }
 
 export interface PaginatedUsersResult {
@@ -53,6 +54,9 @@ export interface UserDetailData {
     // Cancellation details
     canceled_at: string | null;
     cancel_at: string | null;
+    cancellation_reason: string | null;
+    cancellation_feedback: string | null;
+    cancellation_comment: string | null;
   } | null;
   
   // Usage stats
@@ -284,7 +288,7 @@ async function getPaginatedSubscriptionStatusUsers(
   const orderColumn = status === 'canceled' ? 'canceled_at' : 'created_at';
   const { data: subsData, error: subsError } = await supabase
     .from('subscriptions')
-    .select('user_id, provider, status, canceled_at, current_period_end')
+    .select('user_id, provider, status, canceled_at, current_period_end, cancellation_reason')
     .eq('status', status)
     .order(orderColumn, { ascending: false, nullsFirst: false })
     .range(offset, offset + pageSize - 1);
@@ -303,6 +307,7 @@ async function getPaginatedSubscriptionStatusUsers(
     provider: UserListItem['billing_provider'];
     canceled_at: string | null;
     current_period_end: string | null;
+    cancellation_reason: string | null;
   }>();
   
   for (const sub of subsData) {
@@ -310,6 +315,7 @@ async function getPaginatedSubscriptionStatusUsers(
       provider: sub.provider as UserListItem['billing_provider'],
       canceled_at: sub.canceled_at,
       current_period_end: sub.current_period_end,
+      cancellation_reason: sub.cancellation_reason,
     });
   }
   
@@ -361,6 +367,7 @@ async function getPaginatedSubscriptionStatusUsers(
         subscription_status: status,
         canceled_at: subInfo?.canceled_at || null,
         current_period_end: subInfo?.current_period_end || null,
+        cancellation_reason: subInfo?.cancellation_reason || null,
       });
     }
   }
@@ -518,6 +525,9 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
       billing_interval: subscription.billing_interval,
       canceled_at: subscription.canceled_at,
       cancel_at: subscription.cancel_at,
+      cancellation_reason: subscription.cancellation_reason,
+      cancellation_feedback: subscription.cancellation_feedback,
+      cancellation_comment: subscription.cancellation_comment,
     } : null,
     
     projectsCount,

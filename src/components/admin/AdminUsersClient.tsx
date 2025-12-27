@@ -155,9 +155,19 @@ export function AdminUsersClient() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Billing Provider
                 </th>
-                {(filter === 'canceled' || filter === 'past_due') && (
+                {filter === 'canceled' && (
+                  <>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Reason
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Canceled Date
+                    </th>
+                  </>
+                )}
+                {filter === 'past_due' && (
                   <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    {filter === 'canceled' ? 'Canceled Date' : 'Period End'}
+                    Period End
                   </th>
                 )}
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -225,15 +235,31 @@ export function AdminUsersClient() {
                         : user.billing_provider}
                     </span>
                   </td>
-                  {(filter === 'canceled' || filter === 'past_due') && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                      {filter === 'canceled' && user.canceled_at ? (
-                        new Date(user.canceled_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      ) : filter === 'past_due' && user.current_period_end ? (
+                  {filter === 'canceled' && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {user.cancellation_reason ? (
+                          <CancellationReasonBadge reason={user.cancellation_reason} />
+                        ) : (
+                          <span className="text-slate-500 text-sm">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                        {user.canceled_at ? (
+                          new Date(user.canceled_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        ) : (
+                          <span className="text-slate-500">—</span>
+                        )}
+                      </td>
+                    </>
+                  )}
+                  {filter === 'past_due' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {user.current_period_end ? (
                         <span className="text-orange-400">
                           Ended: {new Date(user.current_period_end).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -266,7 +292,7 @@ export function AdminUsersClient() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={filter === 'canceled' || filter === 'past_due' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={filter === 'canceled' ? 7 : filter === 'past_due' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
                     No users found{debouncedSearch ? ` matching "${debouncedSearch}"` : ''}.
                   </td>
                 </tr>
@@ -471,6 +497,23 @@ function UserDetailContent({ user, onClose }: { user: UserDetailData; onClose: (
                       </span>
                     )}
                   </p>
+                  {user.subscription.cancellation_reason && (
+                    <p className="text-red-300 text-sm mt-1">
+                      <span className="font-medium">Reason:</span>{' '}
+                      <CancellationReasonBadge reason={user.subscription.cancellation_reason} />
+                    </p>
+                  )}
+                  {user.subscription.cancellation_feedback && (
+                    <p className="text-red-300 text-sm mt-1">
+                      <span className="font-medium">Feedback:</span>{' '}
+                      {formatCancellationFeedback(user.subscription.cancellation_feedback)}
+                    </p>
+                  )}
+                  {user.subscription.cancellation_comment && (
+                    <p className="text-red-300 text-sm mt-1 italic">
+                      &quot;{user.subscription.cancellation_comment}&quot;
+                    </p>
+                  )}
                 </div>
               )}
               {user.subscription.status === 'past_due' && (
@@ -685,5 +728,40 @@ function InfoCard({ label, value, small = false }: { label: string; value: strin
       <p className={`font-semibold text-white ${small ? 'text-xs' : 'text-lg'}`}>{value}</p>
     </div>
   );
+}
+
+// Helper component for cancellation reason badge
+function CancellationReasonBadge({ reason }: { reason: string }) {
+  const reasonLabels: Record<string, { label: string; color: string }> = {
+    'cancellation_requested': { label: 'User Requested', color: 'bg-orange-500/20 text-orange-400' },
+    'payment_failed': { label: 'Payment Failed', color: 'bg-red-500/20 text-red-400' },
+    'payment_disputed': { label: 'Payment Disputed', color: 'bg-red-500/20 text-red-400' },
+    'user_cancelled': { label: 'User Cancelled', color: 'bg-orange-500/20 text-orange-400' },
+    'subscription_expired': { label: 'Expired', color: 'bg-slate-500/20 text-slate-400' },
+  };
+  
+  const config = reasonLabels[reason] || { label: reason.replace(/_/g, ' '), color: 'bg-slate-500/20 text-slate-400' };
+  
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${config.color}`}>
+      {config.label}
+    </span>
+  );
+}
+
+// Helper to format cancellation feedback
+function formatCancellationFeedback(feedback: string): string {
+  const feedbackLabels: Record<string, string> = {
+    'too_expensive': 'Too Expensive',
+    'missing_features': 'Missing Features',
+    'switched_service': 'Switched to Another Service',
+    'unused': 'Not Using It',
+    'customer_service': 'Customer Service Issues',
+    'too_complex': 'Too Complex',
+    'low_quality': 'Low Quality',
+    'other': 'Other',
+  };
+  
+  return feedbackLabels[feedback] || feedback.replace(/_/g, ' ');
 }
 
