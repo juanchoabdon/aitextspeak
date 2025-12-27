@@ -291,7 +291,14 @@ async function getPaginatedSubscriptionStatusUsers(
     .select('user_id, provider, status, canceled_at, current_period_end, cancellation_reason')
     .eq('status', status)
     .order(orderColumn, { ascending: false, nullsFirst: false })
-    .range(offset, offset + pageSize - 1);
+    .range(offset, offset + pageSize - 1) as { data: Array<{
+      user_id: string;
+      provider: string;
+      status: string;
+      canceled_at: string | null;
+      current_period_end: string | null;
+      cancellation_reason: string | null;
+    }> | null; error: any };
   
   if (subsError) {
     console.error('Error fetching subscriptions:', subsError);
