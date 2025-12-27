@@ -229,10 +229,25 @@ export async function getMRRStats(): Promise<MRRStats> {
     const provider = sub.provider || 'unknown';
     const displayPlanName = sub.plan_name || sub.plan_id || 'Unknown Plan';
     
+    // Determine billing type from plan name if interval is null
+    let effectiveBillingInterval = sub.billing_interval;
+    
+    // Infer billing interval from plan name for legacy subscriptions
+    if (!effectiveBillingInterval) {
+      if (planName.includes('monthly') || planId.includes('monthly')) {
+        effectiveBillingInterval = 'month';
+      } else if (planName.includes('annual') || planId.includes('annual') || 
+                 planName.includes('yearly') || planId.includes('yearly')) {
+        effectiveBillingInterval = 'year';
+      }
+    }
+    
     // Check if it's a lifetime plan (doesn't count towards MRR)
+    // Only treat as lifetime if explicitly named as lifetime/one_time OR
+    // if billing_interval is null AND plan name doesn't suggest recurring
     const isLifetime = planName.includes('lifetime') || planId.includes('lifetime') || 
         planName.includes('one_time') || planName.includes('one-time') ||
-        sub.billing_interval === null;
+        (sub.billing_interval === null && !effectiveBillingInterval);
     
     if (isLifetime) {
       lifetimeCount++;
@@ -256,6 +271,14 @@ export async function getMRRStats(): Promise<MRRStats> {
         if (multiMonthPlan) {
           // Multi-month plans - divide total by months
           priceInDollars = multiMonthPlan.price / multiMonthPlan.months;
+        } else if (effectiveBillingInterval === 'year') {
+          // Annual plans - use annual price and will divide by 12 below
+          // Legacy Pro Annual was typically $29.99 for 6 months, so ~$60/year
+          if (planName.includes('pro')) {
+            priceInDollars = 29.99; // Full price, will be divided by 12 below
+          } else {
+            priceInDollars = 9.99; // Basic annual
+          }
         } else {
           // Monthly plans - use monthly price directly
           priceInDollars = MONTHLY_PLAN_PRICES[planName] || MONTHLY_PLAN_PRICES[planId] || 9.99;
@@ -265,10 +288,10 @@ export async function getMRRStats(): Promise<MRRStats> {
         priceInDollars = priceInDollars / multiMonthPlan.months;
       }
       
-      // Handle billing interval for non-monthly
-      if (sub.billing_interval === 'year') {
+      // Handle billing interval for non-monthly (use effective interval)
+      if (effectiveBillingInterval === 'year') {
         priceInDollars = priceInDollars / 12;
-      } else if (sub.billing_interval === 'week') {
+      } else if (effectiveBillingInterval === 'week') {
         priceInDollars = priceInDollars * 4; // ~4 weeks per month
       }
       
