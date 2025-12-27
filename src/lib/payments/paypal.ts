@@ -629,8 +629,15 @@ export async function handlePayPalWebhook(
         // resource.id is used for BILLING.SUBSCRIPTION.RENEWED
         const subscriptionId = resource.billing_agreement_id || resource.id;
         
-        // For PAYMENT.SALE.COMPLETED, we get the actual sale amount
-        const saleAmount = resource.amount?.value ? parseFloat(resource.amount.value) : null;
+        // For PAYMENT.SALE.COMPLETED, amount can be in different locations:
+        // - resource.amount.total (older format)
+        // - resource.amount.value (newer format)
+        const amountObj = resource.amount as { total?: string; value?: string } | undefined;
+        const saleAmount = amountObj?.total 
+          ? parseFloat(amountObj.total) 
+          : amountObj?.value 
+            ? parseFloat(amountObj.value) 
+            : null;
 
         console.log('[PayPal Webhook] Renewal/Sale event:', {
           eventType: event.event_type,
@@ -640,79 +647,107 @@ export async function handlePayPalWebhook(
         });
 
         if (subscriptionId && subscriptionId.startsWith('I-')) {
-          const subscription = await getPayPalSubscription(subscriptionId);
-          if (subscription) {
-            await supabase
-              .from('subscriptions')
-              .update({
-                status: 'active',
-                current_period_end: subscription.billing_info?.next_billing_time || null,
-              })
-              .eq('provider_subscription_id', subscriptionId);
+          // Check if subscription exists in our database first
+          const { data: existingSub } = await supabase
+            .from('subscriptions')
+            .select('user_id, plan_id, plan_name, price_amount')
+            .eq('provider_subscription_id', subscriptionId)
+            .single();
 
-            // Get user and log renewal payment
-            const { data: sub } = await supabase
-              .from('subscriptions')
-              .select('user_id, plan_id, plan_name, price_amount')
-              .eq('provider_subscription_id', subscriptionId)
+          // If subscription exists in our DB, update it
+          if (existingSub) {
+            const subscription = await getPayPalSubscription(subscriptionId);
+            if (subscription) {
+              await supabase
+                .from('subscriptions')
+                .update({
+                  status: 'active',
+                  current_period_end: subscription.billing_info?.next_billing_time || null,
+                })
+                .eq('provider_subscription_id', subscriptionId);
+            }
+          }
+
+          // Get user from subscriptions table OR from legacy payment_history
+          let userId: string | null = existingSub?.user_id || null;
+          let planId = existingSub?.plan_id || 'monthly';
+          let planName = existingSub?.plan_name || 'Monthly Plan';
+          let priceAmount = existingSub?.price_amount;
+
+          // If not found in subscriptions, try to find from legacy payment_history
+          if (!userId) {
+            const { data: legacyPayment } = await supabase
+              .from('payment_history')
+              .select('user_id')
+              .eq('gateway_identifier', subscriptionId)
+              .eq('gateway', 'paypal')
+              .limit(1)
+              .single();
+            
+            if (legacyPayment?.user_id) {
+              userId = legacyPayment.user_id;
+              console.log('[PayPal Webhook] Found user from legacy payment_history:', userId);
+            }
+          }
+
+          if (userId) {
+            // price_amount is stored in cents, convert to dollars for payment_history
+            // Or use the actual sale amount from the webhook if available
+            const amountInDollars = saleAmount || (priceAmount ? priceAmount / 100 : 9.99);
+              
+            // Check if we already recorded this renewal (avoid duplicates)
+            const today = new Date().toISOString().split('T')[0];
+            const { data: existingRenewal } = await supabase
+              .from('payment_history')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('gateway', 'paypal')
+              .eq('gateway_identifier', subscriptionId)
+              .eq('transaction_type', 'renewal')
+              .gte('created_at', today)
               .single();
 
-            if (sub?.user_id) {
-              // price_amount is stored in cents, convert to dollars for payment_history
-              // Or use the actual sale amount from the webhook if available
-              const amountInDollars = saleAmount || (sub.price_amount ? sub.price_amount / 100 : 9.99);
+            if (!existingRenewal) {
+              await supabase.from('payment_history').insert({
+                user_id: userId,
+                transaction_type: 'renewal',
+                gateway: 'paypal',
+                gateway_identifier: subscriptionId,
+                gateway_event_id: resource.id, // The actual sale/event ID
+                currency: 'USD',
+                amount: amountInDollars,
+                item_name: planName || 'Subscription Renewal',
+                redirect_status: 'success',
+                callback_status: 'success',
+                visible_for_user: true,
+                metadata: {
+                  plan_id: planId,
+                  subscription_id: subscriptionId,
+                  event_type: event.event_type,
+                  sale_id: resource.id,
+                },
+              });
+
+              // Track renewal in Amplitude
+              trackSubscriptionRenewalServer(userId, {
+                planId: planId || 'unknown',
+                amount: amountInDollars,
+                provider: 'paypal',
+                currency: 'USD',
+                subscriptionId,
+              });
               
-              // Check if we already recorded this renewal (avoid duplicates)
-              const today = new Date().toISOString().split('T')[0];
-              const { data: existingRenewal } = await supabase
-                .from('payment_history')
-                .select('id')
-                .eq('user_id', sub.user_id)
-                .eq('gateway', 'paypal')
-                .eq('gateway_identifier', subscriptionId)
-                .eq('transaction_type', 'renewal')
-                .gte('created_at', today)
-                .single();
-
-              if (!existingRenewal) {
-                await supabase.from('payment_history').insert({
-                  user_id: sub.user_id,
-                  transaction_type: 'renewal',
-                  gateway: 'paypal',
-                  gateway_identifier: subscriptionId,
-                  gateway_event_id: resource.id, // The actual sale/event ID
-                  currency: 'USD',
-                  amount: amountInDollars,
-                  item_name: sub.plan_name || 'Subscription Renewal',
-                  redirect_status: 'success',
-                  callback_status: 'success',
-                  visible_for_user: true,
-                  metadata: {
-                    plan_id: sub.plan_id,
-                    subscription_id: subscriptionId,
-                    event_type: event.event_type,
-                    sale_id: resource.id,
-                  },
-                });
-
-                // Track renewal in Amplitude
-                trackSubscriptionRenewalServer(sub.user_id, {
-                  planId: sub.plan_id || 'unknown',
-                  amount: amountInDollars,
-                  provider: 'paypal',
-                  currency: 'USD',
-                  subscriptionId,
-                });
-                
-                console.log('[PayPal Webhook] ✅ Renewal payment recorded:', {
-                  userId: sub.user_id,
-                  amount: amountInDollars,
-                  subscriptionId,
-                });
-              } else {
-                console.log('[PayPal Webhook] Renewal already recorded for today, skipping');
-              }
+              console.log('[PayPal Webhook] ✅ Renewal payment recorded:', {
+                userId,
+                amount: amountInDollars,
+                subscriptionId,
+                isLegacy: !existingSub,
+              });
+            } else {
+              console.log('[PayPal Webhook] Renewal already recorded for today, skipping');
             }
+          } else {
+            console.log('[PayPal Webhook] ⚠️ Could not find user for subscription:', subscriptionId);
           }
         }
         break;
