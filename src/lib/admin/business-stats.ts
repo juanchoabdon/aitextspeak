@@ -7,8 +7,13 @@ export type DatePeriod = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
 export interface BusinessStats {
   newUsers: number;
-  newPaidUsers: number;
+  newPaidUsers: number; // First-time subscribers
+  renewals: number;     // Recurring payments
+  lifetimePurchases: number;
   revenue: number;
+  revenueFromNewSubs: number;
+  revenueFromRenewals: number;
+  revenueFromLifetime: number;
   period: {
     start: string;
     end: string;
@@ -100,40 +105,65 @@ export async function getBusinessStats(
   const endISO = end.toISOString();
 
   // Run all queries in parallel
-  const [newUsersResult, newPaidUsersResult, revenueResult] = await Promise.all([
-    // New users created in the period
+  const [
+    newUsersResult,
+    newSubsResult,
+    renewalsResult,
+    lifetimeResult,
+  ] = await Promise.all([
+    // New users created in the period (all signups)
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', startISO)
       .lte('created_at', endISO),
 
-    // New paid users (subscriptions created in the period)
+    // New subscriptions (first-time paid users)
     supabase
-      .from('subscriptions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
+      .from('payment_history')
+      .select('amount, user_id')
+      .eq('transaction_type', 'subscription')
+      .in('redirect_status', ['success', 'completed'])
       .gte('created_at', startISO)
       .lte('created_at', endISO),
 
-    // Revenue from payment_history in the period
+    // Renewals
     supabase
       .from('payment_history')
       .select('amount')
-      .eq('status', 'completed')
+      .eq('transaction_type', 'renewal')
+      .in('redirect_status', ['success', 'completed'])
+      .gte('created_at', startISO)
+      .lte('created_at', endISO),
+
+    // Lifetime / one-time purchases
+    supabase
+      .from('payment_history')
+      .select('amount')
+      .in('transaction_type', ['purchase', 'one_time'])
+      .in('redirect_status', ['success', 'completed'])
       .gte('created_at', startISO)
       .lte('created_at', endISO),
   ]);
 
-  // Calculate total revenue
-  const revenue = (revenueResult.data || []).reduce((sum, payment) => {
-    return sum + (payment.amount || 0);
-  }, 0);
+  // Calculate revenues by type
+  const revenueFromNewSubs = (newSubsResult.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  const revenueFromRenewals = (renewalsResult.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  const revenueFromLifetime = (lifetimeResult.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalRevenue = revenueFromNewSubs + revenueFromRenewals + revenueFromLifetime;
+
+  // Count unique new paid users (distinct user_ids from new subscriptions)
+  const uniqueNewPaidUsers = new Set((newSubsResult.data || []).map(p => p.user_id)).size;
 
   return {
     newUsers: newUsersResult.count || 0,
-    newPaidUsers: newPaidUsersResult.count || 0,
-    revenue,
+    newPaidUsers: uniqueNewPaidUsers,
+    renewals: renewalsResult.data?.length || 0,
+    lifetimePurchases: lifetimeResult.data?.length || 0,
+    revenue: totalRevenue,
+    revenueFromNewSubs,
+    revenueFromRenewals,
+    revenueFromLifetime,
     period: {
       start: start.toISOString().split('T')[0],
       end: end.toISOString().split('T')[0],

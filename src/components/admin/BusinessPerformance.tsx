@@ -333,15 +333,34 @@ export function BusinessPerformance() {
         </p>
       )}
 
-      {/* Stats Grid */}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          label="Revenue"
-          value={stats?.revenue ?? 0}
-          prefix="$"
-          color="amber"
-          loading={loading}
-        />
+      {/* Revenue Stats */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-6">
+          <p className="text-sm text-slate-400">Total Revenue</p>
+          {loading ? (
+            <div className="mt-2 h-9 w-24 animate-pulse rounded bg-slate-800" />
+          ) : (
+            <>
+              <p className="mt-2 text-3xl font-bold text-amber-500">
+                ${(stats?.revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-400">
+                  <span>New Subs:</span>
+                  <span className="text-green-400">${(stats?.revenueFromNewSubs ?? 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Renewals:</span>
+                  <span className="text-blue-400">${(stats?.revenueFromRenewals ?? 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Lifetime:</span>
+                  <span className="text-purple-400">${(stats?.revenueFromLifetime ?? 0).toFixed(2)}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
         <StatCard
           label="New Paid Users"
           value={stats?.newPaidUsers ?? 0}
@@ -349,12 +368,31 @@ export function BusinessPerformance() {
           loading={loading}
         />
         <StatCard
-          label="New Users"
-          value={stats?.newUsers ?? 0}
+          label="Renewals"
+          value={stats?.renewals ?? 0}
           color="blue"
           loading={loading}
         />
+        <StatCard
+          label="New Signups"
+          value={stats?.newUsers ?? 0}
+          color="purple"
+          loading={loading}
+        />
       </div>
+
+      {/* Lifetime Purchases (if any) */}
+      {!loading && stats && stats.lifetimePurchases > 0 && (
+        <div className="mt-4 p-4 rounded-xl border border-purple-500/30 bg-purple-500/5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400">Lifetime Purchases</span>
+            <div className="text-right">
+              <span className="text-lg font-semibold text-purple-400">{stats.lifetimePurchases}</span>
+              <span className="ml-2 text-sm text-slate-500">(${stats.revenueFromLifetime.toFixed(2)})</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Conversion Rate */}
       {stats && stats.newUsers > 0 && (
@@ -376,23 +414,29 @@ export function BusinessPerformance() {
 
       {/* Quick Insights */}
       {stats && !loading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Avg Revenue per Paid User</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Avg per New Sub</p>
             <p className="mt-1 text-xl font-semibold text-white">
-              ${stats.newPaidUsers > 0 ? (stats.revenue / stats.newPaidUsers).toFixed(2) : '0.00'}
+              ${stats.newPaidUsers > 0 ? (stats.revenueFromNewSubs / stats.newPaidUsers).toFixed(2) : '0.00'}
             </p>
           </div>
           <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Avg Revenue per User</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Avg per Renewal</p>
             <p className="mt-1 text-xl font-semibold text-white">
-              ${stats.newUsers > 0 ? (stats.revenue / stats.newUsers).toFixed(2) : '0.00'}
+              ${stats.renewals > 0 ? (stats.revenueFromRenewals / stats.renewals).toFixed(2) : '0.00'}
             </p>
           </div>
           <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Free Users This Period</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Free Signups</p>
             <p className="mt-1 text-xl font-semibold text-white">
-              {stats.newUsers - stats.newPaidUsers}
+              {Math.max(0, stats.newUsers - stats.newPaidUsers)}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Total Transactions</p>
+            <p className="mt-1 text-xl font-semibold text-white">
+              {stats.newPaidUsers + stats.renewals + stats.lifetimePurchases}
             </p>
           </div>
         </div>
