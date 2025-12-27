@@ -104,7 +104,7 @@ export async function getTransactions(
   }
 
   // Get user emails for the transactions
-  const userIds = [...new Set((transactions || []).map(t => t.user_id).filter(Boolean))];
+  const userIds = [...new Set((transactions || []).map(t => t.user_id).filter((id): id is string => id !== null))]
   const userEmails = new Map<string, string>();
 
   if (userIds.length > 0) {
