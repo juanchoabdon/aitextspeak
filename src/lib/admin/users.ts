@@ -451,10 +451,8 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
   // Fetch all data in parallel
   const [
     subscriptionResult,
-    projectsResult,
-    audioResult,
+    projectsWithIdsResult,
     usageResult,
-    audioCharsResult,
     transactionsResult,
   ] = await Promise.all([
     // Get most recent subscription (including canceled/past_due)
@@ -466,28 +464,16 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
       .limit(1)
       .single(),
     
-    // Projects count
+    // Projects with IDs (to count audio)
     supabase
       .from('projects')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId),
-    
-    // Audio count
-    supabase
-      .from('project_audio')
-      .select('id', { count: 'exact', head: true })
+      .select('id')
       .eq('user_id', userId),
     
     // All usage records (to sum total usage)
     supabase
       .from('usage_tracking')
       .select('characters_used, characters_preview_used, characters_production_used')
-      .eq('user_id', userId),
-    
-    // Fallback: Sum characters from project_audio records
-    supabase
-      .from('project_audio')
-      .select('characters_count')
       .eq('user_id', userId),
     
     // Transactions
@@ -505,10 +491,32 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
     cancellation_feedback?: string | null;
     cancellation_comment?: string | null;
   }) | null;
-  const projectsCount = projectsResult.count || 0;
-  const audioCount = audioResult.count || 0;
+  
+  const projects = projectsWithIdsResult.data || [];
+  const projectsCount = projects.length;
+  const projectIds = projects.map(p => p.id);
+  
+  // Fetch audio count for user's projects
+  let audioCount = 0;
+  let audioCharRecords: { characters_count: number | null }[] = [];
+  
+  if (projectIds.length > 0) {
+    const [audioCountResult, audioCharsResult] = await Promise.all([
+      supabase
+        .from('project_audio')
+        .select('id', { count: 'exact', head: true })
+        .in('project_id', projectIds),
+      supabase
+        .from('project_audio')
+        .select('characters_count')
+        .in('project_id', projectIds),
+    ]);
+    
+    audioCount = audioCountResult.count || 0;
+    audioCharRecords = audioCharsResult.data || [];
+  }
+  
   const usageRecords = usageResult.data || [];
-  const audioCharRecords = audioCharsResult.data || [];
   const transactions = transactionsResult.data || [];
   
   // Calculate total characters used across all periods
