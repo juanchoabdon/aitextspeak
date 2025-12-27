@@ -606,7 +606,7 @@ export async function handlePayPalWebhook(
           if (subscriptionId) {
             const { data: cancelledSub } = await supabase
               .from('subscriptions')
-              .select('plan_id, price_amount, cancellation_comment')
+              .select('plan_id, price_amount')
               .eq('provider_subscription_id', subscriptionId)
               .single();
 
@@ -616,7 +616,6 @@ export async function handlePayPalWebhook(
               subscriptionId: subscriptionId,
               reason: event.event_type,
               amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : undefined,
-              comment: cancelledSub?.cancellation_comment || undefined,
             });
           }
         }

@@ -428,7 +428,7 @@ export async function handleStripeWebhook(
           // Track subscription cancellation with amount
           const { data: cancelledSub } = await supabase
             .from('subscriptions')
-            .select('plan_id, price_amount, cancellation_comment')
+            .select('plan_id, price_amount')
             .eq('provider_subscription_id', subData.id)
             .single();
 
@@ -438,7 +438,7 @@ export async function handleStripeWebhook(
             subscriptionId: subData.id,
             reason: cancellationDetails?.reason,
             amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : undefined,
-            comment: cancelledSub?.cancellation_comment || cancellationDetails?.comment,
+            comment: cancellationDetails?.comment,
           });
         }
         break;
