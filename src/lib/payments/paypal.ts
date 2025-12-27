@@ -701,18 +701,22 @@ export async function handlePayPalWebhook(
               .from('payment_history')
               .select('id')
               .eq('user_id', userId)
-              .eq('gateway', 'paypal')
+              .in('gateway', ['paypal', 'paypal_legacy'])
               .eq('gateway_identifier', subscriptionId)
               .eq('transaction_type', 'renewal')
               .gte('created_at', today)
               .single();
 
             if (!existingRenewal) {
+              // Determine if this is a legacy subscription
+              const isLegacySubscription = !existingSub;
+              const gatewayType = isLegacySubscription ? 'paypal_legacy' : 'paypal';
+
               // Record the payment
               await supabase.from('payment_history').insert({
                 user_id: userId,
                 transaction_type: 'renewal',
-                gateway: 'paypal',
+                gateway: gatewayType,
                 gateway_identifier: subscriptionId,
                 gateway_event_id: resource.id, // The actual sale/event ID
                 currency: 'USD',
@@ -739,7 +743,7 @@ export async function handlePayPalWebhook(
               console.log('[PayPal Webhook] ✅ User role updated to pro:', userId);
 
               // For legacy subscriptions, create/update subscription record
-              if (!existingSub) {
+              if (isLegacySubscription) {
                 // Calculate next billing (approximately 1 month from now)
                 const nextBilling = new Date();
                 nextBilling.setMonth(nextBilling.getMonth() + 1);
@@ -767,7 +771,7 @@ export async function handlePayPalWebhook(
               trackSubscriptionRenewalServer(userId, {
                 planId: planId || 'unknown',
                 amount: amountInDollars,
-                provider: 'paypal',
+                provider: gatewayType,
                 currency: 'USD',
                 subscriptionId,
               });
@@ -776,7 +780,8 @@ export async function handlePayPalWebhook(
                 userId,
                 amount: amountInDollars,
                 subscriptionId,
-                isLegacy: !existingSub,
+                gateway: gatewayType,
+                isLegacy: isLegacySubscription,
               });
             } else {
               console.log('[PayPal Webhook] Renewal already recorded for today, skipping');
