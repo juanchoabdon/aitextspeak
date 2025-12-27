@@ -236,18 +236,45 @@ export function trackSubscriptionCancelledServer(
     provider: 'stripe' | 'paypal';
     subscriptionId: string;
     reason?: string;
+    amount?: number; // Monthly value being lost
+    comment?: string;
   }
 ) {
+  console.log('[Amplitude Server] 🚫 Tracking cancellation:', {
+    userId: userId.substring(0, 8) + '...',
+    planId: properties.planId,
+    reason: properties.reason,
+    amount: properties.amount,
+  });
+
+  // Track negative revenue (churn) if amount provided
+  if (properties.amount && properties.amount > 0) {
+    trackServerRevenue(userId, {
+      productId: properties.planId,
+      price: -properties.amount, // Negative to indicate lost revenue
+      quantity: 1,
+      revenueType: 'churn',
+      eventProperties: {
+        payment_provider: properties.provider,
+        subscription_id: properties.subscriptionId,
+        cancellation_reason: properties.reason,
+      },
+    });
+  }
+
   trackServerEvent(userId, 'Subscription Cancelled', {
     plan_id: properties.planId,
+    amount: properties.amount,
     payment_provider: properties.provider,
     subscription_id: properties.subscriptionId,
     cancellation_reason: properties.reason,
+    cancellation_comment: properties.comment,
   });
 
   identifyServerUser(userId, {
     plan: 'free',
     subscription_cancelled_at: new Date().toISOString(),
+    cancellation_reason: properties.reason,
   });
 }
 
@@ -259,15 +286,44 @@ export function trackPaymentFailedServer(
   properties: {
     planId: string;
     provider: 'stripe' | 'paypal';
+    amount?: number; // Amount that failed to charge
+    currency?: string;
     errorMessage: string;
     errorCode?: string;
+    subscriptionId?: string;
   }
 ) {
+  console.log('[Amplitude Server] ❌ Tracking payment failed:', {
+    userId: userId.substring(0, 8) + '...',
+    planId: properties.planId,
+    amount: properties.amount,
+    error: properties.errorMessage,
+  });
+
+  // Track failed revenue (at-risk revenue)
+  if (properties.amount && properties.amount > 0) {
+    trackServerRevenue(userId, {
+      productId: properties.planId,
+      price: properties.amount,
+      quantity: 0, // 0 quantity indicates failed/incomplete
+      revenueType: 'failed',
+      eventProperties: {
+        payment_provider: properties.provider,
+        error_message: properties.errorMessage,
+        error_code: properties.errorCode,
+        subscription_id: properties.subscriptionId,
+      },
+    });
+  }
+
   trackServerEvent(userId, 'Payment Failed', {
     plan_id: properties.planId,
+    amount: properties.amount,
+    currency: properties.currency || 'USD',
     payment_provider: properties.provider,
     error_message: properties.errorMessage,
     error_code: properties.errorCode,
+    subscription_id: properties.subscriptionId,
   });
 }
 

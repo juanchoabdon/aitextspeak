@@ -425,10 +425,10 @@ export async function handleStripeWebhook(
             .update({ role: 'user' })
             .eq('id', userId);
 
-          // Track subscription cancellation
+          // Track subscription cancellation with amount
           const { data: cancelledSub } = await supabase
             .from('subscriptions')
-            .select('plan_id')
+            .select('plan_id, price_amount, cancellation_comment')
             .eq('provider_subscription_id', subData.id)
             .single();
 
@@ -437,6 +437,8 @@ export async function handleStripeWebhook(
             provider: 'stripe',
             subscriptionId: subData.id,
             reason: cancellationDetails?.reason,
+            amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : undefined,
+            comment: cancelledSub?.cancellation_comment || cancellationDetails?.comment,
           });
         }
         break;
@@ -542,11 +544,14 @@ export async function handleStripeWebhook(
               },
             });
 
-            // Track payment failure
+            // Track payment failure with amount
             trackPaymentFailedServer(sub.user_id, {
               planId: sub.plan_id || 'unknown',
               provider: 'stripe',
+              amount: invoiceData.amount_due / 100,
+              currency: invoiceData.currency.toUpperCase(),
               errorMessage: 'Invoice payment failed',
+              subscriptionId: invoiceData.subscription,
             });
           }
         }
