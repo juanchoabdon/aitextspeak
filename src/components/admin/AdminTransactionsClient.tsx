@@ -39,16 +39,17 @@ function TransactionTypeBadge({ type }: { type: string }) {
 }
 
 function GatewayBadge({ gateway }: { gateway: string }) {
-  const config: Record<string, { bg: string; text: string; icon: string }> = {
-    stripe: { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '💳' },
-    paypal: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: '🅿️' },
+  const config: Record<string, { bg: string; text: string; icon: string; label: string }> = {
+    stripe: { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '💳', label: 'Stripe' },
+    paypal: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: '🅿️', label: 'PayPal' },
+    paypal_legacy: { bg: 'bg-orange-500/20', text: 'text-orange-400', icon: '🅿️', label: 'PayPal Legacy' },
   };
 
-  const { bg, text, icon } = config[gateway.toLowerCase()] || { bg: 'bg-slate-500/20', text: 'text-slate-400', icon: '💰' };
+  const { bg, text, icon, label } = config[gateway.toLowerCase()] || { bg: 'bg-slate-500/20', text: 'text-slate-400', icon: '💰', label: gateway };
 
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${bg} ${text}`}>
-      {icon} {gateway}
+      {icon} {label}
     </span>
   );
 }
@@ -103,6 +104,7 @@ export function AdminTransactionsClient() {
           <option value="all">All Gateways</option>
           <option value="stripe">Stripe</option>
           <option value="paypal">PayPal</option>
+          <option value="paypal_legacy">PayPal Legacy</option>
         </select>
 
         {isPending && (

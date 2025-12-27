@@ -42,7 +42,7 @@ export interface PaginatedTransactionsResult {
 }
 
 export type TransactionFilter = 'all' | 'subscription' | 'renewal' | 'purchase' | 'one_time' | 'payment_failed';
-export type GatewayFilter = 'all' | 'stripe' | 'paypal';
+export type GatewayFilter = 'all' | 'stripe' | 'paypal' | 'paypal_legacy';
 
 /**
  * Get paginated transactions with filters
