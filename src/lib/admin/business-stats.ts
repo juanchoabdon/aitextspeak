@@ -231,15 +231,26 @@ export async function getMRRStats(): Promise<MRRStats> {
     
     // Determine billing type from plan name if interval is null
     let effectiveBillingInterval = sub.billing_interval;
+    let intervalMonths = 1; // Default to 1 month
     
     // Infer billing interval from plan name for legacy subscriptions
     if (!effectiveBillingInterval) {
       if (planName.includes('monthly') || planId.includes('monthly')) {
         effectiveBillingInterval = 'month';
-      } else if (planName.includes('annual') || planId.includes('annual') || 
-                 planName.includes('yearly') || planId.includes('yearly')) {
+        intervalMonths = 1;
+      } else if (planName.includes('6 month') || planId.includes('6_month') ||
+                 planName.includes('annual') || planId.includes('annual')) {
+        // "Pro Annual" in legacy is actually a 6-month package ($29.99/6 months)
+        effectiveBillingInterval = '6month';
+        intervalMonths = 6;
+      } else if (planName.includes('yearly') || planId.includes('yearly')) {
         effectiveBillingInterval = 'year';
+        intervalMonths = 12;
       }
+    } else if (effectiveBillingInterval === 'year') {
+      intervalMonths = 12;
+    } else if (effectiveBillingInterval === 'week') {
+      intervalMonths = 0.25; // 1/4 of a month
     }
     
     // Check if it's a lifetime plan (doesn't count towards MRR)
@@ -261,38 +272,29 @@ export async function getMRRStats(): Promise<MRRStats> {
       // It's a recurring subscription
       monthlyCount++;
       
-      // Check if it's a multi-month plan (annual, 6-month, etc.)
-      const multiMonthPlan = MULTI_MONTH_PLANS[planName] || MULTI_MONTH_PLANS[planId];
-      
       // Get price - price_amount is stored in CENTS, convert to dollars
       let priceInDollars = sub.price_amount ? sub.price_amount / 100 : 0;
       
       if (priceInDollars === 0) {
-        if (multiMonthPlan) {
-          // Multi-month plans - divide total by months
-          priceInDollars = multiMonthPlan.price / multiMonthPlan.months;
-        } else if (effectiveBillingInterval === 'year') {
-          // Annual plans - use annual price and will divide by 12 below
-          // Legacy Pro Annual was typically $29.99 for 6 months, so ~$60/year
-          if (planName.includes('pro')) {
-            priceInDollars = 29.99; // Full price, will be divided by 12 below
-          } else {
-            priceInDollars = 9.99; // Basic annual
-          }
+        // No price set, use defaults based on plan type
+        if (intervalMonths === 6) {
+          // 6-month package: $29.99 / 6 months
+          priceInDollars = 29.99;
+        } else if (intervalMonths === 12) {
+          // Yearly plan
+          priceInDollars = planName.includes('pro') ? 99.99 : 59.99;
         } else {
           // Monthly plans - use monthly price directly
           priceInDollars = MONTHLY_PLAN_PRICES[planName] || MONTHLY_PLAN_PRICES[planId] || 9.99;
         }
-      } else if (multiMonthPlan) {
-        // If price_amount is set but it's multi-month, divide by months
-        priceInDollars = priceInDollars / multiMonthPlan.months;
       }
       
-      // Handle billing interval for non-monthly (use effective interval)
-      if (effectiveBillingInterval === 'year') {
-        priceInDollars = priceInDollars / 12;
-      } else if (effectiveBillingInterval === 'week') {
-        priceInDollars = priceInDollars * 4; // ~4 weeks per month
+      // Convert to monthly MRR based on interval
+      if (intervalMonths > 1) {
+        priceInDollars = priceInDollars / intervalMonths;
+      } else if (intervalMonths < 1) {
+        // Weekly billing - multiply to get monthly
+        priceInDollars = priceInDollars / intervalMonths;
       }
       
       totalMrr += priceInDollars;
