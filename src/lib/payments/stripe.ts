@@ -6,6 +6,7 @@ import {
   trackSubscriptionActivatedServer,
   trackSubscriptionCancelledServer,
   trackPaymentFailedServer,
+  trackSubscriptionRenewalServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
 
@@ -467,6 +468,8 @@ export async function handleStripeWebhook(
             .single();
 
           if (sub?.user_id) {
+            const amountInDollars = invoice.amount_paid / 100;
+            
             await supabase.from('payment_history').insert({
               user_id: sub.user_id,
               transaction_type: 'renewal',
@@ -474,7 +477,7 @@ export async function handleStripeWebhook(
               gateway_identifier: invoice.id,
               gateway_event_id: event.id,
               currency: invoice.currency.toUpperCase(),
-              amount: invoice.amount_paid / 100,
+              amount: amountInDollars,
               item_name: sub.plan_name || 'Subscription Renewal',
               redirect_status: 'success',
               callback_status: 'success',
@@ -484,6 +487,15 @@ export async function handleStripeWebhook(
                 subscription_id: invoice.subscription,
                 billing_reason: invoice.billing_reason,
               },
+            });
+
+            // Track renewal in Amplitude
+            trackSubscriptionRenewalServer(sub.user_id, {
+              planId: sub.plan_id || 'unknown',
+              amount: amountInDollars,
+              provider: 'stripe',
+              currency: invoice.currency.toUpperCase(),
+              subscriptionId: invoice.subscription,
             });
           }
         }

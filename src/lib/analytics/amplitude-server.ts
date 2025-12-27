@@ -256,6 +256,49 @@ export function trackPaymentFailedServer(
   });
 }
 
+/**
+ * Track subscription renewal (for recurring payment webhooks)
+ */
+export function trackSubscriptionRenewalServer(
+  userId: string,
+  properties: {
+    planId: string;
+    amount: number;
+    provider: 'stripe' | 'paypal';
+    currency?: string;
+    subscriptionId?: string;
+  }
+) {
+  console.log('[Amplitude Server] trackSubscriptionRenewalServer called:', {
+    userId,
+    planId: properties.planId,
+    amount: properties.amount,
+    provider: properties.provider,
+  });
+
+  // Track revenue for the renewal
+  trackServerRevenue(userId, {
+    productId: properties.planId,
+    price: properties.amount,
+    quantity: 1,
+    revenueType: 'renewal',
+    eventProperties: {
+      payment_provider: properties.provider,
+      currency: properties.currency || 'USD',
+      subscription_id: properties.subscriptionId,
+    },
+  });
+
+  // Track the renewal event
+  trackServerEvent(userId, 'Subscription Renewed', {
+    plan_id: properties.planId,
+    amount: properties.amount,
+    payment_provider: properties.provider,
+    currency: properties.currency || 'USD',
+    subscription_id: properties.subscriptionId,
+  });
+}
+
 // Flush events before process exits (important for serverless)
 export async function flushAmplitude() {
   if (isInitialized) {

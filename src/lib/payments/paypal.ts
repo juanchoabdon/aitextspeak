@@ -4,6 +4,7 @@ import {
   trackPaymentCompleted,
   trackSubscriptionActivatedServer,
   trackSubscriptionCancelledServer,
+  trackSubscriptionRenewalServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
 
@@ -690,6 +691,15 @@ export async function handlePayPalWebhook(
                     event_type: event.event_type,
                     sale_id: resource.id,
                   },
+                });
+
+                // Track renewal in Amplitude
+                trackSubscriptionRenewalServer(sub.user_id, {
+                  planId: sub.plan_id || 'unknown',
+                  amount: amountInDollars,
+                  provider: 'paypal',
+                  currency: 'USD',
+                  subscriptionId,
                 });
                 
                 console.log('[PayPal Webhook] ✅ Renewal payment recorded:', {
