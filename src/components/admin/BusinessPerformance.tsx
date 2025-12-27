@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getBusinessStats, getMRRStats, type BusinessStats, type MRRStats, type DatePeriod } from '@/lib/admin/business-stats';
+import { BusinessCharts } from './BusinessCharts';
 
 const periodLabels: Record<DatePeriod, string> = {
   today: 'Today',
@@ -441,6 +442,20 @@ export function BusinessPerformance() {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Historical Charts Section */}
+      <div className="mt-12 pt-8 border-t border-slate-800">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+            <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            </svg>
+            Growth Analytics
+          </h2>
+          <p className="mt-1 text-slate-400">Historical trends and growth metrics</p>
+        </div>
+        <BusinessCharts />
       </div>
     </div>
   );
