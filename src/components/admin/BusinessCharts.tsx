@@ -88,7 +88,7 @@ export function BusinessCharts() {
   const [stats, setStats] = useState<GrowthStats | null>(null);
   const [dailyData, setDailyData] = useState<{ date: string; newSignups: number; newPaidUsers: number; revenue: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<6 | 12>(12);
+  const [timeRange, setTimeRange] = useState<3 | 6 | 12>(3);
 
   useEffect(() => {
     async function fetchData() {
@@ -140,6 +140,14 @@ export function BusinessCharts() {
       {/* Time Range Selector */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-slate-400">Time Range:</span>
+        <button
+          onClick={() => setTimeRange(3)}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            timeRange === 3 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          3 Months
+        </button>
         <button
           onClick={() => setTimeRange(6)}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
