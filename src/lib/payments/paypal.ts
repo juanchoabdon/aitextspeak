@@ -708,6 +708,7 @@ export async function handlePayPalWebhook(
               .single();
 
             if (!existingRenewal) {
+              // Record the payment
               await supabase.from('payment_history').insert({
                 user_id: userId,
                 transaction_type: 'renewal',
@@ -727,6 +728,40 @@ export async function handlePayPalWebhook(
                   sale_id: resource.id,
                 },
               });
+
+              // Enable service for the user - update role to 'pro'
+              await supabase
+                .from('profiles')
+                .update({ role: 'pro' })
+                .eq('id', userId)
+                .neq('role', 'admin'); // Don't downgrade admins
+
+              console.log('[PayPal Webhook] ✅ User role updated to pro:', userId);
+
+              // For legacy subscriptions, create/update subscription record
+              if (!existingSub) {
+                // Calculate next billing (approximately 1 month from now)
+                const nextBilling = new Date();
+                nextBilling.setMonth(nextBilling.getMonth() + 1);
+
+                await supabase.from('subscriptions').upsert({
+                  user_id: userId,
+                  provider: 'paypal_legacy',
+                  provider_subscription_id: subscriptionId,
+                  status: 'active',
+                  plan_id: 'monthly',
+                  plan_name: 'Basic Plan (Legacy)',
+                  price_amount: Math.round(amountInDollars * 100), // Store in cents
+                  price_currency: 'USD',
+                  billing_interval: 'month',
+                  current_period_end: nextBilling.toISOString(),
+                  is_legacy: true,
+                }, {
+                  onConflict: 'provider,provider_subscription_id',
+                });
+
+                console.log('[PayPal Webhook] ✅ Legacy subscription record created/updated');
+              }
 
               // Track renewal in Amplitude
               trackSubscriptionRenewalServer(userId, {
