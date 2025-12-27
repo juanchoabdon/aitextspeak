@@ -6,8 +6,6 @@
 import * as amplitude from '@amplitude/analytics-node';
 import { Types } from '@amplitude/analytics-node';
 
-const AMPLITUDE_API_KEY = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '';
-
 let isInitialized = false;
 
 /**
@@ -18,22 +16,29 @@ function initAmplitudeServer() {
     return;
   }
 
-  if (!AMPLITUDE_API_KEY) {
-    console.warn('[Amplitude Server] NEXT_PUBLIC_AMPLITUDE_API_KEY not set, tracking disabled');
+  // Read API key at runtime (not module load time) for serverless compatibility
+  const apiKey = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '';
+
+  if (!apiKey) {
+    console.warn('[Amplitude Server] ⚠️ NEXT_PUBLIC_AMPLITUDE_API_KEY not set, tracking disabled');
+    console.warn('[Amplitude Server] Available env vars:', Object.keys(process.env).filter(k => k.includes('AMPLITUDE')));
     return;
   }
 
-  console.log('[Amplitude Server] Initializing with API key:', AMPLITUDE_API_KEY.substring(0, 8) + '...');
+  console.log('[Amplitude Server] Initializing with API key:', apiKey.substring(0, 8) + '...');
   
-  // Configure for EU Data Center (must match client-side config)
-  // Use the proper Types enum for server zone
-  amplitude.init(AMPLITUDE_API_KEY, {
-    serverZone: Types.ServerZone.EU,
-    logLevel: Types.LogLevel.Warn, // Enable warnings for debugging
-  });
-  
-  isInitialized = true;
-  console.log('[Amplitude Server] ✅ Initialized successfully for EU data center');
+  try {
+    // Configure for EU Data Center (must match client-side config)
+    amplitude.init(apiKey, {
+      serverZone: Types.ServerZone.EU,
+      logLevel: Types.LogLevel.Warn,
+    });
+    
+    isInitialized = true;
+    console.log('[Amplitude Server] ✅ Initialized successfully for EU data center');
+  } catch (error) {
+    console.error('[Amplitude Server] ❌ Failed to initialize:', error);
+  }
 }
 
 /**
