@@ -362,7 +362,14 @@ async function getPaginatedSubscriptionStatusUsers(
       
       const subInfo = userSubMap.get(sub.user_id);
       users.push({
-        ...profile,
+        id: profile.id,
+        email: profile.email || '',
+        username: profile.username,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        role: profile.role || 'user',
+        is_legacy_user: profile.is_legacy_user || false,
+        created_at: profile.created_at || new Date().toISOString(),
         billing_provider: subInfo?.provider || 'free',
         subscription_status: status,
         canceled_at: subInfo?.canceled_at || null,
