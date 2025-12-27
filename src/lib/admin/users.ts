@@ -280,10 +280,10 @@ async function getPaginatedSubscriptionStatusUsers(
   let countQuery = supabase.from('subscriptions').select('id', { count: 'exact', head: true });
   
   if (status === 'grace_period') {
-    // Grace period: active subscriptions with scheduled cancellation
+    // Grace period: active subscriptions with cancel_at set (scheduled cancellation)
     countQuery = countQuery
       .eq('status', 'active')
-      .or(`cancel_at_period_end.eq.true,cancel_at.gt.${now}`);
+      .not('cancel_at', 'is', null);
   } else {
     countQuery = countQuery.eq('status', status);
   }
@@ -299,12 +299,13 @@ async function getPaginatedSubscriptionStatusUsers(
   
   let subsQuery = supabase
     .from('subscriptions')
-    .select('user_id, provider, status, canceled_at, current_period_end, cancel_at, cancel_at_period_end, cancellation_reason');
+    .select('user_id, provider, status, canceled_at, current_period_end, cancel_at, cancellation_reason');
   
   if (status === 'grace_period') {
+    // Grace period: active subscriptions with cancel_at set
     subsQuery = subsQuery
       .eq('status', 'active')
-      .or(`cancel_at_period_end.eq.true,cancel_at.gt.${now}`);
+      .not('cancel_at', 'is', null);
   } else {
     subsQuery = subsQuery.eq('status', status);
   }
@@ -318,7 +319,6 @@ async function getPaginatedSubscriptionStatusUsers(
       canceled_at: string | null;
       current_period_end: string | null;
       cancel_at: string | null;
-      cancel_at_period_end: boolean | null;
       cancellation_reason: string | null;
     }> | null; error: any };
   
