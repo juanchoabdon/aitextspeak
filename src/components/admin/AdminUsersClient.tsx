@@ -168,9 +168,14 @@ export function AdminUsersClient() {
                   </>
                 )}
                 {filter === 'past_due' && (
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Period End
-                  </th>
+                  <>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Reason
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Period End
+                    </th>
+                  </>
                 )}
                 {filter === 'grace_period' && (
                   <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -274,19 +279,32 @@ export function AdminUsersClient() {
                     </>
                   )}
                   {filter === 'past_due' && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {user.current_period_end ? (
-                        <span className="text-orange-400">
-                          Ended: {new Date(user.current_period_end).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">—</span>
-                      )}
-                    </td>
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {user.cancellation_reason ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-900/50 text-orange-300">
+                            💳 {user.cancellation_reason === 'payment_failed' ? 'Payment Failed' : user.cancellation_reason}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-900/50 text-orange-300">
+                            💳 Payment Failed
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {user.current_period_end ? (
+                          <span className="text-orange-400">
+                            Ended: {new Date(user.current_period_end).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">—</span>
+                        )}
+                      </td>
+                    </>
                   )}
                   {filter === 'grace_period' && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -323,7 +341,7 @@ export function AdminUsersClient() {
               ))}
               {data?.users.length === 0 && (
                 <tr>
-                  <td colSpan={filter === 'canceled' ? 7 : (filter === 'past_due' || filter === 'grace_period') ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={filter === 'canceled' || filter === 'past_due' ? 7 : filter === 'grace_period' ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
                     No users found{debouncedSearch ? ` matching "${debouncedSearch}"` : ''}.
                   </td>
                 </tr>
