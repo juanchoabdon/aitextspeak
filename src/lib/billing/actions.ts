@@ -62,7 +62,7 @@ export async function cancelSubscription(
 
     if (subscription.provider === 'stripe') {
       // Cancel Stripe subscription at period end
-      const stripeSub: Stripe.Subscription = await stripe.subscriptions.update(
+      const stripeSub = await stripe.subscriptions.update(
         subscription.provider_subscription_id,
         {
           cancel_at_period_end: true,
@@ -71,7 +71,7 @@ export async function cancelSubscription(
             feedback: mapReasonToStripeFeedback(reason),
           },
         }
-      );
+      ) as Stripe.Subscription;
 
       periodEnd = stripeSub.current_period_end 
         ? new Date(stripeSub.current_period_end * 1000).toISOString()
