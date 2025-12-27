@@ -543,9 +543,9 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
       billing_interval: subscription.billing_interval,
       canceled_at: subscription.canceled_at,
       cancel_at: subscription.cancel_at,
-      cancellation_reason: subscription.cancellation_reason,
-      cancellation_feedback: subscription.cancellation_feedback,
-      cancellation_comment: subscription.cancellation_comment,
+      cancellation_reason: subscription.cancellation_reason ?? null,
+      cancellation_feedback: subscription.cancellation_feedback ?? null,
+      cancellation_comment: subscription.cancellation_comment ?? null,
     } : null,
     
     projectsCount,
