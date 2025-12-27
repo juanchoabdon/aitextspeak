@@ -7,6 +7,7 @@ import {
   trackSubscriptionRenewalServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
+import { sendPaymentNotification } from '@/lib/email/brevo';
 
 const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'sandbox'
   ? 'https://api-m.sandbox.paypal.com'
@@ -567,6 +568,24 @@ export async function handlePayPalWebhook(
             provider: 'paypal',
             subscriptionId,
           });
+
+          // Get user email for notification
+          const { data: activatedUserProfile } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', userId)
+            .single();
+
+          // Send admin notification for new subscription
+          sendPaymentNotification({
+            type: 'new_subscription',
+            userEmail: activatedUserProfile?.email || 'Unknown',
+            amount: plan?.price || 0,
+            currency: 'USD',
+            provider: 'paypal',
+            planName: plan?.name || 'Subscription',
+            subscriptionId,
+          }).catch(err => console.error('[PayPal Webhook] Failed to send subscription notification:', err));
         }
         break;
       }
@@ -618,6 +637,25 @@ export async function handlePayPalWebhook(
               amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : undefined,
               comment: cancelledSub?.cancellation_comment || undefined,
             });
+
+            // Get user email for notification
+            const { data: cancelledPayPalUserProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', userId)
+              .single();
+
+            // Send admin notification for cancellation
+            sendPaymentNotification({
+              type: 'cancellation',
+              userEmail: cancelledPayPalUserProfile?.email || 'Unknown',
+              amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : 0,
+              currency: 'USD',
+              provider: 'paypal',
+              planName: cancelledSub?.plan_id || 'Subscription',
+              subscriptionId: subscriptionId,
+              reason: cancellationReason,
+            }).catch(err => console.error('[PayPal Webhook] Failed to send cancellation notification:', err));
           }
         }
         break;
@@ -670,9 +708,9 @@ export async function handlePayPalWebhook(
 
           // Get user from subscriptions table OR from legacy payment_history
           let userId: string | null = existingSub?.user_id || null;
-          let planId = existingSub?.plan_id || 'monthly';
-          let planName = existingSub?.plan_name || 'Monthly Plan';
-          let priceAmount = existingSub?.price_amount;
+          const planId = existingSub?.plan_id || 'monthly';
+          const planName = existingSub?.plan_name || 'Monthly Plan';
+          const priceAmount = existingSub?.price_amount;
 
           // If not found in subscriptions, try to find from legacy payment_history
           if (!userId) {
@@ -775,6 +813,25 @@ export async function handlePayPalWebhook(
                 currency: 'USD',
                 subscriptionId,
               });
+
+              // Get user email for notification
+              const { data: renewalUserProfile } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', userId)
+                .single();
+
+              // Send admin notification for renewal
+              sendPaymentNotification({
+                type: 'renewal',
+                userEmail: renewalUserProfile?.email || 'Unknown',
+                amount: amountInDollars,
+                currency: 'USD',
+                provider: gatewayType,
+                planName: planName || 'Subscription',
+                subscriptionId,
+                transactionId: resource.id,
+              }).catch(err => console.error('[PayPal Webhook] Failed to send renewal notification:', err));
               
               console.log('[PayPal Webhook] ✅ Renewal payment recorded:', {
                 userId,
@@ -863,6 +920,24 @@ export async function handlePayPalWebhook(
               isRecurring: false,
               currency: 'USD',
             });
+
+            // Get user email for notification
+            const { data: lifetimePayPalUserProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', customId)
+              .single();
+
+            // Send admin notification for lifetime purchase
+            sendPaymentNotification({
+              type: 'lifetime',
+              userEmail: lifetimePayPalUserProfile?.email || 'Unknown',
+              amount: amount,
+              currency: 'USD',
+              provider: 'paypal',
+              planName: 'Lifetime Package',
+              transactionId: captureId,
+            }).catch(err => console.error('[PayPal Webhook] Failed to send lifetime notification:', err));
           }
         }
         break;

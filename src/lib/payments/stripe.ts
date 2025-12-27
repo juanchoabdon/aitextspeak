@@ -9,6 +9,7 @@ import {
   trackSubscriptionRenewalServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
+import { sendPaymentNotification } from '@/lib/email/brevo';
 
 // Initialize Stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -285,6 +286,18 @@ export async function handleStripeWebhook(
             provider: 'stripe',
             subscriptionId: subscription.id,
           });
+
+          // Send admin notification email
+          const userEmail = session.customer_email || session.customer_details?.email || 'Unknown';
+          sendPaymentNotification({
+            type: 'new_subscription',
+            userEmail,
+            amount: (session.amount_total || 0) / 100,
+            currency: session.currency?.toUpperCase() || 'USD',
+            provider: 'stripe',
+            planName: plan?.name || planId,
+            subscriptionId: subscription.id,
+          }).catch(err => console.error('[Stripe Webhook] Failed to send notification email:', err));
         } else {
           // Handle one-time payment (lifetime)
           const { error: upsertLifetimeError } = await supabase.from('subscriptions').upsert({
@@ -363,6 +376,18 @@ export async function handleStripeWebhook(
             isRecurring: false,
             currency: session.currency?.toUpperCase() || 'USD',
           });
+
+          // Send admin notification email for lifetime
+          const lifetimeUserEmail = session.customer_email || session.customer_details?.email || 'Unknown';
+          sendPaymentNotification({
+            type: 'lifetime',
+            userEmail: lifetimeUserEmail,
+            amount: (session.amount_total || 0) / 100,
+            currency: session.currency?.toUpperCase() || 'USD',
+            provider: 'stripe',
+            planName: 'Lifetime Package',
+            transactionId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
+          }).catch(err => console.error('[Stripe Webhook] Failed to send lifetime notification email:', err));
         }
         break;
       }
@@ -440,6 +465,25 @@ export async function handleStripeWebhook(
             amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : undefined,
             comment: cancelledSub?.cancellation_comment || cancellationDetails?.comment,
           });
+
+          // Get user email for notification
+          const { data: cancelledUserProfile } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', userId)
+            .single();
+
+          // Send admin notification for cancellation
+          sendPaymentNotification({
+            type: 'cancellation',
+            userEmail: cancelledUserProfile?.email || 'Unknown',
+            amount: cancelledSub?.price_amount ? cancelledSub.price_amount / 100 : 0,
+            currency: 'USD',
+            provider: 'stripe',
+            planName: cancelledSub?.plan_id || 'Subscription',
+            subscriptionId: subData.id,
+            reason: cancellationDetails?.feedback || cancellationDetails?.reason || 'Not specified',
+          }).catch(err => console.error('[Stripe Webhook] Failed to send cancellation notification:', err));
         }
         break;
       }
@@ -499,6 +543,25 @@ export async function handleStripeWebhook(
               currency: invoice.currency.toUpperCase(),
               subscriptionId: invoice.subscription,
             });
+
+            // Get user email for notification
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', sub.user_id)
+              .single();
+
+            // Send admin notification for renewal
+            sendPaymentNotification({
+              type: 'renewal',
+              userEmail: userProfile?.email || 'Unknown',
+              amount: amountInDollars,
+              currency: invoice.currency.toUpperCase(),
+              provider: 'stripe',
+              planName: sub.plan_name || 'Subscription',
+              subscriptionId: invoice.subscription,
+              transactionId: invoice.id,
+            }).catch(err => console.error('[Stripe Webhook] Failed to send renewal notification:', err));
           }
         }
         break;
@@ -553,6 +616,24 @@ export async function handleStripeWebhook(
               errorMessage: 'Invoice payment failed',
               subscriptionId: invoiceData.subscription,
             });
+
+            // Get user email for notification
+            const { data: failedUserProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', sub.user_id)
+              .single();
+
+            // Send admin notification for failed payment
+            sendPaymentNotification({
+              type: 'payment_failed',
+              userEmail: failedUserProfile?.email || 'Unknown',
+              amount: invoiceData.amount_due / 100,
+              currency: invoiceData.currency.toUpperCase(),
+              provider: 'stripe',
+              planName: sub.plan_name || 'Subscription',
+              subscriptionId: invoiceData.subscription,
+            }).catch(err => console.error('[Stripe Webhook] Failed to send payment failed notification:', err));
           }
         }
         break;
