@@ -141,7 +141,7 @@ export function trackPaymentCompleted(
   properties: {
     planId: string;
     amount: number;
-    provider: 'stripe' | 'paypal';
+    provider: 'stripe' | 'paypal' | 'paypal_legacy';
     isRecurring: boolean;
     currency?: string;
     subscriptionId?: string;
@@ -213,7 +213,7 @@ export function trackSubscriptionActivatedServer(
   userId: string,
   properties: {
     planId: string;
-    provider: 'stripe' | 'paypal';
+    provider: 'stripe' | 'paypal' | 'paypal_legacy';
     subscriptionId: string;
   }
 ) {
@@ -238,7 +238,7 @@ export function trackSubscriptionCancelledServer(
   userId: string,
   properties: {
     planId: string;
-    provider: 'stripe' | 'paypal';
+    provider: 'stripe' | 'paypal' | 'paypal_legacy';
     subscriptionId: string;
     reason?: string;
     amount?: number; // Monthly value being lost
@@ -290,7 +290,7 @@ export function trackPaymentFailedServer(
   userId: string,
   properties: {
     planId: string;
-    provider: 'stripe' | 'paypal';
+    provider: 'stripe' | 'paypal' | 'paypal_legacy';
     amount?: number; // Amount that failed to charge
     currency?: string;
     errorMessage: string;
@@ -340,7 +340,7 @@ export function trackSubscriptionRenewalServer(
   properties: {
     planId: string;
     amount: number;
-    provider: 'stripe' | 'paypal';
+    provider: 'stripe' | 'paypal' | 'paypal_legacy';
     currency?: string;
     subscriptionId?: string;
   }
