@@ -6,19 +6,31 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   typescript: true,
 });
 
+// New PayPal credentials
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID!;
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!;
+// Legacy PayPal credentials
+const PAYPAL_LEGACY_CLIENT_ID = process.env.PAYPAL_LEGACY_CLIENT_ID;
+const PAYPAL_LEGACY_CLIENT_SECRET = process.env.PAYPAL_LEGACY_CLIENT_SECRET;
+
 const PAYPAL_MODE = process.env.PAYPAL_MODE || 'live';
 const CRON_SECRET = process.env.CRON_SECRET;
 
 // ============== PayPal Helpers ==============
 
-async function getPayPalAccessToken(): Promise<string> {
+async function getPayPalAccessToken(isLegacy: boolean = false): Promise<string> {
   const baseUrl = PAYPAL_MODE === 'live' 
     ? 'https://api-m.paypal.com' 
     : 'https://api-m.sandbox.paypal.com';
   
-  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+  const clientId = isLegacy ? PAYPAL_LEGACY_CLIENT_ID : PAYPAL_CLIENT_ID;
+  const clientSecret = isLegacy ? PAYPAL_LEGACY_CLIENT_SECRET : PAYPAL_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
+    throw new Error(`PayPal ${isLegacy ? 'Legacy' : ''} credentials not configured`);
+  }
+  
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
   
   const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
@@ -33,11 +45,11 @@ async function getPayPalAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-async function getPayPalSubscription(subscriptionId: string): Promise<{ status: string } | null> {
+async function getPayPalSubscription(subscriptionId: string, isLegacy: boolean = false): Promise<{ status: string } | null> {
   try {
     if (!subscriptionId.startsWith('I-')) return null;
 
-    const accessToken = await getPayPalAccessToken();
+    const accessToken = await getPayPalAccessToken(isLegacy);
     const baseUrl = PAYPAL_MODE === 'live' 
       ? 'https://api-m.paypal.com' 
       : 'https://api-m.sandbox.paypal.com';
@@ -83,6 +95,7 @@ export async function GET(request: NextRequest) {
   const results = {
     stripe: { checked: 0, synced: 0, errors: 0, pastDue: 0 },
     paypal: { checked: 0, synced: 0, errors: 0 },
+    paypal_legacy: { checked: 0, synced: 0, errors: 0, skipped: 0 },
     healed: { created: 0, activated: 0 },
     cancelled: [] as string[],
   };
@@ -230,16 +243,26 @@ export async function GET(request: NextRequest) {
   
   const { data: paypalSubscriptions } = await supabase
     .from('subscriptions')
-    .select('id, user_id, provider_subscription_id, status')
+    .select('id, user_id, provider_subscription_id, status, provider')
     .in('provider', ['paypal', 'paypal_legacy'])
     .eq('status', 'active')
     .like('provider_subscription_id', 'I-%'); // Only actual subscriptions
 
   for (const sub of paypalSubscriptions || []) {
-    results.paypal.checked++;
+    const isLegacy = sub.provider === 'paypal_legacy';
+    const resultKey = isLegacy ? 'paypal_legacy' : 'paypal';
+    
+    results[resultKey].checked++;
+    
+    // Skip legacy subscriptions if credentials are not configured
+    if (isLegacy && (!PAYPAL_LEGACY_CLIENT_ID || !PAYPAL_LEGACY_CLIENT_SECRET)) {
+      console.log(`[Cron] Skipping legacy subscription ${sub.provider_subscription_id} - no legacy credentials`);
+      results.paypal_legacy.skipped++;
+      continue;
+    }
     
     try {
-      const paypalSub = await getPayPalSubscription(sub.provider_subscription_id) as {
+      const paypalSub = await getPayPalSubscription(sub.provider_subscription_id, isLegacy) as {
         status: string;
         billing_info?: { next_billing_time?: string };
       } | null;
@@ -275,10 +298,10 @@ export async function GET(request: NextRequest) {
         }
         // If still in grace period, keep pro access
 
-        results.paypal.synced++;
+        results[resultKey].synced++;
       }
     } catch {
-      results.paypal.errors++;
+      results[resultKey].errors++;
     }
   }
 
