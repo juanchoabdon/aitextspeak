@@ -292,7 +292,7 @@ export function BusinessCharts() {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value) => formatCurrency(value as number)}
                 contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
               />
               <Legend />

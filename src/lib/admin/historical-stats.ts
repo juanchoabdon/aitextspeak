@@ -111,6 +111,7 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
     
     // Filter payments for this month
     const monthPayments = payments.filter(p => {
+      if (!p.created_at) return false;
       const date = new Date(p.created_at);
       return date >= month.start && date <= month.end;
     });
@@ -149,13 +150,16 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
     
     // Count churned this month
     const monthChurned = cancelled.filter(c => {
-      const cancelDate = new Date(c.canceled_at || c.updated_at);
+      const dateStr = c.canceled_at || c.updated_at;
+      if (!dateStr) return false;
+      const cancelDate = new Date(dateStr);
       return cancelDate >= month.start && cancelDate <= month.end;
     }).length;
     
     // Calculate MRR for this month
     // Count active subscriptions as of end of month
     const activeAtMonth = (activeSubscriptions || []).filter(sub => {
+      if (!sub.created_at) return false;
       const createdAt = new Date(sub.created_at);
       return createdAt <= month.end;
     });
@@ -292,11 +296,13 @@ export async function getDailyStats(days: number = 30): Promise<{
     const dateStr = dayStart.toISOString().split('T')[0];
     
     const daySignups = signups.filter(s => {
+      if (!s.created_at) return false;
       const d = new Date(s.created_at);
       return d >= dayStart && d <= dayEnd;
     }).length;
     
     const dayPayments = payments.filter(p => {
+      if (!p.created_at) return false;
       const d = new Date(p.created_at);
       return d >= dayStart && d <= dayEnd;
     });
