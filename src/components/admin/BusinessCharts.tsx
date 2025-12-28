@@ -58,14 +58,14 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return null;
 }
 
-function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function ChartCard({ title, subtitle, children, tall = false }: { title: string; subtitle?: string; children: React.ReactNode; tall?: boolean }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-white">{title}</h3>
         {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
       </div>
-      <div className="h-[300px]">
+      <div className={tall ? "h-[250px] sm:h-[300px]" : "h-[200px] sm:h-[300px]"}>
         {children}
       </div>
     </div>
@@ -75,8 +75,8 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
 function GrowthIndicator({ value, label }: { value: number; label: string }) {
   const isPositive = value >= 0;
   return (
-    <div className="text-center p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-      <p className={`text-2xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+    <div className="text-center p-3 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+      <p className={`text-xl sm:text-2xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
         {isPositive ? '+' : ''}{value.toFixed(1)}%
       </p>
       <p className="text-xs text-slate-400 mt-1">{label}</p>
@@ -138,36 +138,38 @@ export function BusinessCharts() {
   return (
     <div className="space-y-8">
       {/* Time Range Selector */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-slate-400">Time Range:</span>
-        <button
-          onClick={() => setTimeRange(3)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            timeRange === 3 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          3 Months
-        </button>
-        <button
-          onClick={() => setTimeRange(6)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            timeRange === 6 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          6 Months
-        </button>
-        <button
-          onClick={() => setTimeRange(12)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            timeRange === 12 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          12 Months
-        </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-slate-400 w-full sm:w-auto">Time Range:</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTimeRange(3)}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              timeRange === 3 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            3M
+          </button>
+          <button
+            onClick={() => setTimeRange(6)}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              timeRange === 6 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            6M
+          </button>
+          <button
+            onClick={() => setTimeRange(12)}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              timeRange === 12 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            12M
+          </button>
+        </div>
       </div>
 
       {/* Growth Indicators */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <GrowthIndicator value={stats.mrrGrowthRate} label="MRR Growth" />
         <GrowthIndicator value={stats.subscriberGrowthRate} label="Subscriber Growth" />
         <div className="text-center p-4 rounded-xl border border-slate-800 bg-slate-900/30">
@@ -210,7 +212,7 @@ export function BusinessCharts() {
       </ChartCard>
 
       {/* Two Column Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Revenue Breakdown */}
         <ChartCard title="Monthly Revenue" subtitle="Revenue breakdown by type">
           <ResponsiveContainer width="100%" height="100%">
@@ -244,7 +246,7 @@ export function BusinessCharts() {
       </div>
 
       {/* Second Row of Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Total Active Subscribers */}
         <ChartCard title="Total Active Subscribers" subtitle="Cumulative subscriber count">
           <ResponsiveContainer width="100%" height="100%">

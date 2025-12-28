@@ -76,7 +76,7 @@ export default async function AdminDashboardPage() {
       <div className="flex">
         <Sidebar items={adminNavItems} isAdmin />
         
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 lg:ml-0">
           {/* Section: Users Overview */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">

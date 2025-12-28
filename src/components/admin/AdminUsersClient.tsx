@@ -75,8 +75,8 @@ export function AdminUsersClient() {
   return (
     <div className="space-y-4">
       {/* Search Bar and Filter */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
             fill="none"
@@ -92,27 +92,27 @@ export function AdminUsersClient() {
           </svg>
           <input
             type="text"
-            placeholder="Search by email, name, or username..."
+            placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-700 bg-slate-800/50 pl-10 pr-4 py-2.5 text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none"
+            className="w-full rounded-xl border border-slate-700 bg-slate-800/50 pl-10 pr-4 py-2.5 text-white placeholder-slate-400 focus:border-amber-500 focus:outline-none text-sm"
           />
         </div>
         
         {/* Filter Dropdown */}
         <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-400">Show:</label>
+          <label className="text-sm text-slate-400 hidden sm:block">Show:</label>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as UserFilter)}
-            className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm min-w-[180px]"
+            className="flex-1 sm:flex-none rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm"
           >
             <option value="paying">Paying Subscribers</option>
             <option value="all">All Users</option>
             <option value="free">Free Users Only</option>
-            <option value="grace_period">Grace Period (Canceling Soon)</option>
-            <option value="canceled">Churned (Canceled)</option>
-            <option value="past_due">Past Due (Payment Failed)</option>
+            <option value="grace_period">Grace Period</option>
+            <option value="canceled">Churned</option>
+            <option value="past_due">Past Due</option>
           </select>
         </div>
         
@@ -142,50 +142,109 @@ export function AdminUsersClient() {
         </p>
       )}
       
-      {/* Users Table */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {data?.users.map((user) => (
+          <div
+            key={user.id}
+            onClick={() => handleUserClick(user.id)}
+            className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 cursor-pointer hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-white truncate">
+                  {user.first_name && user.last_name 
+                    ? `${user.first_name} ${user.last_name}`
+                    : user.username || 'No name'}
+                </p>
+                <p className="text-sm text-slate-400 truncate">{user.email}</p>
+              </div>
+              <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                user.role === 'admin' 
+                  ? 'bg-red-500/20 text-red-400'
+                  : user.role === 'pro'
+                  ? 'bg-amber-500/20 text-amber-400'
+                  : 'bg-slate-500/20 text-slate-400'
+              }`}>
+                {user.role}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                user.billing_provider === 'stripe'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : user.billing_provider === 'paypal'
+                    ? 'bg-blue-500/20 text-blue-400'
+                    : user.billing_provider === 'paypal_legacy'
+                      ? 'bg-indigo-500/20 text-indigo-300'
+                      : 'bg-slate-500/20 text-slate-400'
+              }`}>
+                {user.billing_provider === 'paypal_legacy' ? 'PayPal Legacy' : user.billing_provider}
+              </span>
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                user.is_legacy_user 
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'bg-green-500/20 text-green-400'
+              }`}>
+                {user.is_legacy_user ? 'Legacy' : 'New'}
+              </span>
+              <span className="text-xs text-slate-500">
+                {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+              </span>
+            </div>
+          </div>
+        ))}
+        {data?.users.length === 0 && (
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">
+            No users found{debouncedSearch ? ` matching "${debouncedSearch}"` : ''}.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-800/50">
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   {filter === 'canceled' || filter === 'past_due' || filter === 'grace_period' ? 'Status' : 'Role'}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Billing Provider
+                <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Provider
                 </th>
                 {filter === 'canceled' && (
                   <>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Reason
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Canceled Date
+                    <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Canceled
                     </th>
                   </>
                 )}
                 {filter === 'past_due' && (
                   <>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Reason
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Period End
                     </th>
                   </>
                 )}
                 {filter === 'grace_period' && (
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Access Ends
                   </th>
                 )}
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Created
                 </th>
               </tr>
@@ -197,17 +256,17 @@ export function AdminUsersClient() {
                   className="hover:bg-slate-800/30 transition-colors cursor-pointer"
                   onClick={() => handleUserClick(user.id)}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                     <div>
                       <p className="text-sm font-medium text-white">
                         {user.first_name && user.last_name 
                           ? `${user.first_name} ${user.last_name}`
                           : user.username || 'No name'}
                       </p>
-                      <p className="text-sm text-slate-400">{user.email}</p>
+                      <p className="text-sm text-slate-400 truncate max-w-[200px]">{user.email}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                     {filter === 'canceled' || filter === 'past_due' || filter === 'grace_period' ? (
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         user.subscription_status === 'canceled'
@@ -353,31 +412,31 @@ export function AdminUsersClient() {
       
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-slate-400 order-2 sm:order-1">
             Page {data.page} of {data.totalPages}
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 order-1 sm:order-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1 || isPending}
-              className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 sm:px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              Prev
             </button>
             
-            {/* Page numbers */}
-            <div className="flex gap-1">
-              {Array.from({ length: Math.min(5, data.totalPages) }, (_, i) => {
+            {/* Page numbers - hide on very small screens */}
+            <div className="hidden xs:flex gap-1">
+              {Array.from({ length: Math.min(3, data.totalPages) }, (_, i) => {
                 let pageNum: number;
-                if (data.totalPages <= 5) {
+                if (data.totalPages <= 3) {
                   pageNum = i + 1;
-                } else if (page <= 3) {
+                } else if (page <= 2) {
                   pageNum = i + 1;
-                } else if (page >= data.totalPages - 2) {
-                  pageNum = data.totalPages - 4 + i;
+                } else if (page >= data.totalPages - 1) {
+                  pageNum = data.totalPages - 2 + i;
                 } else {
-                  pageNum = page - 2 + i;
+                  pageNum = page - 1 + i;
                 }
                 
                 return (
@@ -397,10 +456,15 @@ export function AdminUsersClient() {
               })}
             </div>
             
+            {/* Simple page indicator for very small screens */}
+            <span className="xs:hidden px-3 py-2 text-sm text-slate-400">
+              {page}/{data.totalPages}
+            </span>
+            
             <button
               onClick={() => setPage(p => Math.min(data.totalPages, p + 1))}
               disabled={page >= data.totalPages || isPending}
-              className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 sm:px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>
@@ -411,11 +475,11 @@ export function AdminUsersClient() {
       {/* User Detail Modal */}
       {isModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
           onClick={closeModal}
         >
           <div 
-            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            className="bg-slate-900 border-t sm:border border-slate-700 sm:rounded-2xl w-full sm:max-w-3xl h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {isLoadingUser ? (

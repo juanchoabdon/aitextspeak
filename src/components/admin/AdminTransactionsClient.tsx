@@ -80,16 +80,16 @@ export function AdminTransactionsClient() {
   }, [filter, gateway]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Filters */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as TransactionFilter)}
-          className="rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none"
+          className="rounded-xl border border-slate-700 bg-slate-800/50 px-3 sm:px-4 py-2.5 text-white text-sm focus:border-amber-500 focus:outline-none"
         >
           <option value="all">All Types</option>
-          <option value="subscription">New Subscriptions</option>
+          <option value="subscription">New Subs</option>
           <option value="renewal">Renewals</option>
           <option value="purchase">Purchases</option>
           <option value="one_time">Lifetime</option>
@@ -99,12 +99,12 @@ export function AdminTransactionsClient() {
         <select
           value={gateway}
           onChange={(e) => setGateway(e.target.value as GatewayFilter)}
-          className="rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none"
+          className="rounded-xl border border-slate-700 bg-slate-800/50 px-3 sm:px-4 py-2.5 text-white text-sm focus:border-amber-500 focus:outline-none"
         >
           <option value="all">All Gateways</option>
           <option value="stripe">Stripe</option>
           <option value="paypal">PayPal</option>
-          <option value="paypal_legacy">PayPal Legacy</option>
+          <option value="paypal_legacy">Legacy</option>
         </select>
 
         {isPending && (
@@ -112,8 +112,38 @@ export function AdminTransactionsClient() {
         )}
       </div>
 
-      {/* Transactions Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {data?.transactions.map((tx) => (
+          <div key={tx.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{tx.user_email || 'Unknown'}</p>
+                <p className="text-xs text-slate-500">{formatDate(tx.created_at)}</p>
+              </div>
+              <span className={`text-sm font-medium ${tx.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatCurrency(tx.amount, tx.currency)}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <TransactionTypeBadge type={tx.transaction_type} />
+              <GatewayBadge gateway={tx.gateway} />
+              {tx.is_legacy && <span className="text-xs text-slate-500">Legacy</span>}
+            </div>
+            {tx.item_name && (
+              <p className="mt-2 text-xs text-slate-400 truncate">{tx.item_name}</p>
+            )}
+          </div>
+        ))}
+        {data?.transactions.length === 0 && (
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">
+            No transactions found.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Transactions Table */}
+      <div className="hidden md:block overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -182,25 +212,25 @@ export function AdminTransactionsClient() {
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-400">
-            Showing {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, data.totalCount)} of {data.totalCount} transactions
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs sm:text-sm text-slate-400 order-2 sm:order-1">
+            {data.totalCount} transactions • Page {page}/{data.totalPages}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 order-1 sm:order-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1 || isPending}
-              className="px-4 py-2 rounded-lg bg-slate-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
+              className="px-3 sm:px-4 py-2 rounded-lg bg-slate-800 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
             >
-              Previous
+              Prev
             </button>
-            <span className="text-sm text-slate-400">
-              Page {page} of {data.totalPages}
+            <span className="text-sm text-slate-400 px-2">
+              {page}/{data.totalPages}
             </span>
             <button
               onClick={() => setPage(p => Math.min(data.totalPages, p + 1))}
               disabled={page === data.totalPages || isPending}
-              className="px-4 py-2 rounded-lg bg-slate-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
+              className="px-3 sm:px-4 py-2 rounded-lg bg-slate-800 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
             >
               Next
             </button>

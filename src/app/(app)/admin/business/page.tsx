@@ -43,7 +43,7 @@ export default async function BusinessPerformancePage() {
       <div className="flex">
         <Sidebar items={adminNavItems} isAdmin />
         
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

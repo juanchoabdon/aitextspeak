@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -78,39 +79,80 @@ interface SidebarProps {
 
 export function Sidebar({ items, isAdmin = false }: SidebarProps) {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <aside className={`w-64 border-r ${isAdmin ? 'border-red-500/20 bg-red-500/5' : 'border-slate-800 bg-slate-900/50'} min-h-[calc(100vh-4rem)]`}>
-      <nav className="p-4 space-y-2">
-        {isAdmin && (
-          <div className="px-3 py-2 mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-red-400">
-              Admin Panel
-            </span>
-          </div>
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`lg:hidden fixed bottom-4 right-4 z-50 p-3 rounded-full shadow-lg ${
+          isAdmin ? 'bg-red-500 text-white' : 'bg-amber-500 text-black'
+        }`}
+      >
+        {isOpen ? (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         )}
-        {items.map((item) => {
-          const isActive = pathname === item.href;
-          const IconComponent = IconComponents[item.icon];
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                isActive
-                  ? isAdmin
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-amber-500/20 text-amber-400'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <IconComponent />
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+      </button>
+
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:sticky top-16 left-0 z-40
+        w-64 border-r 
+        ${isAdmin ? 'border-red-500/20 bg-slate-950' : 'border-slate-800 bg-slate-950'}
+        min-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)]
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:bg-transparent
+        ${isAdmin ? 'lg:bg-red-500/5' : 'lg:bg-slate-900/50'}
+        overflow-y-auto
+      `}>
+        <nav className="p-4 space-y-2">
+          {isAdmin && (
+            <div className="px-3 py-2 mb-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-red-400">
+                Admin Panel
+              </span>
+            </div>
+          )}
+          {items.map((item) => {
+            const isActive = pathname === item.href;
+            const IconComponent = IconComponents[item.icon];
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isActive
+                    ? isAdmin
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-amber-500/20 text-amber-400'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <IconComponent />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }
 

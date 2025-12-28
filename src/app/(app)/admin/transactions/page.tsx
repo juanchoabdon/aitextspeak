@@ -43,7 +43,7 @@ export default async function AdminTransactionsPage() {
       <div className="flex">
         <Sidebar items={adminNavItems} isAdmin />
         
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white">Transactions</h1>
