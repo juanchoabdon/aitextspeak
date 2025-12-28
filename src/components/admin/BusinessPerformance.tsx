@@ -91,7 +91,7 @@ export function BusinessPerformance() {
   const periods: DatePeriod[] = ['today', 'yesterday', 'week', 'month'];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6 md:space-y-8 overflow-hidden">
       {/* Period-Based Stats - First */}
       <div>
         <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Period Performance</h3>
@@ -233,21 +233,21 @@ export function BusinessPerformance() {
       </div>
 
       {/* MRR Section */}
-      <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <div className="rounded-xl sm:rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
-              <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white flex items-center gap-1.5 sm:gap-2">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Monthly Recurring Revenue
+              <span className="truncate">Monthly Recurring Revenue</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-1">Current active recurring subscriptions</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1">Current active recurring subscriptions</p>
           </div>
           {mrrLoading ? (
-            <div className="h-10 w-32 animate-pulse rounded bg-slate-800" />
+            <div className="h-8 sm:h-10 w-24 sm:w-32 animate-pulse rounded bg-slate-800" />
           ) : (
-            <p className="text-3xl sm:text-4xl font-bold text-amber-500">
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-amber-500">
               ${mrrStats?.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}
             </p>
           )}
@@ -255,61 +255,61 @@ export function BusinessPerformance() {
         
         {/* Provider Breakdown */}
         {!mrrLoading && mrrStats && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-amber-500/20">
-            <div className="text-center p-2 sm:p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-              <p className="text-sm sm:text-xl font-semibold text-purple-400">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-3 md:gap-4 pt-3 sm:pt-4 border-t border-amber-500/20">
+            <div className="text-center p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl bg-purple-500/10 border border-purple-500/20">
+              <p className="text-xs sm:text-base md:text-xl font-semibold text-purple-400">
                 ${mrrStats.stripeMRR.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
-              <p className="text-[10px] sm:text-xs text-slate-400">Stripe</p>
+              <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400">Stripe</p>
             </div>
-            <div className="text-center p-2 sm:p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-              <p className="text-sm sm:text-xl font-semibold text-blue-400">
+            <div className="text-center p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <p className="text-xs sm:text-base md:text-xl font-semibold text-blue-400">
                 ${mrrStats.paypalMRR.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
-              <p className="text-[10px] sm:text-xs text-slate-400">PayPal</p>
+              <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400">PayPal</p>
             </div>
-            <div className="text-center p-2 sm:p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
-              <p className="text-sm sm:text-xl font-semibold text-orange-400">
+            <div className="text-center p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl bg-orange-500/10 border border-orange-500/20">
+              <p className="text-xs sm:text-base md:text-xl font-semibold text-orange-400">
                 ${mrrStats.paypalLegacyMRR.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
-              <p className="text-[10px] sm:text-xs text-slate-400">Legacy</p>
+              <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400">Legacy</p>
             </div>
           </div>
         )}
         
         {/* Subscription Counts */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 mt-4 border-t border-amber-500/20">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3 md:gap-4 pt-3 sm:pt-4 mt-3 sm:mt-4 border-t border-amber-500/20">
           <div className="text-center">
-            <p className="text-xl sm:text-2xl font-semibold text-white">{mrrLoading ? '-' : mrrStats?.activeSubscriptions ?? 0}</p>
-            <p className="text-[10px] sm:text-xs text-slate-400">Active</p>
+            <p className="text-base sm:text-xl md:text-2xl font-semibold text-white">{mrrLoading ? '-' : mrrStats?.activeSubscriptions ?? 0}</p>
+            <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400">Active</p>
           </div>
           <div className="text-center">
-            <p className="text-xl sm:text-2xl font-semibold text-green-400">{mrrLoading ? '-' : mrrStats?.monthlySubscriptions ?? 0}</p>
-            <p className="text-[10px] sm:text-xs text-slate-400">Recurring</p>
+            <p className="text-base sm:text-xl md:text-2xl font-semibold text-green-400">{mrrLoading ? '-' : mrrStats?.monthlySubscriptions ?? 0}</p>
+            <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400">Recurring</p>
           </div>
           <div className="text-center">
-            <p className="text-xl sm:text-2xl font-semibold text-purple-400">{mrrLoading ? '-' : mrrStats?.lifetimeSubscriptions ?? 0}</p>
-            <p className="text-[10px] sm:text-xs text-slate-400">Lifetime</p>
+            <p className="text-base sm:text-xl md:text-2xl font-semibold text-purple-400">{mrrLoading ? '-' : mrrStats?.lifetimeSubscriptions ?? 0}</p>
+            <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400">Lifetime</p>
           </div>
         </div>
 
         {/* Churn Rate */}
-        <div className="mt-4 pt-4 border-t border-amber-500/20">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-amber-500/20">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
               </svg>
-              <span className="text-xs sm:text-sm text-slate-400">Churn (30d)</span>
+              <span className="text-[10px] sm:text-xs md:text-sm text-slate-400">Churn (30d)</span>
             </div>
             {mrrLoading ? (
-              <div className="h-6 w-16 animate-pulse rounded bg-slate-800" />
+              <div className="h-5 sm:h-6 w-12 sm:w-16 animate-pulse rounded bg-slate-800" />
             ) : (
               <div className="text-right">
-                <span className={`text-lg sm:text-xl font-semibold ${(mrrStats?.churnRate ?? 0) > 5 ? 'text-red-400' : (mrrStats?.churnRate ?? 0) > 2 ? 'text-yellow-400' : 'text-green-400'}`}>
+                <span className={`text-sm sm:text-lg md:text-xl font-semibold ${(mrrStats?.churnRate ?? 0) > 5 ? 'text-red-400' : (mrrStats?.churnRate ?? 0) > 2 ? 'text-yellow-400' : 'text-green-400'}`}>
                   {mrrStats?.churnRate.toFixed(1) ?? '0.0'}%
                 </span>
-                <p className="text-xs text-slate-500">{mrrStats?.cancelledLast30Days ?? 0} cancelled</p>
+                <p className="text-[9px] sm:text-xs text-slate-500">{mrrStats?.cancelledLast30Days ?? 0} cancelled</p>
               </div>
             )}
           </div>
@@ -318,15 +318,15 @@ export function BusinessPerformance() {
 
       {/* Plan Breakdown */}
       {!mrrLoading && mrrStats && mrrStats.byPlan.length > 0 && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 p-3 sm:p-4 md:p-6">
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             MRR by Plan
           </h3>
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <table className="w-full min-w-[500px] sm:min-w-0">
+          <div className="overflow-x-auto -mx-3 sm:-mx-4 md:mx-0">
+            <table className="w-full min-w-[400px] sm:min-w-[500px] md:min-w-0">
               <thead>
                 <tr className="border-b border-slate-800">
                   <th className="text-left py-2 sm:py-3 px-3 sm:px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">Plan</th>
@@ -391,14 +391,14 @@ export function BusinessPerformance() {
 
       {/* Provider Breakdown Table */}
       {!mrrLoading && mrrStats && mrrStats.byProvider.length > 0 && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 p-3 sm:p-4 md:p-6">
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
             Revenue by Provider
           </h3>
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+          <div className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-1 sm:grid-cols-3">
             {mrrStats.byProvider.map((provider, idx) => {
               const percentage = mrrStats.mrr > 0 ? (provider.mrr / mrrStats.mrr) * 100 : 0;
               const colorClass = provider.provider === 'stripe' 
@@ -413,19 +413,19 @@ export function BusinessPerformance() {
                   : 'text-blue-400';
               
               return (
-                <div key={idx} className={`rounded-xl border p-3 sm:p-4 ${colorClass}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs sm:text-sm font-medium ${textColor}`}>
-                      {provider.provider === 'paypal_legacy' ? 'PayPal Legacy' : provider.provider === 'paypal' ? 'PayPal' : 'Stripe'}
+                <div key={idx} className={`rounded-lg sm:rounded-xl border p-2 sm:p-3 md:p-4 ${colorClass}`}>
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className={`text-[10px] sm:text-xs md:text-sm font-medium ${textColor}`}>
+                      {provider.provider === 'paypal_legacy' ? 'Legacy' : provider.provider === 'paypal' ? 'PayPal' : 'Stripe'}
                     </span>
-                    <span className="text-xs text-slate-500">{percentage.toFixed(0)}%</span>
+                    <span className="text-[9px] sm:text-xs text-slate-500">{percentage.toFixed(0)}%</span>
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold text-white">
+                  <p className="text-base sm:text-xl md:text-2xl font-bold text-white">
                     ${provider.mrr.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </p>
-                  <p className="text-xs text-slate-400 mt-1">{provider.count} subscribers</p>
+                  <p className="text-[9px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1">{provider.count} subs</p>
                   {/* Progress bar */}
-                  <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="mt-1.5 sm:mt-2 h-1 sm:h-1.5 rounded-full bg-slate-800 overflow-hidden">
                     <div
                       className={`h-full transition-all duration-500 ${
                         provider.provider === 'stripe' 
@@ -445,15 +445,15 @@ export function BusinessPerformance() {
       )}
 
       {/* Historical Charts Section */}
-      <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-slate-800">
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="mt-6 sm:mt-8 md:mt-12 pt-4 sm:pt-6 md:pt-8 border-t border-slate-800">
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
             </svg>
             Growth Analytics
           </h2>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400">Historical trends and growth metrics</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs md:text-sm text-slate-400">Historical trends and growth metrics</p>
         </div>
         <BusinessCharts />
       </div>

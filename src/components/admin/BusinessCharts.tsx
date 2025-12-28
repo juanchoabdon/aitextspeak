@@ -60,12 +60,12 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 function ChartCard({ title, subtitle, children, tall = false }: { title: string; subtitle?: string; children: React.ReactNode; tall?: boolean }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-3 sm:p-6 overflow-hidden">
-      <div className="mb-3 sm:mb-4">
-        <h3 className="text-sm sm:text-lg font-semibold text-white">{title}</h3>
-        {subtitle && <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{subtitle}</p>}
+    <div className="rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 p-2 sm:p-4 md:p-6 overflow-hidden">
+      <div className="mb-2 sm:mb-4">
+        <h3 className="text-xs sm:text-base md:text-lg font-semibold text-white truncate">{title}</h3>
+        {subtitle && <p className="text-[9px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 truncate">{subtitle}</p>}
       </div>
-      <div className={tall ? "h-[220px] sm:h-[300px]" : "h-[180px] sm:h-[300px]"}>
+      <div className={tall ? "h-[160px] sm:h-[220px] md:h-[300px]" : "h-[140px] sm:h-[200px] md:h-[300px]"}>
         {children}
       </div>
     </div>
@@ -75,11 +75,11 @@ function ChartCard({ title, subtitle, children, tall = false }: { title: string;
 function GrowthIndicator({ value, label }: { value: number; label: string }) {
   const isPositive = value >= 0;
   return (
-    <div className="text-center p-2 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-      <p className={`text-lg sm:text-2xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+    <div className="text-center p-1.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-800 bg-slate-900/30">
+      <p className={`text-sm sm:text-xl md:text-2xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
         {isPositive ? '+' : ''}{value.toFixed(1)}%
       </p>
-      <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{label}</p>
+      <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5 sm:mt-1">{label}</p>
     </div>
   );
 }
@@ -111,11 +111,11 @@ export function BusinessCharts() {
 
   if (loading) {
     return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="h-[200px] sm:h-[300px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-          <div className="h-[180px] sm:h-[300px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
-          <div className="h-[180px] sm:h-[300px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
+      <div className="space-y-3 sm:space-y-4 md:space-y-6 overflow-hidden">
+        <div className="h-[120px] sm:h-[180px] md:h-[300px] rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
+        <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
+          <div className="h-[120px] sm:h-[180px] md:h-[300px] rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
+          <div className="h-[120px] sm:h-[180px] md:h-[300px] rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
         </div>
       </div>
     );
@@ -136,14 +136,14 @@ export function BusinessCharts() {
   ].filter(item => item.value > 0);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6 md:space-y-8 overflow-hidden">
       {/* Time Range Selector */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs sm:text-sm text-slate-400">Range:</span>
-        <div className="flex gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <span className="text-[10px] sm:text-xs md:text-sm text-slate-400">Range:</span>
+        <div className="flex gap-1 sm:gap-2">
           <button
             onClick={() => setTimeRange(3)}
-            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            className={`px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs md:text-sm font-medium transition-all ${
               timeRange === 3 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -151,7 +151,7 @@ export function BusinessCharts() {
           </button>
           <button
             onClick={() => setTimeRange(6)}
-            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            className={`px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs md:text-sm font-medium transition-all ${
               timeRange === 6 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -159,7 +159,7 @@ export function BusinessCharts() {
           </button>
           <button
             onClick={() => setTimeRange(12)}
-            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            className={`px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs md:text-sm font-medium transition-all ${
               timeRange === 12 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -169,16 +169,16 @@ export function BusinessCharts() {
       </div>
 
       {/* Growth Indicators */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-3 md:gap-4 lg:grid-cols-4">
         <GrowthIndicator value={stats.mrrGrowthRate} label="MRR Growth" />
         <GrowthIndicator value={stats.subscriberGrowthRate} label="Sub Growth" />
-        <div className="text-center p-2 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-          <p className="text-lg sm:text-2xl font-bold text-amber-500">{formatCurrency(stats.arpu)}</p>
-          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">ARPU</p>
+        <div className="text-center p-1.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-800 bg-slate-900/30">
+          <p className="text-sm sm:text-xl md:text-2xl font-bold text-amber-500">{formatCurrency(stats.arpu)}</p>
+          <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5 sm:mt-1">ARPU</p>
         </div>
-        <div className="text-center p-2 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-          <p className="text-lg sm:text-2xl font-bold text-purple-400">{formatCurrency(stats.ltv)}</p>
-          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">Est. LTV</p>
+        <div className="text-center p-1.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border border-slate-800 bg-slate-900/30">
+          <p className="text-sm sm:text-xl md:text-2xl font-bold text-purple-400">{formatCurrency(stats.ltv)}</p>
+          <p className="text-[8px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5 sm:mt-1">Est. LTV</p>
         </div>
       </div>
 
@@ -213,7 +213,7 @@ export function BusinessCharts() {
       </ChartCard>
 
       {/* Two Column Charts */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Revenue Breakdown */}
         <ChartCard title="Monthly Revenue" subtitle="Revenue breakdown by type">
           <ResponsiveContainer width="100%" height="100%">
@@ -247,7 +247,7 @@ export function BusinessCharts() {
       </div>
 
       {/* Recurring vs Lifetime Charts */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Active Recurring Subscribers */}
         <ChartCard title="Active Recurring" subtitle="Cumulative recurring subscribers (contributes to MRR)">
           <ResponsiveContainer width="100%" height="100%">
