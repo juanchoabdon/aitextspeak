@@ -92,7 +92,147 @@ export function BusinessPerformance() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* MRR Section - Always Current */}
+      {/* Period-Based Stats - First */}
+      <div>
+        <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Period Performance</h3>
+        
+        {/* Period Selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs sm:text-sm text-slate-400 mr-1 sm:mr-2">Period:</span>
+        {periods.map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+              period === p
+                ? 'bg-amber-500 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {periodLabels[p]}
+          </button>
+        ))}
+      </div>
+
+      {/* Date Range Display */}
+      {stats && (
+        <p className="mt-4 text-sm text-slate-500">
+          Showing data from <span className="text-slate-300">{stats.period.start}</span> to{' '}
+          <span className="text-slate-300">{stats.period.end}</span>
+        </p>
+      )}
+
+        {/* Revenue Stats */}
+        <div className="mt-4 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="col-span-2 sm:col-span-1 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-4 sm:p-6">
+            <p className="text-xs sm:text-sm text-slate-400">Total Revenue</p>
+            {loading ? (
+              <div className="mt-2 h-9 w-24 animate-pulse rounded bg-slate-800" />
+            ) : (
+              <>
+                <p className="mt-2 text-2xl sm:text-3xl font-bold text-amber-500">
+                  ${(stats?.revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </p>
+                <div className="mt-2 space-y-1 text-[10px] sm:text-xs">
+                  <div className="flex justify-between text-slate-400">
+                    <span>New Subs:</span>
+                    <span className="text-green-400">${(stats?.revenueFromNewSubs ?? 0).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Renewals:</span>
+                    <span className="text-blue-400">${(stats?.revenueFromRenewals ?? 0).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Lifetime:</span>
+                    <span className="text-purple-400">${(stats?.revenueFromLifetime ?? 0).toFixed(0)}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        <StatCard
+          label="New Paid Users"
+          value={stats?.newPaidUsers ?? 0}
+          color="green"
+          loading={loading}
+        />
+        <StatCard
+            label="Renewals"
+            value={stats?.renewals ?? 0}
+          color="blue"
+          loading={loading}
+        />
+          <StatCard
+            label="New Signups"
+            value={stats?.newUsers ?? 0}
+            color="purple"
+            loading={loading}
+          />
+      </div>
+
+        {/* Lifetime Purchases (if any) */}
+        {!loading && stats && stats.lifetimePurchases > 0 && (
+          <div className="mt-4 p-4 rounded-xl border border-purple-500/30 bg-purple-500/5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-400">Lifetime Purchases</span>
+              <div className="text-right">
+                <span className="text-lg font-semibold text-purple-400">{stats.lifetimePurchases}</span>
+                <span className="ml-2 text-sm text-slate-500">(${stats.revenueFromLifetime.toFixed(2)})</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+      {/* Conversion Rate */}
+      {stats && stats.newUsers > 0 && (
+        <div className="mt-4 p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400">Conversion Rate (New Users → Paid)</span>
+            <span className="text-lg font-semibold text-white">
+              {((stats.newPaidUsers / stats.newUsers) * 100).toFixed(1)}%
+            </span>
+          </div>
+          <div className="mt-2 h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-amber-500 to-orange-600 transition-all duration-500"
+              style={{ width: `${Math.min((stats.newPaidUsers / stats.newUsers) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Quick Insights */}
+      {stats && !loading && (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Avg per New Sub</p>
+              <p className="mt-1 text-xl font-semibold text-white">
+                ${stats.newPaidUsers > 0 ? (stats.revenueFromNewSubs / stats.newPaidUsers).toFixed(2) : '0.00'}
+              </p>
+            </div>
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Avg per Renewal</p>
+            <p className="mt-1 text-xl font-semibold text-white">
+                ${stats.renewals > 0 ? (stats.revenueFromRenewals / stats.renewals).toFixed(2) : '0.00'}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Free Signups</p>
+            <p className="mt-1 text-xl font-semibold text-white">
+                {Math.max(0, stats.newUsers - stats.newPaidUsers)}
+            </p>
+          </div>
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Total Transactions</p>
+            <p className="mt-1 text-xl font-semibold text-white">
+                {stats.newPaidUsers + stats.renewals + stats.lifetimePurchases}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MRR Section */}
       <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
@@ -303,146 +443,6 @@ export function BusinessPerformance() {
           </div>
         </div>
       )}
-
-      {/* Period-Based Stats */}
-      <div>
-        <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Period Performance</h3>
-        
-        {/* Period Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs sm:text-sm text-slate-400 mr-1 sm:mr-2">Period:</span>
-        {periods.map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              period === p
-                ? 'bg-amber-500 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            {periodLabels[p]}
-          </button>
-        ))}
-      </div>
-
-      {/* Date Range Display */}
-      {stats && (
-        <p className="mt-4 text-sm text-slate-500">
-          Showing data from <span className="text-slate-300">{stats.period.start}</span> to{' '}
-          <span className="text-slate-300">{stats.period.end}</span>
-        </p>
-      )}
-
-      {/* Revenue Stats */}
-      <div className="mt-4 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-4 sm:p-6">
-          <p className="text-xs sm:text-sm text-slate-400">Total Revenue</p>
-          {loading ? (
-            <div className="mt-2 h-9 w-24 animate-pulse rounded bg-slate-800" />
-          ) : (
-            <>
-              <p className="mt-2 text-2xl sm:text-3xl font-bold text-amber-500">
-                ${(stats?.revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </p>
-              <div className="mt-2 space-y-1 text-[10px] sm:text-xs">
-                <div className="flex justify-between text-slate-400">
-                  <span>New Subs:</span>
-                  <span className="text-green-400">${(stats?.revenueFromNewSubs ?? 0).toFixed(0)}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Renewals:</span>
-                  <span className="text-blue-400">${(stats?.revenueFromRenewals ?? 0).toFixed(0)}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Lifetime:</span>
-                  <span className="text-purple-400">${(stats?.revenueFromLifetime ?? 0).toFixed(0)}</span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-        <StatCard
-          label="New Paid Users"
-          value={stats?.newPaidUsers ?? 0}
-          color="green"
-          loading={loading}
-        />
-        <StatCard
-          label="Renewals"
-          value={stats?.renewals ?? 0}
-          color="blue"
-          loading={loading}
-        />
-        <StatCard
-          label="New Signups"
-          value={stats?.newUsers ?? 0}
-          color="purple"
-          loading={loading}
-        />
-      </div>
-
-      {/* Lifetime Purchases (if any) */}
-      {!loading && stats && stats.lifetimePurchases > 0 && (
-        <div className="mt-4 p-4 rounded-xl border border-purple-500/30 bg-purple-500/5">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400">Lifetime Purchases</span>
-            <div className="text-right">
-              <span className="text-lg font-semibold text-purple-400">{stats.lifetimePurchases}</span>
-              <span className="ml-2 text-sm text-slate-500">(${stats.revenueFromLifetime.toFixed(2)})</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Conversion Rate */}
-      {stats && stats.newUsers > 0 && (
-        <div className="mt-4 p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400">Conversion Rate (New Users → Paid)</span>
-            <span className="text-lg font-semibold text-white">
-              {((stats.newPaidUsers / stats.newUsers) * 100).toFixed(1)}%
-            </span>
-          </div>
-          <div className="mt-2 h-2 rounded-full bg-slate-800 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-amber-500 to-orange-600 transition-all duration-500"
-              style={{ width: `${Math.min((stats.newPaidUsers / stats.newUsers) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Quick Insights */}
-      {stats && !loading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Avg per New Sub</p>
-            <p className="mt-1 text-xl font-semibold text-white">
-              ${stats.newPaidUsers > 0 ? (stats.revenueFromNewSubs / stats.newPaidUsers).toFixed(2) : '0.00'}
-            </p>
-          </div>
-          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Avg per Renewal</p>
-            <p className="mt-1 text-xl font-semibold text-white">
-              ${stats.renewals > 0 ? (stats.revenueFromRenewals / stats.renewals).toFixed(2) : '0.00'}
-            </p>
-          </div>
-          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Free Signups</p>
-            <p className="mt-1 text-xl font-semibold text-white">
-              {Math.max(0, stats.newUsers - stats.newPaidUsers)}
-            </p>
-          </div>
-          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Total Transactions</p>
-            <p className="mt-1 text-xl font-semibold text-white">
-              {stats.newPaidUsers + stats.renewals + stats.lifetimePurchases}
-            </p>
-          </div>
-        </div>
-      )}
-      </div>
 
       {/* Historical Charts Section */}
       <div className="mt-12 pt-8 border-t border-slate-800">
