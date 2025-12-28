@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "🔨 Running build check before push..."
+
+# Run TypeScript check and build
+npm run build
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Build failed! Push aborted."
+  echo "Please fix the errors above before pushing."
+  exit 1
+fi
+
+echo ""
+echo "✅ Build successful! Proceeding with push..."
+
