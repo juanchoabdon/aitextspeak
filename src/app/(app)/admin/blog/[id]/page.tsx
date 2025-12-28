@@ -6,19 +6,12 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { BlogPostForm } from '@/components/admin/BlogPostForm';
 import { getPostById } from '@/lib/blog/db';
+import { adminNavItems } from '@/lib/admin/nav';
 
 export const metadata: Metadata = {
   title: 'Edit Blog Post - Admin',
   robots: { index: false, follow: false },
 };
-
-const adminNavItems = [
-  { name: 'Users', href: '/admin', icon: 'users' as const },
-  { name: 'Transactions', href: '/admin/transactions', icon: 'money' as const },
-  { name: 'Business', href: '/admin/business', icon: 'chart' as const },
-  { name: 'Services', href: '/admin/services', icon: 'services' as const },
-  { name: 'Resources', href: '/admin/blog', icon: 'blog' as const },
-];
 
 interface EditBlogPostPageProps {
   params: Promise<{ id: string }>;

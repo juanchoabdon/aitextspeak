@@ -4,6 +4,7 @@ import { getUser, getUserProfile } from '@/lib/supabase/server';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { AdminTransactionsClient } from '@/components/admin/AdminTransactionsClient';
+import { adminNavItems } from '@/lib/admin/nav';
 
 export const metadata: Metadata = {
   title: 'Transactions | Admin Dashboard',
@@ -13,14 +14,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-const adminNavItems = [
-  { name: 'Users', href: '/admin', icon: 'users' as const },
-  { name: 'Transactions', href: '/admin/transactions', icon: 'money' as const },
-  { name: 'Business', href: '/admin/business', icon: 'chart' as const },
-  { name: 'Services', href: '/admin/services', icon: 'services' as const },
-  { name: 'Resources', href: '/admin/blog', icon: 'blog' as const },
-];
 
 export default async function AdminTransactionsPage() {
   const user = await getUser();

@@ -5,6 +5,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { AdminUsersClient } from '@/components/admin/AdminUsersClient';
 import { getAdminStats } from '@/lib/admin/stats';
+import { adminNavItems } from '@/lib/admin/nav';
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard - AI TextSpeak',
@@ -14,14 +15,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-const adminNavItems = [
-  { name: 'Users', href: '/admin', icon: 'users' as const },
-  { name: 'Transactions', href: '/admin/transactions', icon: 'money' as const },
-  { name: 'Business', href: '/admin/business', icon: 'chart' as const },
-  { name: 'Services', href: '/admin/services', icon: 'services' as const },
-  { name: 'Resources', href: '/admin/blog', icon: 'blog' as const },
-];
 
 function StatCard({ 
   label, 

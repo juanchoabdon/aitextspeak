@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { migrateLegacyUser, findLegacyUserByEmail, verifyLegacyPassword } from './legacy';
 import type { AuthResult, LoginCredentials, SignupData } from '@/types';
+import { triggerAutomation } from '@/lib/crm/automations';
 
 /**
  * Server Action: Sign in with email and password
@@ -173,6 +174,16 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
   } catch (projectError) {
     // Don't fail signup if project creation fails
     console.error('Failed to create welcome project:', projectError);
+  }
+
+  // Trigger welcome email automation for free users
+  try {
+    triggerAutomation('welcome_free', authData.user.id).catch(err => {
+      console.error('Failed to send welcome email:', err);
+    });
+  } catch (emailError) {
+    // Don't fail signup if email fails
+    console.error('Failed to trigger welcome email:', emailError);
   }
   
   return {

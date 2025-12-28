@@ -6,6 +6,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { getAllServices } from '@/lib/services/db';
 import { AdminServicesList } from '@/components/admin/AdminServicesList';
+import { adminNavItems } from '@/lib/admin/nav';
 
 // Force SSR
 export const dynamic = 'force-dynamic';
@@ -18,14 +19,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-const adminNavItems = [
-  { name: 'Users', href: '/admin', icon: 'users' as const },
-  { name: 'Transactions', href: '/admin/transactions', icon: 'money' as const },
-  { name: 'Business', href: '/admin/business', icon: 'chart' as const },
-  { name: 'Services', href: '/admin/services', icon: 'services' as const },
-  { name: 'Resources', href: '/admin/blog', icon: 'blog' as const },
-];
 
 export default async function AdminServicesPage() {
   const user = await getUser();
