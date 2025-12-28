@@ -17,6 +17,69 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 /**
+ * Insert payment history with duplicate prevention
+ * Checks if a payment with the same gateway_identifier already exists
+ */
+async function insertPaymentHistory(
+  supabase: ReturnType<typeof createAdminClient>,
+  payment: {
+    user_id: string;
+    transaction_type: string;
+    gateway: string;
+    gateway_identifier: string;
+    gateway_event_id?: string;
+    currency: string;
+    amount: number;
+    item_name: string;
+    redirect_status: string;
+    callback_status?: string;
+    visible_for_user?: boolean;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<{ success: boolean; error?: string; duplicate?: boolean }> {
+  // Check if payment already exists
+  const { data: existing } = await supabase
+    .from('payment_history')
+    .select('id')
+    .eq('gateway_identifier', payment.gateway_identifier)
+    .single();
+
+  if (existing) {
+    console.log('[Payment History] Duplicate prevented:', payment.gateway_identifier);
+    return { success: true, duplicate: true };
+  }
+
+  // Also check for same user + amount within 5 minutes (covers different gateway_identifiers)
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { data: recentSame } = await supabase
+    .from('payment_history')
+    .select('id')
+    .eq('user_id', payment.user_id)
+    .eq('amount', payment.amount)
+    .gte('created_at', fiveMinutesAgo)
+    .limit(1);
+
+  if (recentSame && recentSame.length > 0) {
+    console.log('[Payment History] Recent duplicate prevented:', payment.user_id, payment.amount);
+    return { success: true, duplicate: true };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from('payment_history').insert(payment as any);
+
+  if (error) {
+    // Handle unique constraint violation gracefully
+    if (error.code === '23505') {
+      console.log('[Payment History] Concurrent duplicate prevented:', payment.gateway_identifier);
+      return { success: true, duplicate: true };
+    }
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
  * Create a Stripe Checkout Session for a subscription
  */
 export async function createCheckoutSession({
@@ -228,8 +291,8 @@ export async function handleStripeWebhook(
             return { success: false, error: `DB error upserting subscription: ${upsertSubError.message}` };
           }
 
-          // Save transaction to payment_history
-          const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
+          // Save transaction to payment_history (with duplicate prevention)
+          const paymentResult = await insertPaymentHistory(supabase, {
             user_id: userId,
             transaction_type: 'subscription',
             gateway: 'stripe',
@@ -247,14 +310,14 @@ export async function handleStripeWebhook(
               customer_id: typeof session.customer === 'string' ? session.customer : null,
             },
           });
-          if (paymentHistoryError) {
+          if (!paymentResult.success) {
             console.error('[Stripe Webhook] Failed to insert payment_history row', {
               eventId: event.id,
               userId,
               planId,
-              error: paymentHistoryError,
+              error: paymentResult.error,
             });
-            return { success: false, error: `DB error inserting payment history: ${paymentHistoryError.message}` };
+            return { success: false, error: `DB error inserting payment history: ${paymentResult.error}` };
           }
 
           // Update user role to 'pro'
@@ -326,8 +389,8 @@ export async function handleStripeWebhook(
             return { success: false, error: `DB error upserting lifetime subscription: ${upsertLifetimeError.message}` };
           }
 
-          // Save transaction to payment_history
-          const { error: lifetimePaymentHistoryError } = await supabase.from('payment_history').insert({
+          // Save transaction to payment_history (with duplicate prevention)
+          const lifetimePaymentResult = await insertPaymentHistory(supabase, {
             user_id: userId,
             transaction_type: 'one_time',
             gateway: 'stripe',
@@ -345,13 +408,13 @@ export async function handleStripeWebhook(
               customer_id: typeof session.customer === 'string' ? session.customer : null,
             },
           });
-          if (lifetimePaymentHistoryError) {
+          if (!lifetimePaymentResult.success) {
             console.error('[Stripe Webhook] Failed to insert lifetime payment_history row', {
               eventId: event.id,
               userId,
-              error: lifetimePaymentHistoryError,
+              error: lifetimePaymentResult.error,
             });
-            return { success: false, error: `DB error inserting lifetime payment history: ${lifetimePaymentHistoryError.message}` };
+            return { success: false, error: `DB error inserting lifetime payment history: ${lifetimePaymentResult.error}` };
           }
 
           // Update user role to 'pro'
@@ -518,7 +581,8 @@ export async function handleStripeWebhook(
           if (sub?.user_id) {
             const amountInDollars = invoice.amount_paid / 100;
             
-            await supabase.from('payment_history').insert({
+            // Insert with duplicate prevention
+            await insertPaymentHistory(supabase, {
               user_id: sub.user_id,
               transaction_type: 'renewal',
               gateway: 'stripe',
@@ -592,7 +656,8 @@ export async function handleStripeWebhook(
             .single();
 
           if (sub?.user_id) {
-            await supabase.from('payment_history').insert({
+            // Insert with duplicate prevention
+            await insertPaymentHistory(supabase, {
               user_id: sub.user_id,
               transaction_type: 'payment_failed',
               gateway: 'stripe',

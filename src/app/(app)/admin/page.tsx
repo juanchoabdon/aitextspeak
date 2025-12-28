@@ -112,30 +112,30 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Section: Subscriptions */}
+          {/* Section: Recurring Subscriptions */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Active Subscriptions
+              Recurring Subscriptions
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard 
-                label="Total Active Subscribers" 
-                value={stats.totalActiveSubscribers}
-                subValue="Synced with Stripe/PayPal"
+                label="Total Recurring" 
+                value={stats.recurringSubscribersTotal}
+                subValue="Monthly/yearly plans"
                 color="green"
               />
               <StatCard 
-                label="Legacy Subscribers" 
-                value={stats.activeSubscribersLegacy}
+                label="Recurring (Legacy)" 
+                value={stats.recurringSubscribersLegacy}
                 subValue="Migrated from old system"
                 color="amber"
               />
               <StatCard 
-                label="New Subscribers" 
-                value={stats.activeSubscribersNew}
+                label="Recurring (New)" 
+                value={stats.recurringSubscribersNew}
                 subValue="Signed up on new platform"
                 color="purple"
               />
@@ -145,11 +145,59 @@ export default async function AdminDashboardPage() {
                 subValue="In grace period"
                 color="orange"
               />
+            </div>
+          </div>
+
+          {/* Section: Lifetime Subscriptions */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              Lifetime Subscriptions
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard 
+                label="Total Lifetime" 
+                value={stats.lifetimeSubscribersTotal}
+                subValue="One-time purchases"
+                color="blue"
+              />
+              <StatCard 
+                label="Lifetime (Legacy)" 
+                value={stats.lifetimeSubscribersLegacy}
+                subValue="From old system"
+                color="amber"
+              />
+              <StatCard 
+                label="Lifetime (New)" 
+                value={stats.lifetimeSubscribersNew}
+                subValue="New platform purchases"
+                color="purple"
+              />
+            </div>
+          </div>
+
+          {/* Section: Subscription Health */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Subscription Health
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard 
+                label="Total Active" 
+                value={stats.totalActiveSubscribers}
+                subValue="All subscriptions"
+                color="green"
+              />
               <StatCard 
                 label="Past Due" 
                 value={stats.pastDueSubscriptions}
                 subValue="Payment failed"
-                color="amber"
+                color="orange"
               />
               <StatCard 
                 label="Total Churned" 

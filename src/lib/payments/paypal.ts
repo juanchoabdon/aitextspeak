@@ -14,6 +14,71 @@ const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'sandbox'
   : 'https://api-m.paypal.com';
 
 /**
+ * Insert payment history with duplicate prevention
+ * Checks if a payment with the same gateway_identifier already exists
+ * Exported as insertPaymentHistorySafe for external use
+ */
+async function insertPaymentHistory(
+  supabase: ReturnType<typeof createAdminClient>,
+  payment: {
+    user_id: string;
+    transaction_type: string;
+    gateway: string;
+    gateway_identifier: string;
+    gateway_event_id?: string;
+    currency: string;
+    amount: number;
+    item_name: string;
+    redirect_status: string;
+    callback_status?: string;
+    visible_for_user?: boolean;
+    metadata?: Record<string, unknown>;
+    created_at?: string;
+  }
+): Promise<{ success: boolean; error?: string; duplicate?: boolean }> {
+  // Check if payment already exists
+  const { data: existing } = await supabase
+    .from('payment_history')
+    .select('id')
+    .eq('gateway_identifier', payment.gateway_identifier)
+    .single();
+
+  if (existing) {
+    console.log('[Payment History] Duplicate prevented:', payment.gateway_identifier);
+    return { success: true, duplicate: true };
+  }
+
+  // Also check for same user + amount within 5 minutes (covers different gateway_identifiers)
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { data: recentSame } = await supabase
+    .from('payment_history')
+    .select('id')
+    .eq('user_id', payment.user_id)
+    .eq('amount', payment.amount)
+    .gte('created_at', fiveMinutesAgo)
+    .limit(1);
+
+  if (recentSame && recentSame.length > 0) {
+    console.log('[Payment History] Recent duplicate prevented:', payment.user_id, payment.amount);
+    return { success: true, duplicate: true };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from('payment_history').insert(payment as any);
+
+  if (error) {
+    // Handle unique constraint violation gracefully
+    if (error.code === '23505') {
+      console.log('[Payment History] Concurrent duplicate prevented:', payment.gateway_identifier);
+      return { success: true, duplicate: true };
+    }
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
  * Get PayPal access token
  */
 async function getAccessToken(): Promise<string> {
@@ -519,35 +584,24 @@ export async function handlePayPalWebhook(
         // Only create payment_history and update role when subscription is activated
         if (event.event_type === 'BILLING.SUBSCRIPTION.ACTIVATED' || subscriptionStatus === 'ACTIVE') {
           // Check if payment_history already exists for this subscription
-          const { data: existingPayment } = await supabase
-            .from('payment_history')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('gateway', 'paypal')
-            .eq('gateway_identifier', subscriptionId)
-            .eq('transaction_type', 'subscription')
-            .single();
-
-          if (!existingPayment) {
-            // Save transaction to payment_history
-            await supabase.from('payment_history').insert({
-              user_id: userId,
-              transaction_type: 'subscription',
-              gateway: 'paypal',
-              gateway_identifier: subscriptionId,
-              currency: 'USD',
-              amount: plan?.price || 0,
-              item_name: plan?.name || 'Subscription',
-              redirect_status: 'success',
-              callback_status: 'success',
-              visible_for_user: true,
-              metadata: {
-                plan_id: plan?.id,
-                paypal_plan_id: planId,
-                payer_id: resource.subscriber?.payer_id,
-              },
-            });
-          }
+          // Save transaction to payment_history (with duplicate prevention)
+          await insertPaymentHistory(supabase, {
+            user_id: userId,
+            transaction_type: 'subscription',
+            gateway: 'paypal',
+            gateway_identifier: subscriptionId,
+            currency: 'USD',
+            amount: plan?.price || 0,
+            item_name: plan?.name || 'Subscription',
+            redirect_status: 'success',
+            callback_status: 'success',
+            visible_for_user: true,
+            metadata: {
+              plan_id: plan?.id,
+              paypal_plan_id: planId,
+              payer_id: resource.subscriber?.payer_id,
+            },
+          });
 
           await supabase
             .from('profiles')
@@ -689,7 +743,7 @@ export async function handlePayPalWebhook(
           // Check if subscription exists in our database first
           const { data: existingSub } = await supabase
             .from('subscriptions')
-            .select('user_id, plan_id, plan_name, price_amount')
+            .select('user_id, plan_id, plan_name, price_amount, provider')
             .eq('provider_subscription_id', subscriptionId)
             .single();
 
@@ -747,17 +801,18 @@ export async function handlePayPalWebhook(
               .single();
 
             if (!existingRenewal) {
-              // Determine if this is a legacy subscription
-              const isLegacySubscription = !existingSub;
+              // Determine if this is a legacy subscription (check provider field)
+              const isLegacySubscription = !existingSub || existingSub.provider === 'paypal_legacy';
               const gatewayType = isLegacySubscription ? 'paypal_legacy' : 'paypal';
 
-              // Record the payment
-              await supabase.from('payment_history').insert({
+              // Record the payment (with duplicate prevention)
+              const saleId = resource.id || `sale_${subscriptionId}_${Date.now()}`;
+              await insertPaymentHistory(supabase, {
                 user_id: userId,
                 transaction_type: 'renewal',
                 gateway: gatewayType,
-                gateway_identifier: subscriptionId,
-                gateway_event_id: resource.id, // The actual sale/event ID
+                gateway_identifier: saleId, // Use sale ID for unique identification
+                gateway_event_id: saleId,
                 currency: 'USD',
                 amount: amountInDollars,
                 item_name: planName || 'Subscription Renewal',
@@ -768,7 +823,7 @@ export async function handlePayPalWebhook(
                   plan_id: planId,
                   subscription_id: subscriptionId,
                   event_type: event.event_type,
-                  sale_id: resource.id,
+                  sale_id: saleId,
                 },
               });
 
@@ -889,7 +944,7 @@ export async function handlePayPalWebhook(
               onConflict: 'provider,provider_subscription_id',
             });
 
-            await supabase.from('payment_history').insert({
+            await insertPaymentHistory(supabase, {
               user_id: customId,
               transaction_type: 'one_time',
               gateway: 'paypal',
@@ -955,5 +1010,7 @@ export async function handlePayPalWebhook(
   }
 }
 
-
-
+/**
+ * Export insertPaymentHistory for use in route handlers
+ */
+export const insertPaymentHistorySafe = insertPaymentHistory;

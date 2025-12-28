@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { capturePayPalOrder, getPayPalOrder } from '@/lib/payments/paypal';
+import { capturePayPalOrder, getPayPalOrder, insertPaymentHistorySafe } from '@/lib/payments/paypal';
 import { PLANS } from '@/lib/payments/plans';
 import {
   trackPaymentCompleted,
@@ -70,12 +70,12 @@ export async function GET(request: NextRequest) {
       onConflict: 'provider,provider_subscription_id',
     });
 
-    // Save transaction to payment_history
-    await supabase.from('payment_history').insert({
+    // Save transaction to payment_history (with duplicate prevention)
+    await insertPaymentHistorySafe(supabase, {
       user_id: orderUserId,
       transaction_type: 'one_time',
       gateway: 'paypal',
-      gateway_identifier: token,
+      gateway_identifier: captureResult.captureId || token, // Use capture ID for unique identification
       currency: 'USD',
       amount: plan.price,
       item_name: 'Lifetime Package',
@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
         plan_id: 'lifetime',
         capture_id: captureResult.captureId,
         payer_id: captureResult.payerId,
+        order_id: token,
       },
     });
 

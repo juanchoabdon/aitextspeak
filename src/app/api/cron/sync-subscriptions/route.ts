@@ -16,6 +16,21 @@ const PAYPAL_LEGACY_CLIENT_SECRET = process.env.PAYPAL_LEGACY_CLIENT_SECRET;
 const PAYPAL_MODE = process.env.PAYPAL_MODE || 'live';
 const CRON_SECRET = process.env.CRON_SECRET;
 
+interface PayPalSubscriptionDetails {
+  id: string;
+  status: string;
+  plan_id?: string;
+  subscriber?: {
+    email_address?: string;
+    name?: { given_name?: string; surname?: string };
+  };
+  billing_info?: {
+    next_billing_time?: string;
+    last_payment?: { amount?: { value?: string } };
+  };
+  create_time?: string;
+}
+
 // ============== PayPal Helpers ==============
 
 async function getPayPalAccessToken(isLegacy: boolean = false): Promise<string> {
@@ -45,7 +60,7 @@ async function getPayPalAccessToken(isLegacy: boolean = false): Promise<string> 
   return data.access_token;
 }
 
-async function getPayPalSubscription(subscriptionId: string, isLegacy: boolean = false): Promise<{ status: string } | null> {
+async function getPayPalSubscription(subscriptionId: string, isLegacy: boolean = false): Promise<PayPalSubscriptionDetails | null> {
   try {
     if (!subscriptionId.startsWith('I-')) return null;
 
@@ -66,6 +81,170 @@ async function getPayPalSubscription(subscriptionId: string, isLegacy: boolean =
   } catch {
     return null;
   }
+}
+
+// ============== Discovery: Find subscriptions in providers but not in DB ==============
+
+async function discoverStripeSubscriptions(supabase: ReturnType<typeof createAdminClient>) {
+  const discovered: { subId: string; email: string; created: boolean }[] = [];
+  
+  try {
+    // Fetch all active subscriptions from Stripe (paginated)
+    let hasMore = true;
+    let startingAfter: string | undefined;
+    
+    while (hasMore) {
+      const params: Stripe.SubscriptionListParams = {
+        status: 'active',
+        limit: 100,
+      };
+      if (startingAfter) params.starting_after = startingAfter;
+      
+      const stripeSubs = await stripe.subscriptions.list(params);
+      
+      for (const stripeSub of stripeSubs.data) {
+        // Check if this subscription exists in our DB
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('provider_subscription_id', stripeSub.id)
+          .single();
+        
+        if (!existingSub) {
+          // Subscription in Stripe but NOT in our DB!
+          const customer = await stripe.customers.retrieve(stripeSub.customer as string) as Stripe.Customer;
+          const email = customer.email || '';
+          
+          // Find or create user
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .ilike('email', email)
+            .single();
+          
+          if (profile) {
+            // Create missing subscription record
+            const priceId = stripeSub.items.data[0]?.price?.id;
+            const amount = stripeSub.items.data[0]?.price?.unit_amount || 999;
+            
+            // Cast to access current_period_end
+            const subData = stripeSub as unknown as { current_period_end?: number };
+            const periodEnd = subData.current_period_end 
+              ? new Date(subData.current_period_end * 1000).toISOString()
+              : null;
+            
+            const { error } = await supabase.from('subscriptions').insert({
+              user_id: profile.id,
+              provider: 'stripe',
+              provider_subscription_id: stripeSub.id,
+              status: 'active',
+              plan_id: priceId?.includes('29') ? 'monthly_pro' : 'monthly',
+              plan_name: amount >= 2999 ? 'Pro Plan' : 'Basic Plan',
+              price_amount: amount,
+              price_currency: 'USD',
+              billing_interval: 'month',
+              current_period_end: periodEnd,
+              is_legacy: false,
+            });
+            
+            if (!error) {
+              // Ensure user has pro role
+              await supabase
+                .from('profiles')
+                .update({ role: 'pro' })
+                .eq('id', profile.id)
+                .neq('role', 'admin');
+              
+              discovered.push({ subId: stripeSub.id, email, created: true });
+              console.log('[Cron Discovery] ✅ Created Stripe subscription:', stripeSub.id, email);
+            }
+          } else {
+            console.log('[Cron Discovery] ⚠️ Stripe subscription without matching user:', stripeSub.id, email);
+            discovered.push({ subId: stripeSub.id, email, created: false });
+          }
+        }
+      }
+      
+      hasMore = stripeSubs.has_more;
+      if (stripeSubs.data.length > 0) {
+        startingAfter = stripeSubs.data[stripeSubs.data.length - 1].id;
+      }
+    }
+  } catch (error) {
+    console.error('[Cron Discovery] Error discovering Stripe subscriptions:', error);
+  }
+  
+  return discovered;
+}
+
+async function discoverPayPalSubscriptions(
+  supabase: ReturnType<typeof createAdminClient>,
+  subscriptionIds: string[],
+  isLegacy: boolean
+) {
+  const discovered: { subId: string; email: string; created: boolean }[] = [];
+  const provider = isLegacy ? 'paypal_legacy' : 'paypal';
+  
+  for (const subId of subscriptionIds) {
+    // Check if this subscription exists in our DB
+    const { data: existingSub } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('provider_subscription_id', subId)
+      .single();
+    
+    if (!existingSub) {
+      // Subscription in PayPal but NOT in our DB!
+      const ppSub = await getPayPalSubscription(subId, isLegacy);
+      
+      if (ppSub && ppSub.status === 'ACTIVE') {
+        const email = ppSub.subscriber?.email_address || '';
+        
+        // Find user by email
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('email', email)
+          .single();
+        
+        if (profile) {
+          // Create missing subscription record
+          const amount = parseFloat(ppSub.billing_info?.last_payment?.amount?.value || '9.99') * 100;
+          
+          const { error } = await supabase.from('subscriptions').insert({
+            user_id: profile.id,
+            provider,
+            provider_subscription_id: subId,
+            status: 'active',
+            plan_id: amount >= 2999 ? 'monthly_pro' : 'monthly',
+            plan_name: amount >= 2999 ? 'Pro Plan' : 'Basic Plan',
+            price_amount: Math.round(amount),
+            price_currency: 'USD',
+            billing_interval: 'month',
+            current_period_end: ppSub.billing_info?.next_billing_time || null,
+            is_legacy: isLegacy,
+          });
+          
+          if (!error) {
+            // Ensure user has pro role
+            await supabase
+              .from('profiles')
+              .update({ role: 'pro' })
+              .eq('id', profile.id)
+              .neq('role', 'admin');
+            
+            discovered.push({ subId, email, created: true });
+            console.log(`[Cron Discovery] ✅ Created ${provider} subscription:`, subId, email);
+          }
+        } else {
+          console.log(`[Cron Discovery] ⚠️ ${provider} subscription without matching user:`, subId, email);
+          discovered.push({ subId, email, created: false });
+        }
+      }
+    }
+  }
+  
+  return discovered;
 }
 
 /**
@@ -97,6 +276,7 @@ export async function GET(request: NextRequest) {
     paypal: { checked: 0, synced: 0, errors: 0 },
     paypal_legacy: { checked: 0, synced: 0, errors: 0, skipped: 0 },
     healed: { created: 0, activated: 0 },
+    discovered: { stripe: 0, paypal: 0, paypal_legacy: 0 },
     cancelled: [] as string[],
   };
 
@@ -374,10 +554,72 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ============== DISCOVERY: Find subscriptions in providers but not in our DB ==============
+  
+  console.log('[Cron Sync] Starting discovery phase - checking providers for missing subscriptions...');
+  
+  // 1. Discover missing Stripe subscriptions
+  try {
+    const stripeDiscovered = await discoverStripeSubscriptions(supabase);
+    results.discovered.stripe = stripeDiscovered.filter(d => d.created).length;
+    if (stripeDiscovered.length > 0) {
+      console.log(`[Cron Discovery] Stripe: Found ${stripeDiscovered.length} subscriptions not in DB, created ${results.discovered.stripe}`);
+    }
+  } catch (error) {
+    console.error('[Cron Discovery] Error during Stripe discovery:', error);
+  }
+  
+  // 2. Discover missing PayPal (new) subscriptions
+  // We need a list of subscription IDs from PayPal - we'll check our payment_history for any we might have missed
+  try {
+    const { data: paypalPayments } = await supabase
+      .from('payment_history')
+      .select('gateway_identifier')
+      .eq('gateway', 'paypal')
+      .like('gateway_identifier', 'I-%');
+    
+    const paypalSubIds = [...new Set((paypalPayments || []).map(p => p.gateway_identifier).filter(Boolean))] as string[];
+    
+    if (paypalSubIds.length > 0) {
+      const paypalDiscovered = await discoverPayPalSubscriptions(supabase, paypalSubIds, false);
+      results.discovered.paypal = paypalDiscovered.filter(d => d.created).length;
+      if (paypalDiscovered.length > 0) {
+        console.log(`[Cron Discovery] PayPal (new): Found ${paypalDiscovered.length} not in DB, created ${results.discovered.paypal}`);
+      }
+    }
+  } catch (error) {
+    console.error('[Cron Discovery] Error during PayPal discovery:', error);
+  }
+  
+  // 3. Discover missing PayPal Legacy subscriptions (if credentials are configured)
+  if (PAYPAL_LEGACY_CLIENT_ID && PAYPAL_LEGACY_CLIENT_SECRET) {
+    try {
+      const { data: legacyPayments } = await supabase
+        .from('payment_history')
+        .select('gateway_identifier')
+        .eq('gateway', 'paypal_legacy')
+        .like('gateway_identifier', 'I-%');
+      
+      const legacySubIds = [...new Set((legacyPayments || []).map(p => p.gateway_identifier).filter(Boolean))] as string[];
+      
+      if (legacySubIds.length > 0) {
+        const legacyDiscovered = await discoverPayPalSubscriptions(supabase, legacySubIds, true);
+        results.discovered.paypal_legacy = legacyDiscovered.filter(d => d.created).length;
+        if (legacyDiscovered.length > 0) {
+          console.log(`[Cron Discovery] PayPal Legacy: Found ${legacyDiscovered.length} not in DB, created ${results.discovered.paypal_legacy}`);
+        }
+      }
+    } catch (error) {
+      console.error('[Cron Discovery] Error during PayPal Legacy discovery:', error);
+    }
+  }
+
   // Log summary
   console.log('[Cron Sync] Subscription sync complete:', {
     stripe: results.stripe,
     paypal: results.paypal,
+    paypal_legacy: results.paypal_legacy,
+    discovered: results.discovered,
     healed: results.healed,
     totalCancelled: results.cancelled.length,
   });
@@ -388,6 +630,8 @@ export async function GET(request: NextRequest) {
     results: {
       stripe: results.stripe,
       paypal: results.paypal,
+      paypal_legacy: results.paypal_legacy,
+      discovered: results.discovered,
       healed: results.healed,
       cancelled: results.cancelled.length,
     },

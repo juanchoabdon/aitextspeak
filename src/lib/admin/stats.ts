@@ -8,6 +8,15 @@ export interface AdminStats {
   legacyUsersMigrated: number;
   newUsers: number;
   freeUsers: number;
+  // Recurring subscriptions (monthly/yearly)
+  recurringSubscribersTotal: number;
+  recurringSubscribersLegacy: number;
+  recurringSubscribersNew: number;
+  // Lifetime subscriptions
+  lifetimeSubscribersTotal: number;
+  lifetimeSubscribersLegacy: number;
+  lifetimeSubscribersNew: number;
+  // Legacy fields (kept for compatibility)
   activeSubscribersLegacy: number;
   activeSubscribersNew: number;
   totalActiveSubscribers: number;
@@ -31,6 +40,11 @@ export async function getAdminStats(): Promise<AdminStats> {
     totalUsersResult,
     legacyMigratedResult,
     newUsersResult,
+    // Lifetime subscriptions (plan_id = 'lifetime' OR billing_interval = 'one_time')
+    lifetimeTotalResult,
+    lifetimeLegacyResult,
+    lifetimeNewResult,
+    // Other stats
     activeSubsLegacyResult,
     activeSubsNewResult,
     totalActiveResult,
@@ -49,8 +63,31 @@ export async function getAdminStats(): Promise<AdminStats> {
     // New users (not legacy)
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_legacy_user', false),
 
-    // Active subscriptions from legacy users
-    // Include: status=active AND (period not ended OR lifetime with null period_end)
+    // === LIFETIME SUBSCRIPTIONS ===
+    // Total lifetime active (plan_id = 'lifetime' OR billing_interval = 'one_time')
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .or('plan_id.eq.lifetime,billing_interval.eq.one_time'),
+
+    // Lifetime legacy
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .eq('is_legacy', true)
+      .or('plan_id.eq.lifetime,billing_interval.eq.one_time'),
+
+    // Lifetime new
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .eq('is_legacy', false)
+      .or('plan_id.eq.lifetime,billing_interval.eq.one_time'),
+
+    // Active subscriptions from legacy users (all)
     supabase
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
@@ -58,8 +95,7 @@ export async function getAdminStats(): Promise<AdminStats> {
       .eq('is_legacy', true)
       .or(`current_period_end.gt.${now},current_period_end.is.null`),
 
-    // Active subscriptions from new users
-    // Include: status=active AND (period not ended OR lifetime with null period_end)
+    // Active subscriptions from new users (all)
     supabase
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
@@ -106,12 +142,31 @@ export async function getAdminStats(): Promise<AdminStats> {
   const scheduledCancellations = scheduledCancellationsResult.count || 0;
   const pastDueSubscriptions = pastDueResult.count || 0;
   const totalChurned = churnedResult.count || 0;
+  
+  // Lifetime counts
+  const lifetimeSubscribersTotal = lifetimeTotalResult.count || 0;
+  const lifetimeSubscribersLegacy = lifetimeLegacyResult.count || 0;
+  const lifetimeSubscribersNew = lifetimeNewResult.count || 0;
+  
+  // Recurring = Total - Lifetime (to avoid null value issues in DB)
+  const recurringSubscribersTotal = totalActiveSubscribers - lifetimeSubscribersTotal;
+  const recurringSubscribersLegacy = activeSubscribersLegacy - lifetimeSubscribersLegacy;
+  const recurringSubscribersNew = activeSubscribersNew - lifetimeSubscribersNew;
 
   return {
     totalUsers,
     legacyUsersMigrated: legacyMigratedResult.count || 0,
     newUsers: newUsersResult.count || 0,
     freeUsers: totalUsers - totalActiveSubscribers,
+    // Recurring (calculated as total - lifetime)
+    recurringSubscribersTotal,
+    recurringSubscribersLegacy,
+    recurringSubscribersNew,
+    // Lifetime
+    lifetimeSubscribersTotal,
+    lifetimeSubscribersLegacy,
+    lifetimeSubscribersNew,
+    // Legacy fields
     activeSubscribersLegacy,
     activeSubscribersNew,
     totalActiveSubscribers,

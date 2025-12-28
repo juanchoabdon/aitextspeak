@@ -81,7 +81,7 @@ export interface UserDetailData {
   }[];
 }
 
-export type UserFilter = 'all' | 'paying' | 'free' | 'canceled' | 'past_due' | 'grace_period';
+export type UserFilter = 'all' | 'paying' | 'recurring' | 'lifetime' | 'free' | 'canceled' | 'past_due' | 'grace_period';
 
 /**
  * Fetch paginated users with optional search and filter
@@ -100,6 +100,11 @@ export async function getPaginatedUsers(
   // For 'paying' filter, we need to get user IDs from subscriptions first
   if (filter === 'paying') {
     return await getPaginatedPayingUsers(page, pageSize, search);
+  }
+  
+  // For 'lifetime' or 'recurring' filter, use subscription type query
+  if (filter === 'lifetime' || filter === 'recurring') {
+    return await getPaginatedSubscriptionTypeUsers(page, pageSize, search, filter);
   }
   
   // For 'canceled', 'past_due', or 'grace_period' filter, use subscription-based query
@@ -243,6 +248,101 @@ async function getPaginatedPayingUsers(
   
   if (error) {
     console.error('Error fetching paying users:', error);
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  const users = (data || []).map(u => ({
+    ...u,
+    billing_provider: userProviderMap.get(u.id) || 'free',
+  })) as UserListItem[];
+  
+  const totalCount = count || 0;
+  
+  return {
+    users,
+    totalCount,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
+  };
+}
+
+/**
+ * Fetch paginated users by subscription type (lifetime or recurring)
+ */
+async function getPaginatedSubscriptionTypeUsers(
+  page: number,
+  pageSize: number,
+  search: string,
+  subscriptionType: 'lifetime' | 'recurring'
+): Promise<PaginatedUsersResult> {
+  const supabase = createAdminClient();
+  const offset = (page - 1) * pageSize;
+  
+  // Build query based on subscription type
+  let subsQuery = supabase
+    .from('subscriptions')
+    .select('user_id, provider')
+    .eq('status', 'active');
+  
+  if (subscriptionType === 'lifetime') {
+    // Lifetime: plan_id = 'lifetime' OR billing_interval = 'one_time'
+    subsQuery = subsQuery.or('plan_id.eq.lifetime,billing_interval.eq.one_time');
+  } else {
+    // Recurring: NOT (plan_id = 'lifetime' OR billing_interval = 'one_time')
+    // We need to get all active and filter out lifetime
+    subsQuery = subsQuery
+      .not('plan_id', 'eq', 'lifetime')
+      .not('billing_interval', 'eq', 'one_time');
+  }
+  
+  const { data: subsData, error: subsError } = await subsQuery;
+  
+  if (subsError) {
+    console.error('Error fetching subscriptions:', subsError);
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // For recurring, also filter out any nulls that might be lifetime
+  let filteredSubs = subsData || [];
+  if (subscriptionType === 'recurring') {
+    // Additional filtering for edge cases
+    filteredSubs = filteredSubs.filter(sub => sub.user_id);
+  }
+  
+  // Create a map of user_id -> provider
+  const userProviderMap = new Map<string, UserListItem['billing_provider']>();
+  for (const sub of filteredSubs) {
+    if (!userProviderMap.has(sub.user_id)) {
+      userProviderMap.set(sub.user_id, sub.provider as UserListItem['billing_provider']);
+    }
+  }
+  
+  const userIds = [...userProviderMap.keys()];
+  
+  if (userIds.length === 0) {
+    return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+  
+  // Now fetch profiles for these users
+  let query = supabase
+    .from('profiles')
+    .select('id, email, username, first_name, last_name, role, is_legacy_user, created_at', { count: 'exact' })
+    .in('id', userIds);
+  
+  // Apply search filter
+  if (search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    query = query.or(`email.ilike.${searchTerm},first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},username.ilike.${searchTerm}`);
+  }
+  
+  // Apply pagination and ordering
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
+  
+  if (error) {
+    console.error('Error fetching users:', error);
     return { users: [], totalCount: 0, page, pageSize, totalPages: 0 };
   }
   

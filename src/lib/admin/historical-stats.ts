@@ -3,6 +3,9 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 
+// Colombia/Bogota timezone (UTC-5)
+const TIMEZONE = 'America/Bogota';
+
 export interface MonthlyData {
   month: string; // YYYY-MM format
   label: string; // "Jan 2025" format
@@ -18,6 +21,11 @@ export interface MonthlyData {
   stripeRevenue: number;
   paypalRevenue: number;
   paypalLegacyRevenue: number;
+  // Separate recurring vs lifetime
+  newRecurring: number;
+  newLifetime: number;
+  activeRecurring: number;
+  activeLifetime: number;
 }
 
 export interface GrowthStats {
@@ -116,14 +124,13 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
       return date >= month.start && date <= month.end;
     });
     
-    // Calculate revenues
+    // Calculate revenues from payment_history
     let revenueFromNewSubs = 0;
     let revenueFromRenewals = 0;
     let revenueFromLifetime = 0;
     let stripeRevenue = 0;
     let paypalRevenue = 0;
     let paypalLegacyRevenue = 0;
-    const newSubscriberIds = new Set<string>();
     let renewalCount = 0;
     
     for (const payment of monthPayments) {
@@ -131,11 +138,10 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
       
       if (payment.transaction_type === 'subscription') {
         revenueFromNewSubs += amount;
-        if (payment.user_id) newSubscriberIds.add(payment.user_id);
       } else if (payment.transaction_type === 'renewal') {
         revenueFromRenewals += amount;
         renewalCount++;
-      } else if (['purchase', 'one_time'].includes(payment.transaction_type)) {
+      } else if (['purchase', 'one_time', 'lifetime'].includes(payment.transaction_type)) {
         revenueFromLifetime += amount;
       }
       
@@ -145,6 +151,31 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
         paypalRevenue += amount;
       } else if (payment.gateway === 'paypal_legacy') {
         paypalLegacyRevenue += amount;
+      }
+    }
+    
+    // Count new subscriptions from subscriptions table (source of truth)
+    const monthSubscriptions = subscriptions.filter(s => {
+      if (!s.created_at) return false;
+      const date = new Date(s.created_at);
+      return date >= month.start && date <= month.end;
+    });
+    
+    let newRecurringCount = 0;
+    let newLifetimeCount = 0;
+    
+    for (const sub of monthSubscriptions) {
+      const planName = (sub.plan_name || '').toLowerCase();
+      const planId = (sub.plan_id || '').toLowerCase();
+      const billingInterval = sub.billing_interval || '';
+      
+      const isLifetime = planName.includes('lifetime') || planId.includes('lifetime') || 
+                        billingInterval === 'one_time';
+      
+      if (isLifetime) {
+        newLifetimeCount++;
+      } else {
+        newRecurringCount++;
       }
     }
     
@@ -167,22 +198,39 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
     // Subtract those that were cancelled before this month
     const activeCount = activeAtMonth.length;
     
+    // Separate recurring vs lifetime for active count
+    let activeRecurring = 0;
+    let activeLifetime = 0;
     let mrr = 0;
+    
     for (const sub of activeAtMonth) {
       const planName = (sub.plan_name || '').toLowerCase();
       const planId = (sub.plan_id || '').toLowerCase();
+      const billingInterval = sub.billing_interval || '';
       
-      // Skip lifetime plans
-      if (planName.includes('lifetime') || planId.includes('lifetime')) continue;
+      // Check if lifetime
+      const isLifetime = planName.includes('lifetime') || planId.includes('lifetime') || 
+                        billingInterval === 'one_time';
       
-      // Determine interval
+      if (isLifetime) {
+        activeLifetime++;
+        continue; // Don't add to MRR
+      }
+      
+      activeRecurring++;
+      
+      // Determine interval for MRR calculation
       let intervalMonths = 1;
-      if (!sub.billing_interval) {
-        if (planName.includes('annual') || planId.includes('annual')) {
-          intervalMonths = 6; // Legacy "annual" is actually 6 months
-        }
-      } else if (sub.billing_interval === 'year') {
+      const intervalMatch = billingInterval.match(/^(\d+)_?(month|year)/i);
+      if (intervalMatch) {
+        intervalMonths = parseInt(intervalMatch[1]) * (intervalMatch[2].toLowerCase() === 'year' ? 12 : 1);
+      } else if (billingInterval === 'year') {
         intervalMonths = 12;
+      } else if (!billingInterval) {
+        if (planName.includes('annual') || planId.includes('annual') || 
+            planName.includes('6 month')) {
+          intervalMonths = 6;
+        }
       }
       
       // Get price
@@ -207,7 +255,7 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
       month: month.key,
       label: month.label,
       mrr,
-      newSubscribers: newSubscriberIds.size,
+      newSubscribers: newRecurringCount + newLifetimeCount,
       renewals: renewalCount,
       churned: monthChurned,
       totalActiveSubscribers: activeCount,
@@ -218,6 +266,11 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
       stripeRevenue,
       paypalRevenue,
       paypalLegacyRevenue,
+      // Separate recurring vs lifetime (both from subscriptions table)
+      newRecurring: newRecurringCount,
+      newLifetime: newLifetimeCount,
+      activeRecurring,
+      activeLifetime,
     });
   }
   
@@ -254,8 +307,39 @@ export async function getHistoricalStats(months: number = 12): Promise<GrowthSta
   };
 }
 
+// Helper to get Colombia timezone date boundaries
+function getColombiaDateBoundaries(daysAgo: number): { start: Date; end: Date; dateStr: string } {
+  const now = new Date();
+  // Get current date in Colombia timezone
+  const colombiaStr = now.toLocaleDateString('en-CA', { timeZone: TIMEZONE }); // YYYY-MM-DD format
+  const [year, month, day] = colombiaStr.split('-').map(Number);
+  
+  // Calculate the target date
+  const targetDate = new Date(year, month - 1, day - daysAgo);
+  
+  // Colombia is UTC-5, so start of day in Colombia = 05:00 UTC
+  const startUTC = new Date(Date.UTC(
+    targetDate.getFullYear(),
+    targetDate.getMonth(),
+    targetDate.getDate(),
+    5, 0, 0, 0 // 00:00 Colombia = 05:00 UTC
+  ));
+  
+  const endUTC = new Date(Date.UTC(
+    targetDate.getFullYear(),
+    targetDate.getMonth(),
+    targetDate.getDate() + 1,
+    4, 59, 59, 999 // 23:59:59 Colombia = 04:59:59 UTC next day
+  ));
+  
+  const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+  
+  return { start: startUTC, end: endUTC, dateStr };
+}
+
 /**
  * Get daily stats for the last N days (for more granular view)
+ * Uses Colombia/Bogota timezone for day boundaries
  */
 export async function getDailyStats(days: number = 30): Promise<{
   dailyData: { date: string; newSignups: number; newPaidUsers: number; revenue: number }[];
@@ -263,11 +347,10 @@ export async function getDailyStats(days: number = 30): Promise<{
   noStore();
   
   const supabase = createAdminClient();
-  const now = new Date();
   const dailyData: { date: string; newSignups: number; newPaidUsers: number; revenue: number }[] = [];
   
-  // Use UTC dates to match database timestamps
-  const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days));
+  // Get start date for query (oldest day we need)
+  const { start: queryStart } = getColombiaDateBoundaries(days);
   
   // Fetch all data for the period (exclude legacy migrated users)
   const [signupsResult, paymentsResult] = await Promise.all([
@@ -275,25 +358,22 @@ export async function getDailyStats(days: number = 30): Promise<{
       .from('profiles')
       .select('created_at')
       .eq('is_legacy_user', false) // Only count new signups, not migrated users
-      .gte('created_at', startDate.toISOString()),
+      .gte('created_at', queryStart.toISOString()),
     
     supabase
       .from('payment_history')
       .select('amount, transaction_type, created_at, user_id')
       .in('redirect_status', ['success', 'completed'])
       .eq('transaction_type', 'subscription')
-      .gte('created_at', startDate.toISOString()),
+      .gte('created_at', queryStart.toISOString()),
   ]);
   
   const signups = signupsResult.data || [];
   const payments = paymentsResult.data || [];
   
-  // Group by day using UTC
+  // Group by day using Colombia timezone
   for (let i = days - 1; i >= 0; i--) {
-    // Create day boundaries in UTC
-    const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i, 0, 0, 0, 0));
-    const dayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i, 23, 59, 59, 999));
-    const dateStr = dayStart.toISOString().split('T')[0];
+    const { start: dayStart, end: dayEnd, dateStr } = getColombiaDateBoundaries(i);
     
     const daySignups = signups.filter(s => {
       if (!s.created_at) return false;

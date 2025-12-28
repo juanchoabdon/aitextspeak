@@ -230,8 +230,8 @@ export function BusinessCharts() {
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Subscribers Chart */}
-        <ChartCard title="Subscriber Growth" subtitle="New vs Churned subscribers">
+        {/* Recurring Subscriber Growth */}
+        <ChartCard title="Recurring Subscribers" subtitle="New vs Churned recurring subscriptions">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -239,23 +239,23 @@ export function BusinessCharts() {
               <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={30} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
-              <Bar dataKey="newSubscribers" name="New" fill={COLORS.success} />
+              <Bar dataKey="newRecurring" name="New" fill={COLORS.success} />
               <Bar dataKey="churned" name="Churned" fill={COLORS.danger} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
       </div>
 
-      {/* Second Row of Charts */}
+      {/* Recurring vs Lifetime Charts */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-        {/* Total Active Subscribers */}
-        <ChartCard title="Active Subscribers" subtitle="Cumulative subscriber count">
+        {/* Active Recurring Subscribers */}
+        <ChartCard title="Active Recurring" subtitle="Cumulative recurring subscribers (contributes to MRR)">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
               <defs>
-                <linearGradient id="subscribersGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS.secondary} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={COLORS.secondary} stopOpacity={0} />
+                <linearGradient id="recurringGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -264,13 +264,55 @@ export function BusinessCharts() {
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
-                dataKey="totalActiveSubscribers"
-                name="Active Subscribers"
-                stroke={COLORS.secondary}
-                fill="url(#subscribersGradient)"
+                dataKey="activeRecurring"
+                name="Active Recurring"
+                stroke={COLORS.success}
+                fill="url(#recurringGradient)"
                 strokeWidth={2}
               />
             </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Active Lifetime Subscribers */}
+        <ChartCard title="Active Lifetime" subtitle="Cumulative lifetime purchases">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+              <defs>
+                <linearGradient id="lifetimeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS.tertiary} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={COLORS.tertiary} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={30} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="activeLifetime"
+                name="Active Lifetime"
+                stroke={COLORS.tertiary}
+                fill="url(#lifetimeGradient)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* Lifetime Growth Chart */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+        {/* New Lifetime Purchases */}
+        <ChartCard title="Lifetime Purchases" subtitle="New lifetime purchases per month">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={30} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="newLifetime" name="New Lifetime" fill={COLORS.tertiary} radius={[4, 4, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 

@@ -107,7 +107,9 @@ export function AdminUsersClient() {
             onChange={(e) => setFilter(e.target.value as UserFilter)}
             className="flex-1 sm:flex-none rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-white focus:border-amber-500 focus:outline-none text-sm"
           >
-            <option value="paying">Paying Subscribers</option>
+            <option value="paying">All Paying</option>
+            <option value="recurring">Recurring Only</option>
+            <option value="lifetime">Lifetime Only</option>
             <option value="all">All Users</option>
             <option value="free">Free Users Only</option>
             <option value="grace_period">Grace Period</option>
@@ -132,6 +134,8 @@ export function AdminUsersClient() {
         <p className="text-sm text-slate-400">
           Showing {data.users.length} of {data.totalCount.toLocaleString()} {
             filter === 'paying' ? 'paying subscribers' : 
+            filter === 'recurring' ? 'recurring subscribers' :
+            filter === 'lifetime' ? 'lifetime subscribers' :
             filter === 'free' ? 'free users' : 
             filter === 'grace_period' ? 'users in grace period' :
             filter === 'canceled' ? 'churned users' :

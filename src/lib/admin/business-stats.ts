@@ -49,43 +49,56 @@ export interface MRRStats {
   paypalLegacyMRR: number;
 }
 
+// Colombia/Bogota timezone (UTC-5)
+const TIMEZONE = 'America/Bogota';
+
+function getStartOfDayInColombia(date: Date = new Date()): Date {
+  // Get current date in Colombia timezone as YYYY-MM-DD string
+  const colombiaStr = date.toLocaleDateString('en-CA', { timeZone: TIMEZONE });
+  const [year, month, day] = colombiaStr.split('-').map(Number);
+  
+  // Colombia is UTC-5, so 00:00 Colombia = 05:00 UTC
+  return new Date(Date.UTC(year, month - 1, day, 5, 0, 0, 0));
+}
+
 function getDateRange(period: DatePeriod, customStart?: string, customEnd?: string): { start: Date; end: Date } {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Get today's start in Colombia timezone (converted to UTC for DB)
+  const todayStart = getStartOfDayInColombia(now);
   
   switch (period) {
     case 'today':
       return {
-        start: today,
-        end: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1), // End of today
+        start: todayStart,
+        end: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1), // End of today
       };
     case 'yesterday':
-      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
       return {
-        start: yesterday,
-        end: new Date(today.getTime() - 1), // End of yesterday
+        start: yesterdayStart,
+        end: new Date(todayStart.getTime() - 1), // End of yesterday
       };
     case 'week':
-      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
       return {
         start: weekAgo,
-        end: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+        end: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
       };
     case 'month':
-      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
       return {
         start: monthAgo,
-        end: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+        end: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
       };
     case 'custom':
       return {
-        start: customStart ? new Date(customStart) : today,
-        end: customEnd ? new Date(customEnd) : new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+        start: customStart ? new Date(customStart) : todayStart,
+        end: customEnd ? new Date(customEnd) : new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
       };
     default:
       return {
-        start: today,
-        end: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+        start: todayStart,
+        end: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
       };
   }
 }
@@ -259,28 +272,43 @@ export async function getMRRStats(): Promise<MRRStats> {
     const provider = sub.provider || 'unknown';
     const displayPlanName = sub.plan_name || sub.plan_id || 'Unknown Plan';
     
-    // Determine billing type from plan name if interval is null
+    // Determine billing interval and convert to months
     let effectiveBillingInterval = sub.billing_interval;
     let intervalMonths = 1; // Default to 1 month
     
-    // Infer billing interval from plan name for legacy subscriptions
-    if (!effectiveBillingInterval) {
+    // Parse billing interval - handles formats like 'month', '6_month', 'year', etc.
+    if (effectiveBillingInterval) {
+      // Handle composite intervals like '6_month', '3_month', etc.
+      const intervalMatch = effectiveBillingInterval.match(/^(\d+)_?(month|year|week)s?$/i);
+      if (intervalMatch) {
+        const count = parseInt(intervalMatch[1]);
+        const unit = intervalMatch[2].toLowerCase();
+        if (unit === 'month') {
+          intervalMonths = count;
+        } else if (unit === 'year') {
+          intervalMonths = count * 12;
+        } else if (unit === 'week') {
+          intervalMonths = count * 0.25;
+        }
+      } else if (effectiveBillingInterval === 'year') {
+        intervalMonths = 12;
+      } else if (effectiveBillingInterval === 'week') {
+        intervalMonths = 0.25;
+      }
+      // 'month' stays as default = 1
+    } else {
+      // Infer billing interval from plan name for legacy subscriptions with NULL interval
       if (planName.includes('monthly') || planId.includes('monthly')) {
         effectiveBillingInterval = 'month';
         intervalMonths = 1;
       } else if (planName.includes('6 month') || planId.includes('6_month') ||
                  planName.includes('annual') || planId.includes('annual')) {
-        // "Pro Annual" in legacy is actually a 6-month package ($29.99/6 months)
-        effectiveBillingInterval = '6month';
+        effectiveBillingInterval = '6_month';
         intervalMonths = 6;
       } else if (planName.includes('yearly') || planId.includes('yearly')) {
         effectiveBillingInterval = 'year';
         intervalMonths = 12;
       }
-    } else if (effectiveBillingInterval === 'year') {
-      intervalMonths = 12;
-    } else if (effectiveBillingInterval === 'week') {
-      intervalMonths = 0.25; // 1/4 of a month
     }
     
     // Check if it's a lifetime plan (doesn't count towards MRR)
