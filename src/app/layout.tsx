@@ -6,6 +6,7 @@ import { TopLoader } from "@/components/ui/TopLoader";
 import { AmplitudeProvider } from "@/components/analytics/AmplitudeProvider";
 import { FirstPromoterScripts } from "@/components/analytics/FirstPromoter";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { FaviconSetter } from "@/components/FaviconSetter";
 import "./globals.css";
 
 const inter = Inter({
@@ -81,11 +82,17 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
     shortcut: "/favicon.svg",
-    apple: "/icon.svg",
+    apple: "/apple-touch-icon.png",
+    other: [
+      { rel: "mask-icon", url: "/favicon.svg", color: "#f59e0b" },
+    ],
   },
-  manifest: "/site.webmanifest",
 };
 
 export const viewport: Viewport = {
@@ -105,6 +112,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-slate-950 text-white`}>
+        <FaviconSetter />
         <GoogleAnalytics />
         <FirstPromoterScripts />
         <Toaster 
