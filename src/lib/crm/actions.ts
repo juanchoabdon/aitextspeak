@@ -1,6 +1,14 @@
 'use server';
 
-import { getAutomationStats as getStats, runAutomations as run } from './automations';
+import { 
+  getAutomationStats as getStats, 
+  runAutomations as run, 
+  getEmailHistory as getHistory,
+  type EmailHistoryEntry,
+} from './automations';
+
+// Re-export types
+export type { EmailHistoryEntry };
 
 /**
  * Server action to get automation statistics
@@ -20,5 +28,16 @@ export async function runAutomations(dryRun = false) {
     emailsSent: result.emailsSent,
     errors: result.errors,
   };
+}
+
+/**
+ * Server action to get email history
+ */
+export async function getEmailHistory(params: {
+  page?: number;
+  limit?: number;
+  automationFilter?: string;
+}) {
+  return getHistory(params);
 }
 

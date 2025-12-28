@@ -654,3 +654,103 @@ export async function getAutomationStats(): Promise<{
   };
 }
 
+/**
+ * Email history entry type
+ */
+export interface EmailHistoryEntry {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string | null;
+  automation_id: string;
+  automation_name: string;
+  email_type: string;
+  sent_at: string;
+}
+
+/**
+ * Get email history with pagination
+ */
+export async function getEmailHistory(params: {
+  page?: number;
+  limit?: number;
+  automationFilter?: string;
+}): Promise<{
+  emails: EmailHistoryEntry[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> {
+  const supabase = createAdminClient();
+  const page = params.page || 1;
+  const limit = params.limit || 20;
+  const offset = (page - 1) * limit;
+
+  // Build query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
+    .from('crm_email_logs')
+    .select('id, user_id, automation_id, email_type, sent_at', { count: 'exact' });
+
+  if (params.automationFilter && params.automationFilter !== 'all') {
+    query = query.eq('automation_id', params.automationFilter);
+  }
+
+  const { data: logs, count } = await query
+    .order('sent_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (!logs || logs.length === 0) {
+    return {
+      emails: [],
+      total: 0,
+      page,
+      totalPages: 0,
+    };
+  }
+
+  // Get unique user IDs
+  const userIds: string[] = [...new Set(logs.map((l: { user_id: string }) => l.user_id))] as string[];
+
+  // Fetch user profiles
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, email, first_name, last_name')
+    .in('id', userIds);
+
+  const profileMap = new Map(
+    (profiles || []).map((p: { id: string; email: string; first_name: string | null; last_name: string | null }) => [p.id, p])
+  );
+
+  // Map automation IDs to names
+  const automationNameMap = new Map(
+    AUTOMATIONS.map(a => [a.id, a.name])
+  );
+
+  // Build response
+  const emails: EmailHistoryEntry[] = logs.map((log: { id: string; user_id: string; automation_id: string; email_type: string; sent_at: string }) => {
+    const profile = profileMap.get(log.user_id);
+    const firstName = profile?.first_name || '';
+    const lastName = profile?.last_name || '';
+    const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+
+    return {
+      id: log.id,
+      user_id: log.user_id,
+      user_email: profile?.email || 'Unknown',
+      user_name: fullName,
+      automation_id: log.automation_id,
+      automation_name: automationNameMap.get(log.automation_id) || log.automation_id,
+      email_type: log.email_type,
+      sent_at: log.sent_at,
+    };
+  });
+
+  return {
+    emails,
+    total: count || 0,
+    page,
+    totalPages: Math.ceil((count || 0) / limit),
+  };
+}
+

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition, useCallback } from 'react';
-import { getAutomationStats, runAutomations } from '@/lib/crm/actions';
+import { getAutomationStats, runAutomations, getEmailHistory, type EmailHistoryEntry } from '@/lib/crm/actions';
 
 interface AutomationStat {
   id: string;
@@ -97,7 +97,11 @@ function AutomationCard({ automation }: { automation: AutomationStat }) {
   );
 }
 
+// Tabs for switching between views
+type TabType = 'automations' | 'history';
+
 export function AdminCRMClient() {
+  const [activeTab, setActiveTab] = useState<TabType>('automations');
   const [stats, setStats] = useState<CRMStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
@@ -106,6 +110,14 @@ export function AdminCRMClient() {
     emailsSent: number;
     errors: number;
   } | null>(null);
+
+  // Email history state
+  const [emailHistory, setEmailHistory] = useState<EmailHistoryEntry[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = useState(0);
+  const [historyFilter, setHistoryFilter] = useState('all');
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const loadStats = useCallback(() => {
     startTransition(async () => {
@@ -120,9 +132,34 @@ export function AdminCRMClient() {
     });
   }, []);
 
+  const loadEmailHistory = useCallback(async (page: number, filter: string) => {
+    setIsLoadingHistory(true);
+    try {
+      const data = await getEmailHistory({
+        page,
+        limit: 20,
+        automationFilter: filter,
+      });
+      setEmailHistory(data.emails);
+      setHistoryTotal(data.total);
+      setHistoryTotalPages(data.totalPages);
+      setHistoryPage(data.page);
+    } catch (error) {
+      console.error('Failed to load email history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      loadEmailHistory(historyPage, historyFilter);
+    }
+  }, [activeTab, historyPage, historyFilter, loadEmailHistory]);
 
   const handleRunAutomations = async (dryRun: boolean) => {
     startTransition(async () => {
@@ -131,6 +168,9 @@ export function AdminCRMClient() {
         setRunResult(result);
         if (!dryRun) {
           loadStats(); // Refresh stats after real run
+          if (activeTab === 'history') {
+            loadEmailHistory(1, historyFilter);
+          }
         }
       } catch (error) {
         console.error('Failed to run automations:', error);
@@ -181,132 +221,309 @@ export function AdminCRMClient() {
         />
       </div>
 
-      {/* Run Automations Button */}
-      <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/50 border border-slate-800">
-        <div className="flex-1">
-          <h3 className="font-medium text-white">Run Automations</h3>
-          <p className="text-sm text-slate-400 mt-1">
-            Manually trigger all enabled automations. The daily cron runs automatically at midnight UTC.
-          </p>
-        </div>
-        <div className="flex gap-2">
+      {/* Tabs */}
+      <div className="border-b border-slate-800">
+        <nav className="flex gap-4">
           <button
-            onClick={() => handleRunAutomations(true)}
-            disabled={isPending}
-            className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition-colors text-sm"
+            onClick={() => setActiveTab('automations')}
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'automations'
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
           >
-            {isPending ? 'Running...' : 'Dry Run'}
+            ⚙️ Automations
           </button>
           <button
-            onClick={() => handleRunAutomations(false)}
-            disabled={isPending}
-            className="px-4 py-2 rounded-lg bg-amber-500 text-black font-medium hover:bg-amber-400 disabled:opacity-50 transition-colors text-sm"
+            onClick={() => setActiveTab('history')}
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'history'
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
           >
-            {isPending ? 'Running...' : 'Run Now'}
+            📜 Email History
           </button>
-        </div>
+        </nav>
       </div>
 
-      {/* Run Result */}
-      {runResult && (
-        <div className={`p-4 rounded-xl border ${
-          runResult.errors > 0 
-            ? 'bg-red-500/10 border-red-500/30' 
-            : 'bg-green-500/10 border-green-500/30'
-        }`}>
-          <h4 className="font-medium text-white">Automation Run Complete</h4>
-          <div className="flex gap-6 mt-2 text-sm">
-            <span className="text-slate-400">
-              Processed: <span className="text-white font-medium">{runResult.processed}</span>
-            </span>
-            <span className="text-slate-400">
-              Emails Sent: <span className="text-green-400 font-medium">{runResult.emailsSent}</span>
-            </span>
-            {runResult.errors > 0 && (
-              <span className="text-slate-400">
-                Errors: <span className="text-red-400 font-medium">{runResult.errors}</span>
-              </span>
-            )}
+      {activeTab === 'automations' && (
+        <>
+          {/* Run Automations Button */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/50 border border-slate-800">
+            <div className="flex-1">
+              <h3 className="font-medium text-white">Run Automations</h3>
+              <p className="text-sm text-slate-400 mt-1">
+                Manually trigger all enabled automations. The daily cron runs automatically at noon UTC.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleRunAutomations(true)}
+                disabled={isPending}
+                className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition-colors text-sm"
+              >
+                {isPending ? 'Running...' : 'Dry Run'}
+              </button>
+              <button
+                onClick={() => handleRunAutomations(false)}
+                disabled={isPending}
+                className="px-4 py-2 rounded-lg bg-amber-500 text-black font-medium hover:bg-amber-400 disabled:opacity-50 transition-colors text-sm"
+              >
+                {isPending ? 'Running...' : 'Run Now'}
+              </button>
+            </div>
           </div>
-        </div>
+
+          {/* Run Result */}
+          {runResult && (
+            <div className={`p-4 rounded-xl border ${
+              runResult.errors > 0 
+                ? 'bg-red-500/10 border-red-500/30' 
+                : 'bg-green-500/10 border-green-500/30'
+            }`}>
+              <h4 className="font-medium text-white">Automation Run Complete</h4>
+              <div className="flex gap-6 mt-2 text-sm">
+                <span className="text-slate-400">
+                  Processed: <span className="text-white font-medium">{runResult.processed}</span>
+                </span>
+                <span className="text-slate-400">
+                  Emails Sent: <span className="text-green-400 font-medium">{runResult.emailsSent}</span>
+                </span>
+                {runResult.errors > 0 && (
+                  <span className="text-slate-400">
+                    Errors: <span className="text-red-400 font-medium">{runResult.errors}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Automations by Category */}
+          <div className="space-y-6">
+            {/* Onboarding */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="text-blue-400">👋</span> Onboarding & Activation
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {groupedAutomations.onboarding.map(automation => (
+                  <AutomationCard key={automation.id} automation={automation} />
+                ))}
+              </div>
+            </div>
+
+            {/* Conversion */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="text-amber-400">⚡</span> Conversion & Upgrade
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {groupedAutomations.conversion.map(automation => (
+                  <AutomationCard key={automation.id} automation={automation} />
+                ))}
+              </div>
+            </div>
+
+            {/* Retention */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="text-purple-400">💜</span> Retention & Win-Back
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {groupedAutomations.retention.map(automation => (
+                  <AutomationCard key={automation.id} automation={automation} />
+                ))}
+              </div>
+            </div>
+
+            {/* Engagement */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="text-green-400">🎉</span> Engagement & Milestones
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {groupedAutomations.engagement.map(automation => (
+                  <AutomationCard key={automation.id} automation={automation} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* How it Works */}
+          <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800">
+            <h3 className="text-lg font-semibold text-white mb-4">📚 How Automations Work</h3>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 text-sm">
+              <div>
+                <h4 className="font-medium text-amber-400 mb-2">⏰ Daily Cron</h4>
+                <p className="text-slate-400">
+                  Automations run daily at noon UTC. The cron job checks all users against automation conditions.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium text-amber-400 mb-2">🔒 No Duplicates</h4>
+                <p className="text-slate-400">
+                  Each email is only sent once per user. The system tracks which emails have been sent.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium text-amber-400 mb-2">🎯 Smart Triggers</h4>
+                <p className="text-slate-400">
+                  Emails are triggered based on user behavior: signup time, usage, activity, and subscription status.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* Automations by Category */}
-      <div className="space-y-6">
-        {/* Onboarding */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span className="text-blue-400">👋</span> Onboarding & Activation
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groupedAutomations.onboarding.map(automation => (
-              <AutomationCard key={automation.id} automation={automation} />
-            ))}
+      {activeTab === 'history' && (
+        <div className="space-y-4">
+          {/* Filter */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-slate-400">Filter by automation:</label>
+              <select
+                value={historyFilter}
+                onChange={(e) => {
+                  setHistoryFilter(e.target.value);
+                  setHistoryPage(1);
+                }}
+                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="all">All Automations</option>
+                <optgroup label="Onboarding">
+                  <option value="welcome_free">Welcome Email</option>
+                  <option value="getting_started_tips">Getting Started Tips</option>
+                  <option value="first_project_reminder">First Project Reminder</option>
+                </optgroup>
+                <optgroup label="Conversion">
+                  <option value="character_limit_80">Character Limit 80%</option>
+                  <option value="character_limit_100">Character Limit Reached</option>
+                  <option value="inactive_7_days">Inactive 7 Days</option>
+                  <option value="inactive_14_days">Inactive 14 Days</option>
+                  <option value="inactive_30_days">Inactive 30 Days</option>
+                  <option value="high_engagement">High Engagement</option>
+                </optgroup>
+                <optgroup label="Retention">
+                  <option value="churn_prevention">Churn Prevention</option>
+                  <option value="win_back">Win-Back</option>
+                </optgroup>
+                <optgroup label="Engagement">
+                  <option value="milestone_10">Milestone 10</option>
+                  <option value="milestone_50">Milestone 50</option>
+                  <option value="milestone_100">Milestone 100</option>
+                </optgroup>
+              </select>
+            </div>
+            <span className="text-sm text-slate-400">
+              {historyTotal.toLocaleString()} emails total
+            </span>
           </div>
-        </div>
 
-        {/* Conversion */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span className="text-amber-400">⚡</span> Conversion & Upgrade
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groupedAutomations.conversion.map(automation => (
-              <AutomationCard key={automation.id} automation={automation} />
-            ))}
+          {/* Table */}
+          <div className="rounded-xl border border-slate-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-900/80">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Email Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Sent At
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {isLoadingHistory ? (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : emailHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
+                        No emails sent yet
+                      </td>
+                    </tr>
+                  ) : (
+                    emailHistory.map((email) => {
+                      const category = getCategory(email.automation_id);
+                      const colors = categoryColors[category];
+                      return (
+                        <tr key={email.id} className="hover:bg-slate-900/50">
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="text-sm text-white">
+                                {email.user_name || 'Unknown'}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {email.user_email}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.border} border`}>
+                              <span>{colors.icon}</span>
+                              <span className={colors.text}>{email.automation_name}</span>
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-400">
+                            <div>
+                              <p>{new Date(email.sent_at).toLocaleDateString()}</p>
+                              <p className="text-xs text-slate-500">
+                                {new Date(email.sent_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        {/* Retention */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span className="text-purple-400">💜</span> Retention & Win-Back
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groupedAutomations.retention.map(automation => (
-              <AutomationCard key={automation.id} automation={automation} />
-            ))}
-          </div>
+          {/* Pagination */}
+          {historyTotalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-400">
+                Page {historyPage} of {historyTotalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setHistoryPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={historyPage === 1 || isLoadingHistory}
+                  className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => {
+                    setHistoryPage(p => Math.min(historyTotalPages, p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={historyPage === historyTotalPages || isLoadingHistory}
+                  className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Engagement */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span className="text-green-400">🎉</span> Engagement & Milestones
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groupedAutomations.engagement.map(automation => (
-              <AutomationCard key={automation.id} automation={automation} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* How it Works */}
-      <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800">
-        <h3 className="text-lg font-semibold text-white mb-4">📚 How Automations Work</h3>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 text-sm">
-          <div>
-            <h4 className="font-medium text-amber-400 mb-2">⏰ Daily Cron</h4>
-            <p className="text-slate-400">
-              Automations run daily at midnight UTC. The cron job checks all users against automation conditions.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-medium text-amber-400 mb-2">🔒 No Duplicates</h4>
-            <p className="text-slate-400">
-              Each email is only sent once per user. The system tracks which emails have been sent.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-medium text-amber-400 mb-2">🎯 Smart Triggers</h4>
-            <p className="text-slate-400">
-              Emails are triggered based on user behavior: signup time, usage, activity, and subscription status.
-            </p>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
-
