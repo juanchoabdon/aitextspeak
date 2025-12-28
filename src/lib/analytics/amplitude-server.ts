@@ -108,6 +108,17 @@ export function trackServerRevenue(
     }
 
     amplitude.revenue(revenue, { user_id: userId });
+    
+    // Also track as a standard event with $revenue property for better visibility
+    amplitude.track('Revenue', {
+      $revenue: properties.price,
+      $price: properties.price,
+      $quantity: properties.quantity || 1,
+      $productId: properties.productId,
+      $revenueType: properties.revenueType,
+      ...properties.eventProperties,
+    }, { user_id: userId });
+    
     console.log('[Amplitude Server] ✅ Revenue event queued: $' + properties.price);
   } catch (error) {
     console.error('[Amplitude Server] ❌ Error tracking revenue:', error);
