@@ -5,6 +5,7 @@ import {
   trackSubscriptionActivatedServer,
   trackSubscriptionCancelledServer,
   trackSubscriptionRenewalServer,
+  trackPaymentFailedServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
 import { sendPaymentNotification, sendWelcomeEmail } from '@/lib/email/brevo';
@@ -1016,6 +1017,150 @@ export async function handlePayPalWebhook(
             }
           }
         }
+        break;
+      }
+
+      // Handle payment failures (before subscription gets suspended)
+      case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED': {
+        const subscriptionId = resource.id;
+        
+        console.log('[PayPal Webhook] Payment failed for subscription:', subscriptionId);
+
+        if (subscriptionId) {
+          // Get the subscription to find the user
+          const { data: failedSub } = await supabase
+            .from('subscriptions')
+            .select('user_id, plan_id, price_amount')
+            .eq('provider_subscription_id', subscriptionId)
+            .single();
+
+          if (failedSub) {
+            // Update subscription status to past_due
+            await supabase
+              .from('subscriptions')
+              .update({ status: 'past_due' })
+              .eq('provider_subscription_id', subscriptionId);
+
+            // Track payment failure
+            trackPaymentFailedServer(failedSub.user_id, {
+              planId: failedSub.plan_id || 'unknown',
+              provider: 'paypal',
+              amount: failedSub.price_amount ? failedSub.price_amount / 100 : 0,
+              errorMessage: 'Payment method declined or insufficient funds',
+            });
+
+            // Get user email for notification
+            const { data: failedUserProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', failedSub.user_id)
+              .single();
+
+            // Send admin notification for payment failure
+            sendPaymentNotification({
+              type: 'payment_failed',
+              userEmail: failedUserProfile?.email || 'Unknown',
+              amount: failedSub.price_amount ? failedSub.price_amount / 100 : 0,
+              currency: 'USD',
+              provider: 'paypal',
+              planName: failedSub.plan_id || 'Subscription',
+              subscriptionId: subscriptionId,
+              reason: 'Payment method declined or insufficient funds',
+            }).catch(err => console.error('[PayPal Webhook] Failed to send payment failed notification:', err));
+          }
+        }
+        break;
+      }
+
+      // Handle subscription reactivation (after successful retry payment)
+      case 'BILLING.SUBSCRIPTION.RE-ACTIVATED': {
+        const subscriptionId = resource.id;
+        const userId = resource.custom_id;
+
+        console.log('[PayPal Webhook] Subscription reactivated:', subscriptionId);
+
+        if (subscriptionId) {
+          // Update subscription status back to active
+          await supabase
+            .from('subscriptions')
+            .update({ 
+              status: 'active',
+              canceled_at: null,
+              cancellation_reason: null,
+            })
+            .eq('provider_subscription_id', subscriptionId);
+
+          // If we have userId, update their role back to pro
+          if (userId) {
+            await supabase
+              .from('profiles')
+              .update({ role: 'pro' })
+              .eq('id', userId)
+              .neq('role', 'admin');
+          } else {
+            // Try to get userId from subscription record
+            const { data: reactivatedSub } = await supabase
+              .from('subscriptions')
+              .select('user_id')
+              .eq('provider_subscription_id', subscriptionId)
+              .single();
+
+            if (reactivatedSub?.user_id) {
+              await supabase
+                .from('profiles')
+                .update({ role: 'pro' })
+                .eq('id', reactivatedSub.user_id)
+                .neq('role', 'admin');
+            }
+          }
+
+          console.log('[PayPal Webhook] ✅ Subscription reactivated successfully');
+        }
+        break;
+      }
+
+      // Handle denied payments
+      case 'PAYMENT.SALE.DENIED':
+      case 'PAYMENT.SALE.REFUNDED':
+      case 'PAYMENT.SALE.REVERSED': {
+        const subscriptionId = resource.billing_agreement_id;
+        
+        console.log('[PayPal Webhook] Payment issue:', event.event_type, subscriptionId);
+
+        if (subscriptionId) {
+          const { data: affectedSub } = await supabase
+            .from('subscriptions')
+            .select('user_id, plan_id, price_amount')
+            .eq('provider_subscription_id', subscriptionId)
+            .single();
+
+          if (affectedSub) {
+            // Get user email for notification
+            const { data: affectedUserProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', affectedSub.user_id)
+              .single();
+
+            // Send admin notification
+            sendPaymentNotification({
+              type: 'payment_failed',
+              userEmail: affectedUserProfile?.email || 'Unknown',
+              amount: affectedSub.price_amount ? affectedSub.price_amount / 100 : 0,
+              currency: 'USD',
+              provider: 'paypal',
+              planName: affectedSub.plan_id || 'Subscription',
+              subscriptionId: subscriptionId,
+              reason: event.event_type.replace('PAYMENT.SALE.', ''),
+            }).catch(err => console.error('[PayPal Webhook] Failed to send payment issue notification:', err));
+          }
+        }
+        break;
+      }
+
+      default: {
+        // Log unhandled events for monitoring
+        console.log('[PayPal Webhook] Unhandled event type:', event.event_type);
         break;
       }
     }
