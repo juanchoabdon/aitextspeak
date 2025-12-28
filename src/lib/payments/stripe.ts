@@ -9,7 +9,7 @@ import {
   trackSubscriptionRenewalServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
-import { sendPaymentNotification } from '@/lib/email/brevo';
+import { sendPaymentNotification, sendWelcomeEmail } from '@/lib/email/brevo';
 
 // Initialize Stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -361,6 +361,16 @@ export async function handleStripeWebhook(
             planName: plan?.name || planId,
             subscriptionId: subscription.id,
           }).catch(err => console.error('[Stripe Webhook] Failed to send notification email:', err));
+
+          // Send welcome email to user
+          if (userEmail && userEmail !== 'Unknown') {
+            sendWelcomeEmail({
+              userEmail,
+              planType: 'subscription',
+              planName: plan?.name || 'Pro Plan',
+              characterLimit: plan?.charactersPerMonth || 1000000,
+            }).catch(err => console.error('[Stripe Webhook] Failed to send welcome email:', err));
+          }
         } else {
           // Handle one-time payment (lifetime)
           const { error: upsertLifetimeError } = await supabase.from('subscriptions').upsert({
@@ -451,6 +461,16 @@ export async function handleStripeWebhook(
             planName: 'Lifetime Package',
             transactionId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
           }).catch(err => console.error('[Stripe Webhook] Failed to send lifetime notification email:', err));
+
+          // Send welcome email to lifetime user
+          if (lifetimeUserEmail && lifetimeUserEmail !== 'Unknown') {
+            sendWelcomeEmail({
+              userEmail: lifetimeUserEmail,
+              planType: 'lifetime',
+              planName: 'Lifetime Pro',
+              characterLimit: 'unlimited',
+            }).catch(err => console.error('[Stripe Webhook] Failed to send lifetime welcome email:', err));
+          }
         }
         break;
       }

@@ -7,7 +7,7 @@ import {
   trackSubscriptionRenewalServer,
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
-import { sendPaymentNotification } from '@/lib/email/brevo';
+import { sendPaymentNotification, sendWelcomeEmail } from '@/lib/email/brevo';
 
 const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'sandbox'
   ? 'https://api-m.sandbox.paypal.com'
@@ -640,6 +640,16 @@ export async function handlePayPalWebhook(
             planName: plan?.name || 'Subscription',
             subscriptionId,
           }).catch(err => console.error('[PayPal Webhook] Failed to send subscription notification:', err));
+
+          // Send welcome email to new subscriber
+          if (activatedUserProfile?.email) {
+            sendWelcomeEmail({
+              userEmail: activatedUserProfile.email,
+              planType: 'subscription',
+              planName: plan?.name || 'Pro Plan',
+              characterLimit: plan?.charactersPerMonth || 1000000,
+            }).catch(err => console.error('[PayPal Webhook] Failed to send welcome email:', err));
+          }
         }
         break;
       }
@@ -994,6 +1004,16 @@ export async function handlePayPalWebhook(
               planName: 'Lifetime Package',
               transactionId: captureId,
             }).catch(err => console.error('[PayPal Webhook] Failed to send lifetime notification:', err));
+
+            // Send welcome email to lifetime user
+            if (lifetimePayPalUserProfile?.email) {
+              sendWelcomeEmail({
+                userEmail: lifetimePayPalUserProfile.email,
+                planType: 'lifetime',
+                planName: 'Lifetime Pro',
+                characterLimit: 'unlimited',
+              }).catch(err => console.error('[PayPal Webhook] Failed to send lifetime welcome email:', err));
+            }
           }
         }
         break;

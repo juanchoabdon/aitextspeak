@@ -271,6 +271,182 @@ ${params.reason ? `<tr>
   });
 }
 
+export interface WelcomeEmailParams {
+  userEmail: string;
+  userName?: string;
+  planType: 'subscription' | 'lifetime';
+  planName: string;
+  characterLimit?: number | 'unlimited';
+}
+
+export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
+  const isLifetime = params.planType === 'lifetime';
+  const characterText = params.characterLimit === 'unlimited' 
+    ? 'unlimited characters' 
+    : params.characterLimit 
+      ? `${params.characterLimit.toLocaleString()} characters per month`
+      : 'your plan characters';
+
+  const subject = isLifetime 
+    ? '🎉 Welcome to AI TextSpeak - Lifetime Access Activated!'
+    : '🎉 Welcome to AI TextSpeak - Your Subscription is Active!';
+
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<table width="100%" cellspacing="0" cellpadding="0" style="background-color:#0f172a;">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;">
+
+<!-- Logo -->
+<tr><td align="center" style="padding-bottom:30px;">
+<h1 style="margin:0;font-size:28px;font-weight:bold;"><span style="color:#f59e0b;">AI</span><span style="color:#ffffff;">TextSpeak</span></h1>
+</td></tr>
+
+<!-- Main Content -->
+<tr><td style="background-color:#1e293b;border-radius:16px;padding:40px;">
+
+<!-- Welcome Header -->
+<div style="text-align:center;margin-bottom:30px;">
+<span style="font-size:60px;">🎉</span>
+<h2 style="margin:15px 0 0;font-size:28px;color:#ffffff;">Welcome to AI TextSpeak!</h2>
+<p style="margin:10px 0 0;font-size:16px;color:#f59e0b;">${isLifetime ? 'Lifetime Access Activated' : 'Your subscription is now active'}</p>
+</div>
+
+<!-- Greeting -->
+<p style="margin:0 0 20px;font-size:16px;color:#e2e8f0;line-height:1.6;">
+Hi${params.userName ? ` ${params.userName}` : ''},
+</p>
+
+<p style="margin:0 0 25px;font-size:16px;color:#94a3b8;line-height:1.6;">
+Thank you for ${isLifetime ? 'purchasing lifetime access' : 'subscribing'} to AI TextSpeak! We're thrilled to have you on board. You now have access to our powerful text-to-speech technology with ${characterText}.
+</p>
+
+<!-- Plan Info Box -->
+<table width="100%" cellspacing="0" cellpadding="0" style="background:linear-gradient(135deg,rgba(245,158,11,0.1) 0%,rgba(234,88,12,0.1) 100%);border:1px solid rgba(245,158,11,0.3);border-radius:12px;margin-bottom:30px;">
+<tr><td style="padding:20px;">
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding:8px 0;">
+<span style="color:#94a3b8;font-size:14px;">Your Plan</span><br>
+<span style="color:#f59e0b;font-size:18px;font-weight:600;">${params.planName}</span>
+</td>
+<td align="right" style="padding:8px 0;">
+<span style="color:#94a3b8;font-size:14px;">Character Limit</span><br>
+<span style="color:#22c55e;font-size:18px;font-weight:600;">${params.characterLimit === 'unlimited' ? 'Unlimited' : params.characterLimit?.toLocaleString() || 'Standard'}</span>
+</td>
+</tr>
+</table>
+</td></tr>
+</table>
+
+<!-- Quick Start Guide -->
+<h3 style="margin:0 0 15px;font-size:18px;color:#ffffff;">🚀 Quick Start Guide</h3>
+
+<table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:30px;">
+<tr>
+<td style="padding:12px 0;border-bottom:1px solid #334155;">
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td width="40" style="vertical-align:top;">
+<div style="width:28px;height:28px;background:#f59e0b;border-radius:50%;text-align:center;line-height:28px;color:#000;font-weight:600;">1</div>
+</td>
+<td style="padding-left:12px;">
+<span style="color:#ffffff;font-size:15px;font-weight:500;">Create a new project</span><br>
+<span style="color:#94a3b8;font-size:13px;">Click "New Project" in your dashboard to get started</span>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:12px 0;border-bottom:1px solid #334155;">
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td width="40" style="vertical-align:top;">
+<div style="width:28px;height:28px;background:#f59e0b;border-radius:50%;text-align:center;line-height:28px;color:#000;font-weight:600;">2</div>
+</td>
+<td style="padding-left:12px;">
+<span style="color:#ffffff;font-size:15px;font-weight:500;">Enter your text</span><br>
+<span style="color:#94a3b8;font-size:13px;">Paste or type the content you want to convert to speech</span>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:12px 0;border-bottom:1px solid #334155;">
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td width="40" style="vertical-align:top;">
+<div style="width:28px;height:28px;background:#f59e0b;border-radius:50%;text-align:center;line-height:28px;color:#000;font-weight:600;">3</div>
+</td>
+<td style="padding-left:12px;">
+<span style="color:#ffffff;font-size:15px;font-weight:500;">Choose a voice</span><br>
+<span style="color:#94a3b8;font-size:13px;">Select from 100+ natural-sounding AI voices</span>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:12px 0;">
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr>
+<td width="40" style="vertical-align:top;">
+<div style="width:28px;height:28px;background:#f59e0b;border-radius:50%;text-align:center;line-height:28px;color:#000;font-weight:600;">4</div>
+</td>
+<td style="padding-left:12px;">
+<span style="color:#ffffff;font-size:15px;font-weight:500;">Generate & download</span><br>
+<span style="color:#94a3b8;font-size:13px;">Click generate and download your audio file</span>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+<!-- CTA Button -->
+<table width="100%" cellspacing="0" cellpadding="0">
+<tr><td align="center" style="padding:10px 0 30px;">
+<a href="https://www.aitextspeak.com/dashboard/projects/new" style="display:inline-block;background:linear-gradient(to right,#f59e0b,#ea580c);color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;padding:16px 40px;border-radius:12px;box-shadow:0 4px 15px rgba(245,158,11,0.3);">Start Creating Audio →</a>
+</td></tr>
+</table>
+
+<!-- Support Section -->
+<div style="background-color:#0f172a;border-radius:12px;padding:20px;text-align:center;">
+<p style="margin:0 0 10px;font-size:14px;color:#94a3b8;">Need help? We're here for you!</p>
+<p style="margin:0;font-size:14px;color:#64748b;">
+<a href="https://www.aitextspeak.com/help" style="color:#f59e0b;text-decoration:none;">Help Center</a> &nbsp;•&nbsp; 
+<a href="mailto:support@aitextspeak.com" style="color:#f59e0b;text-decoration:none;">support@aitextspeak.com</a>
+</p>
+</div>
+
+</td></tr>
+
+<!-- Footer -->
+<tr><td align="center" style="padding-top:30px;">
+<p style="margin:0 0 10px;font-size:12px;color:#64748b;">Thank you for choosing AI TextSpeak!</p>
+<p style="margin:0;font-size:12px;color:#64748b;">© ${new Date().getFullYear()} AI TextSpeak. All rights reserved.</p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+
+  console.log('[WelcomeEmail] Sending welcome email to:', params.userEmail, 'Plan:', params.planName);
+
+  return sendEmail({
+    to: [{ email: params.userEmail, name: params.userName }],
+    subject,
+    htmlContent,
+    sender: { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' },
+  });
+}
+
 export function getPasswordResetEmailHtml(resetLink: string, userName?: string): string {
   return `<!DOCTYPE html>
 <html>
