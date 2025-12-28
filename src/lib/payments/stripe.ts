@@ -10,6 +10,7 @@ import {
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
 import { sendPaymentNotification, sendWelcomeEmail } from '@/lib/email/brevo';
+import { trackCRMConversion } from '@/lib/crm/automations';
 
 // Initialize Stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -371,6 +372,14 @@ export async function handleStripeWebhook(
               characterLimit: plan?.charactersPerMonth || 1000000,
             }).catch(err => console.error('[Stripe Webhook] Failed to send welcome email:', err));
           }
+
+          // Track CRM conversion
+          trackCRMConversion({
+            userId,
+            conversionType: 'subscription',
+            planName: plan?.name || 'Pro Plan',
+            amountCents: toCents(session.amount_total),
+          }).catch(err => console.error('[Stripe Webhook] Failed to track CRM conversion:', err));
         } else {
           // Handle one-time payment (lifetime)
           const { error: upsertLifetimeError } = await supabase.from('subscriptions').upsert({
@@ -471,6 +480,14 @@ export async function handleStripeWebhook(
               characterLimit: 'unlimited',
             }).catch(err => console.error('[Stripe Webhook] Failed to send lifetime welcome email:', err));
           }
+
+          // Track CRM conversion for lifetime
+          trackCRMConversion({
+            userId,
+            conversionType: 'lifetime',
+            planName: 'Lifetime Pro',
+            amountCents: toCents(session.amount_total),
+          }).catch(err => console.error('[Stripe Webhook] Failed to track CRM conversion:', err));
         }
         break;
       }

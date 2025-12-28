@@ -754,3 +754,119 @@ export async function getEmailHistory(params: {
   };
 }
 
+/**
+ * Track conversion when a user becomes paid
+ * Call this when a user subscribes or buys lifetime
+ */
+export async function trackCRMConversion(params: {
+  userId: string;
+  conversionType: 'subscription' | 'lifetime';
+  planName: string;
+  amountCents: number;
+}): Promise<void> {
+  const supabase = createAdminClient();
+
+  try {
+    // Find all CRM emails sent to this user that haven't been marked as converted
+    // Only count emails sent in the last 30 days as attributable
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: emails } = await (supabase as any)
+      .from('crm_email_logs')
+      .select('id')
+      .eq('user_id', params.userId)
+      .eq('converted', false)
+      .gte('sent_at', thirtyDaysAgo.toISOString());
+
+    if (emails && emails.length > 0) {
+      // Mark all these emails as converted
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('crm_email_logs')
+        .update({
+          converted: true,
+          converted_at: new Date().toISOString(),
+          conversion_type: params.conversionType,
+          conversion_plan: params.planName,
+          conversion_amount: params.amountCents,
+        })
+        .eq('user_id', params.userId)
+        .eq('converted', false)
+        .gte('sent_at', thirtyDaysAgo.toISOString());
+
+      console.log(`[CRM] Marked ${emails.length} emails as converted for user ${params.userId}`);
+    }
+  } catch (error) {
+    console.error('[CRM] Error tracking conversion:', error);
+  }
+}
+
+/**
+ * Get conversion stats for each automation
+ */
+export async function getConversionStats(): Promise<{
+  automations: Array<{
+    id: string;
+    name: string;
+    totalSent: number;
+    conversions: number;
+    conversionRate: number;
+    revenue: number;
+  }>;
+  totalConversions: number;
+  totalRevenue: number;
+  overallConversionRate: number;
+}> {
+  const supabase = createAdminClient();
+
+  // Get all email logs with conversion data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: logs } = await (supabase as any)
+    .from('crm_email_logs')
+    .select('automation_id, converted, conversion_amount');
+
+  const automationStats: Record<string, { sent: number; conversions: number; revenue: number }> = {};
+
+  let totalSent = 0;
+  let totalConversions = 0;
+  let totalRevenue = 0;
+
+  for (const log of logs || []) {
+    totalSent++;
+
+    if (!automationStats[log.automation_id]) {
+      automationStats[log.automation_id] = { sent: 0, conversions: 0, revenue: 0 };
+    }
+
+    automationStats[log.automation_id].sent++;
+
+    if (log.converted) {
+      automationStats[log.automation_id].conversions++;
+      automationStats[log.automation_id].revenue += log.conversion_amount || 0;
+      totalConversions++;
+      totalRevenue += log.conversion_amount || 0;
+    }
+  }
+
+  const automations = AUTOMATIONS.map(a => {
+    const stats = automationStats[a.id] || { sent: 0, conversions: 0, revenue: 0 };
+    return {
+      id: a.id,
+      name: a.name,
+      totalSent: stats.sent,
+      conversions: stats.conversions,
+      conversionRate: stats.sent > 0 ? (stats.conversions / stats.sent) * 100 : 0,
+      revenue: stats.revenue / 100, // Convert cents to dollars
+    };
+  });
+
+  return {
+    automations,
+    totalConversions,
+    totalRevenue: totalRevenue / 100,
+    overallConversionRate: totalSent > 0 ? (totalConversions / totalSent) * 100 : 0,
+  };
+}
+

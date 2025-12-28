@@ -9,6 +9,7 @@ import {
   flushAmplitude,
 } from '@/lib/analytics/amplitude-server';
 import { sendPaymentNotification, sendWelcomeEmail } from '@/lib/email/brevo';
+import { trackCRMConversion } from '@/lib/crm/automations';
 
 const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'sandbox'
   ? 'https://api-m.sandbox.paypal.com'
@@ -651,6 +652,14 @@ export async function handlePayPalWebhook(
               characterLimit: plan?.charactersPerMonth || 1000000,
             }).catch(err => console.error('[PayPal Webhook] Failed to send welcome email:', err));
           }
+
+          // Track CRM conversion
+          trackCRMConversion({
+            userId,
+            conversionType: 'subscription',
+            planName: plan?.name || 'Pro Plan',
+            amountCents: Math.round((plan?.price || 9.99) * 100),
+          }).catch(err => console.error('[PayPal Webhook] Failed to track CRM conversion:', err));
         }
         break;
       }
@@ -1015,6 +1024,14 @@ export async function handlePayPalWebhook(
                 characterLimit: 'unlimited',
               }).catch(err => console.error('[PayPal Webhook] Failed to send lifetime welcome email:', err));
             }
+
+            // Track CRM conversion for lifetime
+            trackCRMConversion({
+              userId: customId,
+              conversionType: 'lifetime',
+              planName: 'Lifetime Pro',
+              amountCents: Math.round(amount * 100),
+            }).catch(err => console.error('[PayPal Webhook] Failed to track CRM conversion:', err));
           }
         }
         break;

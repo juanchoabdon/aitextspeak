@@ -4,6 +4,7 @@ import {
   getAutomationStats as getStats, 
   runAutomations as run, 
   getEmailHistory as getHistory,
+  getConversionStats as getConversions,
   type EmailHistoryEntry,
 } from './automations';
 
@@ -39,5 +40,12 @@ export async function getEmailHistory(params: {
   automationFilter?: string;
 }) {
   return getHistory(params);
+}
+
+/**
+ * Server action to get conversion statistics
+ */
+export async function getConversionStats() {
+  return getConversions();
 }
 

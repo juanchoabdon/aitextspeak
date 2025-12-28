@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition, useCallback } from 'react';
-import { getAutomationStats, runAutomations, getEmailHistory, type EmailHistoryEntry } from '@/lib/crm/actions';
+import { getAutomationStats, runAutomations, getEmailHistory, getConversionStats, type EmailHistoryEntry } from '@/lib/crm/actions';
 
 interface AutomationStat {
   id: string;
@@ -18,6 +18,22 @@ interface CRMStats {
   totalEmailsSent: number;
   emailsSentToday: number;
   emailsSentThisWeek: number;
+}
+
+interface ConversionStat {
+  id: string;
+  name: string;
+  totalSent: number;
+  conversions: number;
+  conversionRate: number;
+  revenue: number;
+}
+
+interface ConversionStats {
+  automations: ConversionStat[];
+  totalConversions: number;
+  totalRevenue: number;
+  overallConversionRate: number;
 }
 
 // Category colors for visual grouping
@@ -98,7 +114,7 @@ function AutomationCard({ automation }: { automation: AutomationStat }) {
 }
 
 // Tabs for switching between views
-type TabType = 'automations' | 'history';
+type TabType = 'automations' | 'history' | 'conversions';
 
 export function AdminCRMClient() {
   const [activeTab, setActiveTab] = useState<TabType>('automations');
@@ -119,6 +135,10 @@ export function AdminCRMClient() {
   const [historyFilter, setHistoryFilter] = useState('all');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  // Conversion stats state
+  const [conversionStats, setConversionStats] = useState<ConversionStats | null>(null);
+  const [isLoadingConversions, setIsLoadingConversions] = useState(false);
+
   const loadStats = useCallback(() => {
     startTransition(async () => {
       try {
@@ -130,6 +150,18 @@ export function AdminCRMClient() {
         setIsLoading(false);
       }
     });
+  }, []);
+
+  const loadConversionStats = useCallback(async () => {
+    setIsLoadingConversions(true);
+    try {
+      const data = await getConversionStats();
+      setConversionStats(data);
+    } catch (error) {
+      console.error('Failed to load conversion stats:', error);
+    } finally {
+      setIsLoadingConversions(false);
+    }
   }, []);
 
   const loadEmailHistory = useCallback(async (page: number, filter: string) => {
@@ -160,6 +192,12 @@ export function AdminCRMClient() {
       loadEmailHistory(historyPage, historyFilter);
     }
   }, [activeTab, historyPage, historyFilter, loadEmailHistory]);
+
+  useEffect(() => {
+    if (activeTab === 'conversions') {
+      loadConversionStats();
+    }
+  }, [activeTab, loadConversionStats]);
 
   const handleRunAutomations = async (dryRun: boolean) => {
     startTransition(async () => {
@@ -233,6 +271,16 @@ export function AdminCRMClient() {
             }`}
           >
             ⚙️ Automations
+          </button>
+          <button
+            onClick={() => setActiveTab('conversions')}
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'conversions'
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            💰 Conversions
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -375,6 +423,175 @@ export function AdminCRMClient() {
             </div>
           </div>
         </>
+      )}
+
+      {activeTab === 'conversions' && (
+        <div className="space-y-6">
+          {isLoadingConversions ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
+            </div>
+          ) : (
+            <>
+              {/* Conversion Overview */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-2xl border border-green-500/30 bg-green-500/5 p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">💰</span>
+                    <div>
+                      <p className="text-sm text-slate-400">Total Conversions</p>
+                      <p className="text-3xl font-bold text-white">{conversionStats?.totalConversions || 0}</p>
+                      <p className="text-xs text-green-400 mt-1">
+                        {conversionStats?.overallConversionRate.toFixed(1)}% conversion rate
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">💵</span>
+                    <div>
+                      <p className="text-sm text-slate-400">Revenue from CRM</p>
+                      <p className="text-3xl font-bold text-white">
+                        ${(conversionStats?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-amber-400 mt-1">Attributed to CRM emails</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">📧</span>
+                    <div>
+                      <p className="text-sm text-slate-400">Emails → Paid Users</p>
+                      <p className="text-3xl font-bold text-white">
+                        {conversionStats?.overallConversionRate.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">Within 30 days of receiving email</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                <div className="flex gap-3">
+                  <span className="text-xl">ℹ️</span>
+                  <div>
+                    <p className="text-sm text-blue-400 font-medium">How conversion tracking works</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      When a user becomes a paid subscriber or buys lifetime, we attribute the conversion to any CRM emails they received in the last 30 days. This helps measure which automations are most effective at driving revenue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conversion by Automation */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">📊 Conversion by Automation</h3>
+                <div className="rounded-xl border border-slate-800 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-900/80">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                            Automation
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                            Sent
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                            Conversions
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                            Rate
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                            Revenue
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {(conversionStats?.automations || [])
+                          .filter(a => a.totalSent > 0)
+                          .sort((a, b) => b.conversions - a.conversions)
+                          .map((automation) => {
+                            const category = getCategory(automation.id);
+                            const colors = categoryColors[category];
+                            return (
+                              <tr key={automation.id} className="hover:bg-slate-900/50">
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.border} border`}>
+                                    <span>{colors.icon}</span>
+                                    <span className={colors.text}>{automation.name}</span>
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-slate-400">
+                                  {automation.totalSent.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <span className={`text-sm font-medium ${automation.conversions > 0 ? 'text-green-400' : 'text-slate-500'}`}>
+                                    {automation.conversions}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <span className={`text-sm font-medium ${
+                                    automation.conversionRate >= 10 ? 'text-green-400' :
+                                    automation.conversionRate >= 5 ? 'text-amber-400' :
+                                    automation.conversionRate > 0 ? 'text-slate-300' :
+                                    'text-slate-500'
+                                  }`}>
+                                    {automation.conversionRate.toFixed(1)}%
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <span className={`text-sm font-medium ${automation.revenue > 0 ? 'text-green-400' : 'text-slate-500'}`}>
+                                    ${automation.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {(conversionStats?.automations || []).filter(a => a.totalSent > 0).length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                              No emails sent yet. Run automations to start tracking conversions.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tips for improving conversions */}
+              <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800">
+                <h3 className="text-lg font-semibold text-white mb-4">💡 Tips for Improving Conversions</h3>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 text-sm">
+                  <div>
+                    <h4 className="font-medium text-green-400 mb-2">🎯 Focus on High Performers</h4>
+                    <p className="text-slate-400">
+                      Look at which automations have the highest conversion rates and consider making them more prominent or increasing their frequency.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-green-400 mb-2">⏰ Timing Matters</h4>
+                    <p className="text-slate-400">
+                      Users who hit character limits or are highly engaged are prime candidates for upgrades. Make sure these emails are compelling.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-green-400 mb-2">📝 Test & Iterate</h4>
+                    <p className="text-slate-400">
+                      Monitor conversion rates over time. If an automation isn&apos;t performing, consider adjusting the email copy or timing.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {activeTab === 'history' && (
