@@ -1,5 +1,9 @@
-const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+
+// Read API key at runtime (not module load time) for serverless compatibility
+function getBrevoApiKey(): string {
+  return process.env.BREVO_API_KEY || '';
+}
 
 // Retry helper for transient network errors
 async function withRetry<T>(
@@ -43,7 +47,8 @@ interface SendEmailParams {
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
   console.log('[Brevo] Attempting to send email to:', JSON.stringify(params.to, null, 2));
   
-  if (!BREVO_API_KEY) {
+  const apiKey = getBrevoApiKey();
+  if (!apiKey) {
     console.error('[Brevo] API key not configured');
     return { success: false, error: 'Email service not configured' };
   }
@@ -62,7 +67,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     }
   }
 
-  console.log('[Brevo] API key present, length:', BREVO_API_KEY.length);
+  console.log('[Brevo] API key present, length:', apiKey.length);
 
   const sender = params.sender || { name: 'AI TextSpeak', email: 'noreply@aitextspeak.com' };
   
@@ -97,7 +102,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
       method: 'POST',
       headers: {
         'accept': 'application/json',
-        'api-key': BREVO_API_KEY,
+        'api-key': apiKey,
         'content-type': 'application/json',
       },
       body: JSON.stringify(payload),
