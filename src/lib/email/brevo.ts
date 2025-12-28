@@ -1,6 +1,37 @@
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
+// Retry helper for transient network errors
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      const isTransient = 
+        lastError.message?.includes('ECONNRESET') ||
+        lastError.message?.includes('fetch failed') ||
+        lastError.message?.includes('network') ||
+        lastError.message?.includes('timeout');
+      
+      if (!isTransient || attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      console.log(`[Brevo] Retry ${attempt}/${maxRetries} after transient error:`, lastError.message);
+      await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  
+  throw lastError;
+}
+
 interface SendEmailParams {
   to: { email: string; name?: string }[];
   subject: string;
@@ -62,7 +93,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
   if (params.replyTo) console.log('[Brevo] Reply-To:', JSON.stringify(params.replyTo, null, 2));
 
   try {
-    const response = await fetch(BREVO_API_URL, {
+    const response = await withRetry(() => fetch(BREVO_API_URL, {
       method: 'POST',
       headers: {
         'accept': 'application/json',
@@ -70,7 +101,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
         'content-type': 'application/json',
       },
       body: JSON.stringify(payload),
-    });
+    }));
 
     let data;
     const contentType = response.headers.get('content-type');

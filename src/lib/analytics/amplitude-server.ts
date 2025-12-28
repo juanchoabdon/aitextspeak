@@ -375,15 +375,55 @@ export function trackSubscriptionRenewalServer(
   });
 }
 
+// Retry helper for transient network errors
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 500
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      const errorMsg = lastError?.message || '';
+      const isTransient = 
+        errorMsg.includes('ECONNRESET') ||
+        errorMsg.includes('fetch failed') ||
+        errorMsg.includes('network') ||
+        errorMsg.includes('timeout') ||
+        errorMsg.includes('socket');
+      
+      if (!isTransient || attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      console.log(`[Amplitude Server] Retry ${attempt}/${maxRetries} after transient error`);
+      await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  
+  throw lastError;
+}
+
 // Flush events before process exits (important for serverless)
 export async function flushAmplitude() {
   if (isInitialized) {
     console.log('[Amplitude Server] 🔄 Flushing events...');
     try {
-      await amplitude.flush();
+      await withRetry(async () => {
+        const result = amplitude.flush();
+        // Handle both sync and async returns from flush
+        if (result && typeof result === 'object' && 'promise' in result) {
+          await (result as { promise: Promise<void> }).promise;
+        }
+      });
       console.log('[Amplitude Server] ✅ Events flushed successfully');
     } catch (error) {
-      console.error('[Amplitude Server] ❌ Error flushing events:', error);
+      // Log but don't throw - analytics failures shouldn't break the main flow
+      console.error('[Amplitude Server] ❌ Error flushing events (non-blocking):', error);
     }
   } else {
     console.log('[Amplitude Server] ⚠️ Not initialized, nothing to flush');
