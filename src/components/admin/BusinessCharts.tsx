@@ -60,12 +60,12 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 function ChartCard({ title, subtitle, children, tall = false }: { title: string; subtitle?: string; children: React.ReactNode; tall?: boolean }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
-      <div className="mb-4">
-        <h3 className="text-base sm:text-lg font-semibold text-white">{title}</h3>
-        {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-3 sm:p-6 overflow-hidden">
+      <div className="mb-3 sm:mb-4">
+        <h3 className="text-sm sm:text-lg font-semibold text-white">{title}</h3>
+        {subtitle && <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{subtitle}</p>}
       </div>
-      <div className={tall ? "h-[250px] sm:h-[300px]" : "h-[200px] sm:h-[300px]"}>
+      <div className={tall ? "h-[220px] sm:h-[300px]" : "h-[180px] sm:h-[300px]"}>
         {children}
       </div>
     </div>
@@ -75,11 +75,11 @@ function ChartCard({ title, subtitle, children, tall = false }: { title: string;
 function GrowthIndicator({ value, label }: { value: number; label: string }) {
   const isPositive = value >= 0;
   return (
-    <div className="text-center p-3 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-      <p className={`text-xl sm:text-2xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+    <div className="text-center p-2 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+      <p className={`text-lg sm:text-2xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
         {isPositive ? '+' : ''}{value.toFixed(1)}%
       </p>
-      <p className="text-xs text-slate-400 mt-1">{label}</p>
+      <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{label}</p>
     </div>
   );
 }
@@ -111,11 +111,11 @@ export function BusinessCharts() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-[400px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-[350px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
-          <div className="h-[350px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
+      <div className="space-y-4 sm:space-y-6">
+        <div className="h-[200px] sm:h-[300px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+          <div className="h-[180px] sm:h-[300px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
+          <div className="h-[180px] sm:h-[300px] rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse" />
         </div>
       </div>
     );
@@ -136,14 +136,14 @@ export function BusinessCharts() {
   ].filter(item => item.value > 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Time Range Selector */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-slate-400 w-full sm:w-auto">Time Range:</span>
-        <div className="flex gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs sm:text-sm text-slate-400">Range:</span>
+        <div className="flex gap-1.5 sm:gap-2">
           <button
             onClick={() => setTimeRange(3)}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
               timeRange === 3 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -151,7 +151,7 @@ export function BusinessCharts() {
           </button>
           <button
             onClick={() => setTimeRange(6)}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
               timeRange === 6 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -159,7 +159,7 @@ export function BusinessCharts() {
           </button>
           <button
             onClick={() => setTimeRange(12)}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
               timeRange === 12 ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -169,23 +169,23 @@ export function BusinessCharts() {
       </div>
 
       {/* Growth Indicators */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <GrowthIndicator value={stats.mrrGrowthRate} label="MRR Growth" />
-        <GrowthIndicator value={stats.subscriberGrowthRate} label="Subscriber Growth" />
-        <div className="text-center p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-          <p className="text-2xl font-bold text-amber-500">{formatCurrency(stats.arpu)}</p>
-          <p className="text-xs text-slate-400 mt-1">ARPU (Monthly)</p>
+        <GrowthIndicator value={stats.subscriberGrowthRate} label="Sub Growth" />
+        <div className="text-center p-2 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+          <p className="text-lg sm:text-2xl font-bold text-amber-500">{formatCurrency(stats.arpu)}</p>
+          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">ARPU</p>
         </div>
-        <div className="text-center p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-          <p className="text-2xl font-bold text-purple-400">{formatCurrency(stats.ltv)}</p>
-          <p className="text-xs text-slate-400 mt-1">Est. LTV</p>
+        <div className="text-center p-2 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+          <p className="text-lg sm:text-2xl font-bold text-purple-400">{formatCurrency(stats.ltv)}</p>
+          <p className="text-[10px] sm:text-xs text-slate-400 mt-1">Est. LTV</p>
         </div>
       </div>
 
       {/* MRR Trend Chart */}
       <ChartCard title="MRR Trend" subtitle="Monthly Recurring Revenue over time">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={monthlyData}>
+          <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
             <defs>
               <linearGradient id="mrrGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
@@ -193,10 +193,11 @@ export function BusinessCharts() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+            <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
             <YAxis 
-              tick={{ fill: '#94a3b8', fontSize: 12 }} 
+              tick={{ fill: '#94a3b8', fontSize: 10 }} 
               tickFormatter={(value) => `$${value}`}
+              width={45}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
@@ -212,19 +213,19 @@ export function BusinessCharts() {
       </ChartCard>
 
       {/* Two Column Charts */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Revenue Breakdown */}
         <ChartCard title="Monthly Revenue" subtitle="Revenue breakdown by type">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData}>
+            <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(value) => `$${value}`} />
+              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(value) => `$${value}`} width={40} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar dataKey="revenueFromNewSubs" name="New Subs" stackId="a" fill={COLORS.success} />
-              <Bar dataKey="revenueFromRenewals" name="Renewals" stackId="a" fill={COLORS.secondary} />
-              <Bar dataKey="revenueFromLifetime" name="Lifetime" stackId="a" fill={COLORS.tertiary} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+              <Bar dataKey="revenueFromNewSubs" name="New" stackId="a" fill={COLORS.success} />
+              <Bar dataKey="revenueFromRenewals" name="Renew" stackId="a" fill={COLORS.secondary} />
+              <Bar dataKey="revenueFromLifetime" name="Life" stackId="a" fill={COLORS.tertiary} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -232,13 +233,13 @@ export function BusinessCharts() {
         {/* Subscribers Chart */}
         <ChartCard title="Subscriber Growth" subtitle="New vs Churned subscribers">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData}>
+            <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={30} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar dataKey="newSubscribers" name="New Subscribers" fill={COLORS.success} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+              <Bar dataKey="newSubscribers" name="New" fill={COLORS.success} />
               <Bar dataKey="churned" name="Churned" fill={COLORS.danger} />
             </BarChart>
           </ResponsiveContainer>
@@ -246,11 +247,11 @@ export function BusinessCharts() {
       </div>
 
       {/* Second Row of Charts */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Total Active Subscribers */}
-        <ChartCard title="Total Active Subscribers" subtitle="Cumulative subscriber count">
+        <ChartCard title="Active Subscribers" subtitle="Cumulative subscriber count">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={monthlyData}>
+            <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
               <defs>
                 <linearGradient id="subscribersGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.secondary} stopOpacity={0.3} />
@@ -258,8 +259,8 @@ export function BusinessCharts() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={30} />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
@@ -280,70 +281,74 @@ export function BusinessCharts() {
               <Pie
                 data={revenueByProvider}
                 cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
+                cy="45%"
+                innerRadius={40}
+                outerRadius={70}
+                paddingAngle={3}
                 dataKey="value"
-                label={({ name, percent }) => `${name ?? ''}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={false}
               >
                 {revenueByProvider.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value) => formatCurrency(value as number)}
+                formatter={(value) => formatCurrency((value ?? 0) as number)}
                 contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
               />
-              <Legend />
+              <Legend 
+                wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
+                formatter={(value) => <span className="text-xs sm:text-sm text-slate-300">{value}</span>}
+              />
             </PieChart>
           </ResponsiveContainer>
         </ChartCard>
       </div>
 
       {/* Daily Signups (Last 30 Days) */}
-      <ChartCard title="Daily Activity (Last 30 Days)" subtitle="New signups and paid conversions">
+      <ChartCard title="Daily Activity (30 Days)" subtitle="New signups and paid conversions" tall>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={dailyData}>
+          <LineChart data={dailyData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis 
               dataKey="date" 
-              tick={{ fill: '#94a3b8', fontSize: 10 }} 
+              tick={{ fill: '#94a3b8', fontSize: 9 }} 
               tickFormatter={(value) => {
                 const date = new Date(value);
                 return `${date.getMonth() + 1}/${date.getDate()}`;
               }}
+              interval="preserveStartEnd"
             />
-            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+            <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={25} />
             <Tooltip 
               content={<CustomTooltip />}
-              labelFormatter={(label) => new Date(label).toLocaleDateString()}
+              labelFormatter={(label) => new Date(label as string).toLocaleDateString()}
             />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '11px' }} />
             <Line 
               type="monotone" 
               dataKey="newSignups" 
               name="Signups" 
               stroke={COLORS.secondary} 
               strokeWidth={2}
-              dot={{ fill: COLORS.secondary, r: 3 }}
+              dot={false}
             />
             <Line 
               type="monotone" 
               dataKey="newPaidUsers" 
-              name="New Paid Users" 
+              name="Paid" 
               stroke={COLORS.success} 
               strokeWidth={2}
-              dot={{ fill: COLORS.success, r: 3 }}
+              dot={false}
             />
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {/* Revenue by Provider Over Time */}
-      <ChartCard title="Revenue by Provider Over Time" subtitle="Stripe vs PayPal vs PayPal Legacy">
+      <ChartCard title="Revenue by Provider" subtitle="Stripe vs PayPal vs Legacy" tall>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={monthlyData}>
+          <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
             <defs>
               <linearGradient id="stripeGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={COLORS.stripe} stopOpacity={0.3} />
@@ -359,10 +364,10 @@ export function BusinessCharts() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(value) => `$${value}`} />
+            <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" />
+            <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(value) => `$${value}`} width={40} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '11px' }} />
             <Area
               type="monotone"
               dataKey="stripeRevenue"
@@ -382,7 +387,7 @@ export function BusinessCharts() {
             <Area
               type="monotone"
               dataKey="paypalLegacyRevenue"
-              name="PayPal Legacy"
+              name="Legacy"
               stroke={COLORS.paypalLegacy}
               fill="url(#legacyGradient)"
               strokeWidth={2}
