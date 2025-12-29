@@ -81,23 +81,34 @@ export function SignUpForm() {
         // Track signup completed
         trackSignupCompleted(result.user.id, 'email', result.user.email);
         
+        // DEBUG: Log redirect decision
+        console.log('[SignUp] Result:', { 
+          welcomeProjectId: result.welcomeProjectId, 
+          customRedirect, 
+          checkoutPlan 
+        });
+        
         // Determine where to redirect
         let redirectTo: string;
         
         if (customRedirect) {
           // Custom redirect takes priority (e.g., from hero demo)
+          console.log('[SignUp] Using customRedirect:', customRedirect);
           redirectTo = customRedirect;
         } else if (checkoutPlan) {
           // Paid plan checkout flow
           redirectTo = `/pricing?checkout=${checkoutPlan}`;
         } else if (result.welcomeProjectId) {
           // New user - go directly to their first project
+          console.log('[SignUp] Redirecting to welcome project:', result.welcomeProjectId);
           redirectTo = `/dashboard/projects/${result.welcomeProjectId}`;
         } else {
           // Fallback to dashboard
+          console.log('[SignUp] No welcomeProjectId, falling back to /dashboard');
           redirectTo = '/dashboard';
         }
         
+        console.log('[SignUp] Final redirectTo:', redirectTo);
         router.push(redirectTo);
         router.refresh();
       } else {

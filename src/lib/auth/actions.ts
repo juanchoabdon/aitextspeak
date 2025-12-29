@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { migrateLegacyUser, findLegacyUserByEmail, verifyLegacyPassword } from './legacy';
 import type { AuthResult, LoginCredentials, SignupData } from '@/types';
 import { triggerAutomation } from '@/lib/crm/automations';
@@ -155,35 +155,52 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
     }).eq('id', authData.user.id);
   }
   
-  // Create a welcome project for the new user
+  // Create a welcome project for the new user (using admin client to bypass RLS)
   let welcomeProjectId: string | undefined;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: project } = await (supabase as any)
+    const adminClient = createAdminClient();
+    
+    // First insert the project
+    const { error: insertError } = await adminClient
       .from('projects')
       .insert({
         user_id: authData.user.id,
         title: 'My First Project',
         project_type: 'other',
         is_legacy: false,
-      })
-      .select('id')
-      .single();
+      });
     
-    welcomeProjectId = project?.id;
+    if (insertError) {
+      console.error('Failed to create welcome project:', insertError);
+    } else {
+      // Then fetch the created project
+      const { data: project } = await adminClient
+        .from('projects')
+        .select('id')
+        .eq('user_id', authData.user.id)
+        .eq('title', 'My First Project')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      welcomeProjectId = project?.id;
+      console.log('Created welcome project:', welcomeProjectId);
+    }
   } catch (projectError) {
     // Don't fail signup if project creation fails
     console.error('Failed to create welcome project:', projectError);
   }
 
-  // Trigger welcome email automation for free users
-  try {
-    triggerAutomation('welcome_free', authData.user.id).catch(err => {
-      console.error('Failed to send welcome email:', err);
-    });
-  } catch (emailError) {
-    // Don't fail signup if email fails
-    console.error('Failed to trigger welcome email:', emailError);
+  // Trigger welcome email automation for free users (production only)
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      triggerAutomation('welcome_free', authData.user.id).catch(err => {
+        console.error('Failed to send welcome email:', err);
+      });
+    } catch (emailError) {
+      // Don't fail signup if email fails
+      console.error('Failed to trigger welcome email:', emailError);
+    }
   }
   
   return {

@@ -175,8 +175,15 @@ interface EmailLog {
   sent_at: string;
 }
 
+// Maximum emails to send per automation run (to avoid Brevo rate limits)
+const MAX_EMAILS_PER_RUN = 20;
+
+// Only consider users active/created in the last N days
+const LOOKBACK_DAYS = 7;
+
 /**
  * Run all enabled automations
+ * Limited to MAX_EMAILS_PER_RUN to avoid email provider rate limits
  */
 export async function runAutomations(dryRun = false): Promise<{
   processed: number;
@@ -192,6 +199,10 @@ export async function runAutomations(dryRun = false): Promise<{
     details: [] as Array<{ automation: string; user: string; status: string }>,
   };
 
+  // Calculate lookback date
+  const lookbackDate = new Date();
+  lookbackDate.setDate(lookbackDate.getDate() - LOOKBACK_DAYS);
+
   // Get email logs to avoid sending duplicates
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: emailLogs } = await (supabase as any)
@@ -202,7 +213,7 @@ export async function runAutomations(dryRun = false): Promise<{
     (emailLogs || []).map((log: { user_id: string; automation_id: string }) => `${log.user_id}:${log.automation_id}`)
   );
 
-  // Get all users with their usage data
+  // Get recent users only (created or updated in the last LOOKBACK_DAYS)
   const { data: users } = await supabase
     .from('profiles')
     .select(`
@@ -213,11 +224,14 @@ export async function runAutomations(dryRun = false): Promise<{
       created_at,
       updated_at
     `)
-    .not('email', 'is', null);
+    .not('email', 'is', null)
+    .or(`created_at.gte.${lookbackDate.toISOString()},updated_at.gte.${lookbackDate.toISOString()}`);
 
   if (!users) {
     return results;
   }
+
+  console.log(`[CRM] Processing ${users.length} recent users (last ${LOOKBACK_DAYS} days), max ${MAX_EMAILS_PER_RUN} emails`);
 
   // Get usage data
   const { data: usageData } = await supabase
@@ -263,10 +277,22 @@ export async function runAutomations(dryRun = false): Promise<{
   );
 
   // Process each automation
+  automationLoop:
   for (const automation of AUTOMATIONS) {
     if (!automation.enabled) continue;
 
+    // Stop if we've hit the email limit
+    if (results.emailsSent >= MAX_EMAILS_PER_RUN) {
+      console.log(`[CRM] Reached max emails limit (${MAX_EMAILS_PER_RUN}), stopping`);
+      break automationLoop;
+    }
+
     for (const user of users) {
+      // Stop if we've hit the email limit
+      if (results.emailsSent >= MAX_EMAILS_PER_RUN) {
+        break;
+      }
+
       results.processed++;
 
       // Skip if already sent

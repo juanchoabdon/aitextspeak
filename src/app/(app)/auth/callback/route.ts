@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -27,7 +27,9 @@ export async function GET(request: Request) {
         if (!profile) {
           isNewUser = true;
           const userMetadata = user.user_metadata;
-          await supabase.from('profiles').insert({
+          const adminClient = createAdminClient();
+          
+          await adminClient.from('profiles').insert({
             id: user.id,
             email: user.email!,
             first_name: userMetadata?.full_name?.split(' ')[0] || userMetadata?.name?.split(' ')[0] || null,
@@ -35,9 +37,9 @@ export async function GET(request: Request) {
             avatar_url: userMetadata?.avatar_url || userMetadata?.picture || null,
           });
           
-          // Create a welcome project for new OAuth users
+          // Create a welcome project for new OAuth users (using admin client to bypass RLS)
           try {
-            const { data: project } = await supabase
+            const { data: project, error: projectError } = await adminClient
               .from('projects')
               .insert({
                 user_id: user.id,
@@ -47,6 +49,10 @@ export async function GET(request: Request) {
               })
               .select('id')
               .single();
+            
+            if (projectError) {
+              console.error('Failed to create welcome project for OAuth user:', projectError);
+            }
             
             // If we created a project and user isn't going to a specific page, redirect to the project
             if (project && next === '/dashboard') {

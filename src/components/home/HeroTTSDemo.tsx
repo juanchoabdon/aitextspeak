@@ -86,14 +86,14 @@ function SignupModal({ isOpen, onClose }: SignupModalProps) {
 
           <div className="space-y-3">
             <button
-              onClick={() => router.push('/auth/signup?redirect=/dashboard/projects/new')}
+              onClick={() => router.push('/auth/signup')}
               className="w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:from-amber-400 hover:to-orange-500 transition-all hover:scale-[1.02] cursor-pointer"
             >
               Sign Up Free
             </button>
             
             <button
-              onClick={() => router.push('/auth/signin?redirect=/dashboard/projects/new')}
+              onClick={() => router.push('/auth/signin')}
               className="w-full py-3 px-6 border border-slate-600 text-slate-300 font-semibold rounded-xl hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
             >
               Already have an account? Sign In
@@ -363,7 +363,7 @@ export function HeroTTSDemo({ defaultText }: HeroTTSDemoProps = {}) {
               <button
                 onClick={() => {
                   trackCTAClicked('Sign Up Free to Continue', 'demo_rate_limited');
-                  router.push('/auth/signup?redirect=/dashboard/projects/new');
+                  router.push('/auth/signup');
                 }}
                 className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-3 transition-all cursor-pointer bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 hover:scale-[1.02]"
               >
@@ -376,7 +376,7 @@ export function HeroTTSDemo({ defaultText }: HeroTTSDemoProps = {}) {
               <button
                 onClick={() => {
                   trackCTAClicked('Get Started Free', 'demo_after_play');
-                  router.push('/auth/signup?redirect=/dashboard/projects/new');
+                  router.push('/auth/signup');
                 }}
                 className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-3 transition-all cursor-pointer bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 hover:scale-[1.02]"
               >
