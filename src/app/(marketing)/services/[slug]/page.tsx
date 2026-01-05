@@ -5,6 +5,7 @@ import { getServiceBySlug } from '@/lib/services/db';
 import { HeroTTSDemo } from '@/components/home/HeroTTSDemo';
 import { TrustStats } from '@/components/home/TrustStats';
 import { ServiceJsonLd, BreadcrumbJsonLd, FAQJsonLd } from '@/components/seo/JsonLd';
+import { getUser } from '@/lib/supabase/server';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
@@ -86,7 +87,11 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
 
 export default async function ServicePage({ params }: ServicePageProps) {
   const { slug } = await params;
-  const service = await getServiceBySlug(slug);
+  const [service, user] = await Promise.all([
+    getServiceBySlug(slug),
+    getUser(),
+  ]);
+  const isLoggedIn = !!user;
 
   if (!service) {
     notFound();
@@ -132,7 +137,7 @@ export default async function ServicePage({ params }: ServicePageProps) {
             )}
 
             {/* Try It Now - Demo */}
-            <HeroTTSDemo defaultText={SERVICE_DEMO_TEXTS[service.slug]} />
+            <HeroTTSDemo defaultText={SERVICE_DEMO_TEXTS[service.slug]} isLoggedIn={isLoggedIn} />
           </div>
         </div>
       </section>

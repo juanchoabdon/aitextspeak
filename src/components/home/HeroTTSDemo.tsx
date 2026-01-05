@@ -36,6 +36,7 @@ const DEFAULT_TEXT = "Welcome to AI TextSpeak! Transform your text into natural 
 
 interface HeroTTSDemoProps {
   defaultText?: string;
+  isLoggedIn?: boolean;
 }
 
 interface SignupModalProps {
@@ -109,7 +110,7 @@ function SignupModal({ isOpen, onClose }: SignupModalProps) {
   );
 }
 
-export function HeroTTSDemo({ defaultText }: HeroTTSDemoProps = {}) {
+export function HeroTTSDemo({ defaultText, isLoggedIn = false }: HeroTTSDemoProps = {}) {
   const router = useRouter();
   const [text, setText] = useState(defaultText || DEFAULT_TEXT);
   const [selectedVoice, setSelectedVoice] = useState(DEMO_VOICES[0]);
@@ -122,6 +123,54 @@ export function HeroTTSDemo({ defaultText }: HeroTTSDemoProps = {}) {
   const [rateLimitHit, setRateLimitHit] = useState(false);
   const [progress, setProgress] = useState(0);
   const animationRef = useRef<number | null>(null);
+
+  // If user is logged in, show simplified CTA
+  if (isLoggedIn) {
+    return (
+      <div className="mt-12 max-w-2xl mx-auto">
+        <div className="relative rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-xl p-8 shadow-2xl">
+          {/* Glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 rounded-2xl blur-xl opacity-50" />
+          
+          <div className="relative text-center">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-2xl font-bold text-white mb-3">
+              Welcome back! 👋
+            </h3>
+            
+            <p className="text-slate-300 mb-6">
+              Ready to create your next voiceover?
+            </p>
+            
+            <button
+              onClick={() => {
+                trackCTAClicked('Create Text to Speech', 'hero_logged_in');
+                router.push('/dashboard/projects/new');
+              }}
+              className="w-full py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:from-amber-400 hover:to-orange-500 transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-3"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Text to Speech
+            </button>
+            
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="mt-3 w-full py-3 px-6 border border-slate-600 text-slate-300 font-medium rounded-xl hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Stop any playing audio
   const stopAudio = useCallback(() => {

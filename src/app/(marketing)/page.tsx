@@ -5,6 +5,7 @@ import { HeroTTSDemo } from '@/components/home/HeroTTSDemo';
 import { TrustStats } from '@/components/home/TrustStats';
 import { OAuthCallbackRedirect } from '@/components/home/OAuthCallbackRedirect';
 import { OrganizationJsonLd, WebsiteJsonLd, SoftwareApplicationJsonLd, FAQJsonLd } from '@/components/seo/JsonLd';
+import { getUser } from '@/lib/supabase/server';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aitextspeak.com';
 
@@ -93,7 +94,10 @@ const homeFAQs = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getUser();
+  const isLoggedIn = !!user;
+
   return (
     <>
       {/* Handle OAuth callback codes that land on home page (fallback) */}
@@ -128,7 +132,7 @@ export default function HomePage() {
             </p>
 
             {/* TTS Demo */}
-            <HeroTTSDemo />
+            <HeroTTSDemo isLoggedIn={isLoggedIn} />
           </div>
         </div>
       </section>
