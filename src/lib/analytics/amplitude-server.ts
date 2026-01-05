@@ -296,45 +296,32 @@ export function trackSubscriptionCancelledServer(
 
 /**
  * Track payment failed (for webhooks)
+ * NOTE: We intentionally do NOT track revenue for failed payments
+ * Only track the event for analytics/alerting purposes
  */
 export function trackPaymentFailedServer(
   userId: string,
   properties: {
     planId: string;
     provider: 'stripe' | 'paypal' | 'paypal_legacy';
-    amount?: number; // Amount that failed to charge
+    amount?: number; // Amount that failed to charge (for context, not revenue)
     currency?: string;
     errorMessage: string;
     errorCode?: string;
     subscriptionId?: string;
   }
 ) {
-  console.log('[Amplitude Server] ❌ Tracking payment failed:', {
+  console.log('[Amplitude Server] ❌ Tracking payment failed (no revenue):', {
     userId: userId.substring(0, 8) + '...',
     planId: properties.planId,
     amount: properties.amount,
     error: properties.errorMessage,
   });
 
-  // Track failed revenue (at-risk revenue)
-  if (properties.amount && properties.amount > 0) {
-    trackServerRevenue(userId, {
-      productId: properties.planId,
-      price: properties.amount,
-      quantity: 0, // 0 quantity indicates failed/incomplete
-      revenueType: 'failed',
-      eventProperties: {
-        payment_provider: properties.provider,
-        error_message: properties.errorMessage,
-        error_code: properties.errorCode,
-        subscription_id: properties.subscriptionId,
-      },
-    });
-  }
-
+  // Only track the event - DO NOT track revenue for failed payments
   trackServerEvent(userId, 'Payment Failed', {
     plan_id: properties.planId,
-    amount: properties.amount,
+    amount_attempted: properties.amount, // For context only, not revenue
     currency: properties.currency || 'USD',
     payment_provider: properties.provider,
     error_message: properties.errorMessage,
