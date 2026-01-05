@@ -42,6 +42,45 @@ function initAmplitudeServer() {
 }
 
 /**
+ * Track a server-side event via HTTP API (more reliable in serverless)
+ */
+async function trackEventViaHttp(
+  userId: string,
+  eventName: string,
+  eventProperties: Record<string, string | number | boolean>
+): Promise<void> {
+  const apiKey = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY;
+  if (!apiKey) return;
+
+  try {
+    const response = await fetch('https://api.eu.amplitude.com/2/httpapi', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        events: [{
+          user_id: userId,
+          event_type: eventName,
+          event_properties: eventProperties,
+          time: Date.now(),
+        }],
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('[Amplitude HTTP] ❌ Failed:', response.status, text);
+    } else {
+      console.log('[Amplitude HTTP] ✅ Event sent:', eventName);
+    }
+  } catch (error) {
+    console.error('[Amplitude HTTP] ❌ Error:', error);
+  }
+}
+
+/**
  * Track a server-side event
  */
 export function trackServerEvent(
@@ -51,15 +90,10 @@ export function trackServerEvent(
 ) {
   initAmplitudeServer();
   
-  if (!isInitialized) {
-    console.warn('[Amplitude Server] Not initialized, skipping event:', eventName);
-    return;
-  }
-
   console.log('[Amplitude Server] 📊 Tracking event:', eventName, 'for user:', userId.substring(0, 8) + '...');
   
   try {
-    // Convert properties to simple types that Amplitude accepts (matching Revenue format that works)
+    // Convert properties to simple types that Amplitude accepts
     const cleanProperties: Record<string, string | number | boolean> = {};
     if (eventProperties) {
       for (const [key, value] of Object.entries(eventProperties)) {
@@ -72,9 +106,16 @@ export function trackServerEvent(
       }
     }
     
-    // Use the same 3-arg format that works for Revenue
-    amplitude.track(eventName, cleanProperties, { user_id: userId });
-    console.log('[Amplitude Server] ✅ Event queued:', eventName, cleanProperties);
+    // Try SDK first
+    if (isInitialized) {
+      amplitude.track(eventName, cleanProperties, { user_id: userId });
+      console.log('[Amplitude Server] ✅ Event queued via SDK:', eventName);
+    }
+    
+    // Also send via HTTP API as backup (more reliable in serverless)
+    trackEventViaHttp(userId, eventName, cleanProperties).catch(err => {
+      console.error('[Amplitude HTTP] Background error:', err);
+    });
   } catch (error) {
     console.error('[Amplitude Server] ❌ Error tracking event:', eventName, error);
   }
