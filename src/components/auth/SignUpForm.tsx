@@ -101,7 +101,7 @@ export function SignUpForm() {
         } else if (result.welcomeProjectId) {
           // New user - go directly to their first project
           console.log('[SignUp] Redirecting to welcome project:', result.welcomeProjectId);
-          redirectTo = `/dashboard/projects/${result.welcomeProjectId}`;
+          redirectTo = `/dashboard/projects/${result.welcomeProjectId}?new_user=1`;
         } else {
           // Fallback to dashboard
           console.log('[SignUp] No welcomeProjectId, falling back to /dashboard');
