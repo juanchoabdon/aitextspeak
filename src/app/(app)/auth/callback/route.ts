@@ -19,6 +19,8 @@ export async function GET(request: Request) {
       if (user) {
         console.log('[OAuth Callback] User authenticated:', user.id);
         
+        const adminClient = createAdminClient();
+        
         const { data: profile } = await supabase
           .from('profiles')
           .select('id')
@@ -34,7 +36,6 @@ export async function GET(request: Request) {
           console.log('[OAuth Callback] New user detected, creating profile...');
           
           const userMetadata = user.user_metadata;
-          const adminClient = createAdminClient();
           
           const { error: profileError } = await adminClient.from('profiles').insert({
             id: user.id,
@@ -49,9 +50,21 @@ export async function GET(request: Request) {
           } else {
             console.log('[OAuth Callback] Profile created successfully');
           }
+        }
+        
+        // Check if user has any projects
+        const { data: existingProjects, error: projectsError } = await adminClient
+          .from('projects')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+        
+        console.log('[OAuth Callback] Existing projects:', existingProjects?.length || 0);
+        
+        // Create welcome project if user has no projects (new user or user who never created one)
+        if (!projectsError && (!existingProjects || existingProjects.length === 0)) {
+          console.log('[OAuth Callback] No projects found, creating welcome project...');
           
-          // Create a welcome project for new OAuth users (using admin client to bypass RLS)
-          console.log('[OAuth Callback] Creating welcome project...');
           const { data: project, error: projectError } = await adminClient
             .from('projects')
             .insert({
@@ -68,12 +81,13 @@ export async function GET(request: Request) {
           } else if (project) {
             console.log('[OAuth Callback] Welcome project created:', project.id);
             welcomeProjectId = project.id;
+            isNewUser = true; // Treat as new user if we just created their first project
           }
         }
 
-        // Redirect new users to their welcome project
-        if (isNewUser && welcomeProjectId) {
-          console.log('[OAuth Callback] Redirecting new user to project:', welcomeProjectId);
+        // Redirect users with a new welcome project to that project
+        if (welcomeProjectId) {
+          console.log('[OAuth Callback] Redirecting to welcome project:', welcomeProjectId);
           return NextResponse.redirect(
             `${origin}/dashboard/projects/${welcomeProjectId}?oauth=google&new_user=1&user_id=${user.id}`
           );
