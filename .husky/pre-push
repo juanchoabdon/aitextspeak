@@ -1,5 +1,19 @@
 #!/bin/sh
 
+echo "🧪 Running Amplitude tracking tests..."
+
+# Run Amplitude tests first (fast, critical)
+npm test -- --testPathPatterns="amplitude-server" --silent
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Amplitude tests failed! Push aborted."
+  echo "Please fix the failing tests before pushing."
+  exit 1
+fi
+
+echo "✅ Amplitude tests passed!"
+echo ""
 echo "🔨 Running build check before push..."
 
 # Run TypeScript check and build

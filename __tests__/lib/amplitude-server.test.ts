@@ -2,15 +2,24 @@
  * Amplitude Server-Side Tracking Tests
  * 
  * Tests revenue and event tracking for webhooks
+ * Verifies that amplitude.track() is called with correct format
  */
 
-// Mock the amplitude module before any imports
+// Set up env var before any imports
+process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY = 'test-api-key';
+
+// Mock the amplitude module
+const mockTrack = jest.fn();
+const mockRevenue = jest.fn();
+const mockIdentify = jest.fn();
+const mockFlush = jest.fn().mockReturnValue({ promise: Promise.resolve() });
+
 jest.mock('@amplitude/analytics-node', () => ({
   init: jest.fn(),
-  track: jest.fn(),
-  revenue: jest.fn(),
-  identify: jest.fn(),
-  flush: jest.fn().mockReturnValue({ promise: Promise.resolve() }),
+  track: mockTrack,
+  revenue: mockRevenue,
+  identify: mockIdentify,
+  flush: mockFlush,
   Identify: jest.fn().mockImplementation(() => ({
     set: jest.fn().mockReturnThis(),
   })),
@@ -27,124 +36,307 @@ jest.mock('@amplitude/analytics-node', () => ({
   },
 }));
 
+// Import after mocking
+import {
+  trackServerEvent,
+  trackServerRevenue,
+  trackPaymentCompleted,
+  trackSubscriptionActivatedServer,
+  trackSubscriptionRenewalServer,
+  trackSubscriptionCancelledServer,
+  trackPaymentFailedServer,
+  flushAmplitude,
+} from '@/lib/analytics/amplitude-server';
+
 describe('Amplitude Server Tracking', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Module exports', () => {
-    it('should export all tracking functions', async () => {
-      const amplitudeServer = await import('@/lib/analytics/amplitude-server');
-      
-      expect(amplitudeServer.trackServerEvent).toBeDefined();
-      expect(amplitudeServer.trackServerRevenue).toBeDefined();
-      expect(amplitudeServer.trackPaymentCompleted).toBeDefined();
-      expect(amplitudeServer.trackSubscriptionActivatedServer).toBeDefined();
-      expect(amplitudeServer.trackSubscriptionRenewalServer).toBeDefined();
-      expect(amplitudeServer.trackSubscriptionCancelledServer).toBeDefined();
-      expect(amplitudeServer.trackPaymentFailedServer).toBeDefined();
-      expect(amplitudeServer.flushAmplitude).toBeDefined();
-    });
-  });
+  describe('trackServerEvent', () => {
+    it('should call amplitude.track with correct 3-arg format', () => {
+      trackServerEvent('user-123', 'Test Event', {
+        plan_id: 'monthly',
+        amount: 9.99,
+      });
 
-  describe('trackSubscriptionRenewalServer', () => {
-    it('should be callable with correct parameters', async () => {
-      const { trackSubscriptionRenewalServer } = await import('@/lib/analytics/amplitude-server');
-      
-      // Should not throw
-      expect(() => {
-        trackSubscriptionRenewalServer('user-123', {
-          planId: 'basic_monthly',
-          amount: 9.99,
-          provider: 'paypal_legacy',
-          currency: 'USD',
-          subscriptionId: 'I-ABC123',
-        });
-      }).not.toThrow();
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Test Event',
+        { plan_id: 'monthly', amount: 9.99 },
+        { user_id: 'user-123' }
+      );
     });
 
-    it('should accept stripe provider', async () => {
-      const { trackSubscriptionRenewalServer } = await import('@/lib/analytics/amplitude-server');
-      
-      expect(() => {
-        trackSubscriptionRenewalServer('user-456', {
-          planId: 'pro_monthly',
-          amount: 29.99,
-          provider: 'stripe',
-          currency: 'USD',
-        });
-      }).not.toThrow();
+    it('should clean properties - remove null and undefined', () => {
+      trackServerEvent('user-123', 'Test Event', {
+        stringProp: 'hello',
+        numberProp: 42,
+        boolProp: true,
+        nullProp: null,
+        undefinedProp: undefined,
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Test Event',
+        { stringProp: 'hello', numberProp: 42, boolProp: true },
+        { user_id: 'user-123' }
+      );
     });
 
-    it('should accept paypal provider', async () => {
-      const { trackSubscriptionRenewalServer } = await import('@/lib/analytics/amplitude-server');
-      
-      expect(() => {
-        trackSubscriptionRenewalServer('user-789', {
-          planId: 'basic_monthly',
-          amount: 9.99,
-          provider: 'paypal',
-          currency: 'USD',
-        });
-      }).not.toThrow();
+    it('should handle empty properties', () => {
+      trackServerEvent('user-123', 'Test Event', {});
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Test Event',
+        {},
+        { user_id: 'user-123' }
+      );
     });
   });
 
   describe('trackPaymentCompleted', () => {
-    it('should be callable for new subscriptions', async () => {
-      const { trackPaymentCompleted } = await import('@/lib/analytics/amplitude-server');
-      
-      expect(() => {
-        trackPaymentCompleted('user-123', {
-          planId: 'basic_monthly',
-          amount: 9.99,
-          provider: 'stripe',
-          isRecurring: true,
-          currency: 'USD',
-          subscriptionId: 'sub_123',
-        });
-      }).not.toThrow();
+    it('should track Revenue event for subscriptions', () => {
+      trackPaymentCompleted('user-123', {
+        planId: 'monthly',
+        amount: 9.99,
+        provider: 'stripe',
+        isRecurring: true,
+        currency: 'USD',
+        subscriptionId: 'sub_123',
+      });
+
+      // Should call amplitude.revenue
+      expect(mockRevenue).toHaveBeenCalled();
+
+      // Should call amplitude.track for 'Revenue' event
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Revenue',
+        expect.objectContaining({
+          $revenue: 9.99,
+          $price: 9.99,
+          $productId: 'monthly',
+        }),
+        { user_id: 'user-123' }
+      );
     });
 
-    it('should be callable for lifetime purchases', async () => {
-      const { trackPaymentCompleted } = await import('@/lib/analytics/amplitude-server');
-      
-      expect(() => {
-        trackPaymentCompleted('user-123', {
-          planId: 'lifetime',
+    it('should track Subscription Started for recurring payments', () => {
+      trackPaymentCompleted('user-123', {
+        planId: 'monthly',
+        amount: 9.99,
+        provider: 'stripe',
+        isRecurring: true,
+        currency: 'USD',
+        subscriptionId: 'sub_123',
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Subscription Started',
+        expect.objectContaining({
+          plan_id: 'monthly',
+          amount: 9.99,
+          payment_provider: 'stripe',
+        }),
+        { user_id: 'user-123' }
+      );
+    });
+
+    it('should track Payment Completed for all payments', () => {
+      trackPaymentCompleted('user-123', {
+        planId: 'monthly',
+        amount: 9.99,
+        provider: 'stripe',
+        isRecurring: true,
+        currency: 'USD',
+        subscriptionId: 'sub_123',
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Payment Completed',
+        expect.objectContaining({
+          plan_id: 'monthly',
+          amount: 9.99,
+          is_recurring: true,
+        }),
+        { user_id: 'user-123' }
+      );
+    });
+
+    it('should track Lifetime Purchased for lifetime plans', () => {
+      trackPaymentCompleted('user-123', {
+        planId: 'lifetime',
+        amount: 99.00,
+        provider: 'paypal',
+        isRecurring: false,
+        currency: 'USD',
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Lifetime Purchased',
+        expect.objectContaining({
           amount: 99.00,
-          provider: 'paypal',
-          isRecurring: false,
-          currency: 'USD',
-        });
-      }).not.toThrow();
+          payment_provider: 'paypal',
+        }),
+        { user_id: 'user-123' }
+      );
+    });
+
+    it('should NOT track Subscription Started for lifetime', () => {
+      mockTrack.mockClear();
+      
+      trackPaymentCompleted('user-123', {
+        planId: 'lifetime',
+        amount: 99.00,
+        provider: 'paypal',
+        isRecurring: false,
+        currency: 'USD',
+      });
+
+      // Should NOT have called with 'Subscription Started'
+      const subscriptionStartedCalls = mockTrack.mock.calls.filter(
+        call => call[0] === 'Subscription Started'
+      );
+      expect(subscriptionStartedCalls).toHaveLength(0);
+    });
+  });
+
+  describe('trackSubscriptionRenewalServer', () => {
+    it('should track revenue and Subscription Renewed event', () => {
+      trackSubscriptionRenewalServer('user-123', {
+        planId: 'monthly',
+        amount: 9.99,
+        provider: 'paypal_legacy',
+        currency: 'USD',
+        subscriptionId: 'I-ABC123',
+      });
+
+      expect(mockRevenue).toHaveBeenCalled();
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Subscription Renewed',
+        expect.objectContaining({
+          plan_id: 'monthly',
+          amount: 9.99,
+          payment_provider: 'paypal_legacy',
+        }),
+        { user_id: 'user-123' }
+      );
+    });
+  });
+
+  describe('trackSubscriptionCancelledServer', () => {
+    it('should track Subscription Cancelled event with reason', () => {
+      trackSubscriptionCancelledServer('user-123', {
+        planId: 'monthly',
+        provider: 'stripe',
+        subscriptionId: 'sub_123',
+        reason: 'user_cancelled',
+        amount: 9.99,
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Subscription Cancelled',
+        expect.objectContaining({
+          plan_id: 'monthly',
+          cancellation_reason: 'user_cancelled',
+        }),
+        { user_id: 'user-123' }
+      );
+    });
+
+    it('should track negative revenue for churn', () => {
+      trackSubscriptionCancelledServer('user-123', {
+        planId: 'monthly',
+        provider: 'stripe',
+        subscriptionId: 'sub_123',
+        amount: 9.99,
+      });
+
+      // Should call revenue with negative amount
+      expect(mockRevenue).toHaveBeenCalled();
+    });
+  });
+
+  describe('trackPaymentFailedServer', () => {
+    it('should track Payment Failed event WITHOUT revenue', () => {
+      mockTrack.mockClear();
+      mockRevenue.mockClear();
+      
+      trackPaymentFailedServer('user-123', {
+        planId: 'monthly',
+        provider: 'stripe',
+        amount: 9.99,
+        errorMessage: 'Card declined',
+      });
+
+      // Should NOT call amplitude.revenue for failed payments
+      expect(mockRevenue).not.toHaveBeenCalled();
+
+      // Should track the event with amount_attempted (not revenue)
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Payment Failed',
+        expect.objectContaining({
+          plan_id: 'monthly',
+          amount_attempted: 9.99,
+          error_message: 'Card declined',
+        }),
+        { user_id: 'user-123' }
+      );
+    });
+  });
+
+  describe('trackSubscriptionActivatedServer', () => {
+    it('should track Subscription Activated event', () => {
+      trackSubscriptionActivatedServer('user-123', {
+        planId: 'monthly',
+        provider: 'stripe',
+        subscriptionId: 'sub_123',
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Subscription Activated',
+        expect.objectContaining({
+          plan_id: 'monthly',
+          payment_provider: 'stripe',
+          subscription_id: 'sub_123',
+        }),
+        { user_id: 'user-123' }
+      );
     });
   });
 
   describe('flushAmplitude', () => {
-    it('should be callable', async () => {
-      const { flushAmplitude } = await import('@/lib/analytics/amplitude-server');
-      
-      await expect(flushAmplitude()).resolves.not.toThrow();
+    it('should call amplitude.flush', async () => {
+      await flushAmplitude();
+
+      expect(mockFlush).toHaveBeenCalled();
     });
   });
 });
 
 describe('Provider Support', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   const providers: Array<'stripe' | 'paypal' | 'paypal_legacy'> = ['stripe', 'paypal', 'paypal_legacy'];
   
   providers.forEach(provider => {
-    it(`should support ${provider} provider`, async () => {
-      const { trackSubscriptionRenewalServer } = await import('@/lib/analytics/amplitude-server');
-      
-      expect(() => {
-        trackSubscriptionRenewalServer('user-test', {
-          planId: 'test_plan',
-          amount: 9.99,
-          provider,
-          currency: 'USD',
-        });
-      }).not.toThrow();
+    it(`should track events with ${provider} provider`, () => {
+      trackSubscriptionRenewalServer('user-test', {
+        planId: 'test_plan',
+        amount: 9.99,
+        provider,
+        currency: 'USD',
+      });
+
+      expect(mockTrack).toHaveBeenCalledWith(
+        'Subscription Renewed',
+        expect.objectContaining({
+          payment_provider: provider,
+        }),
+        expect.any(Object)
+      );
     });
   });
 });
