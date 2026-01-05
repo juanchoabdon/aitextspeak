@@ -59,7 +59,7 @@ export function trackServerEvent(
   console.log('[Amplitude Server] 📊 Tracking event:', eventName, 'for user:', userId.substring(0, 8) + '...');
   
   try {
-    // Convert properties to simple types that Amplitude accepts
+    // Convert properties to simple types that Amplitude accepts (matching Revenue format that works)
     const cleanProperties: Record<string, string | number | boolean> = {};
     if (eventProperties) {
       for (const [key, value] of Object.entries(eventProperties)) {
@@ -72,12 +72,8 @@ export function trackServerEvent(
       }
     }
     
-    // Use BaseEvent format which is more reliable
-    amplitude.track({
-      event_type: eventName,
-      user_id: userId,
-      event_properties: cleanProperties,
-    });
+    // Use the same 3-arg format that works for Revenue
+    amplitude.track(eventName, cleanProperties, { user_id: userId });
     console.log('[Amplitude Server] ✅ Event queued:', eventName, cleanProperties);
   } catch (error) {
     console.error('[Amplitude Server] ❌ Error tracking event:', eventName, error);
@@ -128,18 +124,16 @@ export function trackServerRevenue(
     amplitude.revenue(revenue, { user_id: userId });
     
     // Also track as a standard event with $revenue property for better visibility
-    amplitude.track({
-      event_type: 'Revenue',
-      user_id: userId,
-      event_properties: {
-        $revenue: properties.price,
-        $price: properties.price,
-        $quantity: properties.quantity || 1,
-        $productId: properties.productId,
-        $revenueType: properties.revenueType,
-        ...(properties.eventProperties || {}),
-      },
-    });
+    // Using the format that works (3 args with inline properties)
+    amplitude.track('Revenue', {
+      $revenue: properties.price,
+      $price: properties.price,
+      $quantity: properties.quantity || 1,
+      $productId: properties.productId,
+      $revenueType: properties.revenueType,
+      payment_provider: (properties.eventProperties as Record<string, unknown>)?.payment_provider || '',
+      currency: (properties.eventProperties as Record<string, unknown>)?.currency || 'USD',
+    }, { user_id: userId });
     
     console.log('[Amplitude Server] ✅ Revenue event queued: $' + properties.price);
   } catch (error) {
