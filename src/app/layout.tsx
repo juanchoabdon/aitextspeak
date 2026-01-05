@@ -7,6 +7,7 @@ import { AmplitudeProvider } from "@/components/analytics/AmplitudeProvider";
 import { FirstPromoterScripts } from "@/components/analytics/FirstPromoter";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { FaviconSetter } from "@/components/FaviconSetter";
+import { WelcomeToast } from "@/components/auth/WelcomeToast";
 import "./globals.css";
 
 const inter = Inter({
@@ -137,6 +138,9 @@ export default function RootLayout({
             },
           }}
         />
+        <Suspense fallback={null}>
+          <WelcomeToast />
+        </Suspense>
         <Suspense fallback={null}>
           <TopLoader />
         </Suspense>
