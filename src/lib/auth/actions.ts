@@ -160,31 +160,36 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
   try {
     const adminClient = createAdminClient();
     
-    // First insert the project
-    const { error: insertError } = await adminClient
+    // Check if user already has projects (edge case)
+    const { data: existingProjects } = await adminClient
       .from('projects')
-      .insert({
-        user_id: authData.user.id,
-        title: 'My First Project',
-        project_type: 'other',
-        is_legacy: false,
-      });
+      .select('id')
+      .eq('user_id', authData.user.id)
+      .limit(1);
     
-    if (insertError) {
-      console.error('Failed to create welcome project:', insertError);
-    } else {
-      // Then fetch the created project
-      const { data: project } = await adminClient
+    // Only create project if user has none
+    if (!existingProjects || existingProjects.length === 0) {
+      const { data: project, error: insertError } = await adminClient
         .from('projects')
+        .insert({
+          user_id: authData.user.id,
+          title: 'My First Project',
+          project_type: 'other',
+          is_legacy: false,
+        })
         .select('id')
-        .eq('user_id', authData.user.id)
-        .eq('title', 'My First Project')
-        .order('created_at', { ascending: false })
-        .limit(1)
         .single();
       
-      welcomeProjectId = project?.id;
-      console.log('Created welcome project:', welcomeProjectId);
+      if (insertError) {
+        console.error('Failed to create welcome project:', insertError);
+      } else if (project) {
+        welcomeProjectId = project.id;
+        console.log('Created welcome project:', welcomeProjectId);
+      }
+    } else {
+      // User already has projects, use the first one
+      welcomeProjectId = existingProjects[0].id;
+      console.log('User already has projects, using:', welcomeProjectId);
     }
   } catch (projectError) {
     // Don't fail signup if project creation fails
