@@ -39,8 +39,8 @@ export function useUsage(): UseUsageReturn {
           // User not logged in - set default free plan
           setUsage({
             charactersUsed: 0,
-            charactersLimit: 500,
-            charactersRemaining: 500,
+            charactersLimit: 5000,
+            charactersRemaining: 5000,
             percentUsed: 0,
             isUnlimited: false,
             hasReachedLimit: false,

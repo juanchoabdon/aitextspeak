@@ -61,7 +61,7 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
   const selectedVoice = voices.find(v => v.voice_id === voiceId);
 
   const characterCount = countBillableCharacters(text);
-  const maxCharacters = usage?.isUnlimited ? 50000 : (usage?.charactersRemaining || 500);
+  const maxCharacters = usage?.isUnlimited ? 50000 : (usage?.charactersRemaining || 5000);
   
   // Check if user is approaching or over limit
   const isOverLimit = usage && !usage.isUnlimited && characterCount > usage.charactersRemaining;

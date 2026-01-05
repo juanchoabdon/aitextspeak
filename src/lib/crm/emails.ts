@@ -83,7 +83,7 @@ Hi${params.firstName ? ` ${params.firstName}` : ''},
 </p>
 
 <p style="margin:0 0 20px;font-size:16px;color:#94a3b8;line-height:1.6;">
-Thank you for joining AI TextSpeak! You now have access to our powerful text-to-speech technology with <strong style="color:#f59e0b;">500 free characters</strong> to get you started.
+Thank you for joining AI TextSpeak! You now have access to our powerful text-to-speech technology with <strong style="color:#f59e0b;">5,000 free characters</strong> to get you started.
 </p>
 
 <div style="background:#0f172a;border-radius:12px;padding:20px;margin:25px 0;">
@@ -110,7 +110,7 @@ Upgrade to Pro and unlock <strong style="color:#ffffff;">1 million characters/mo
 
   return sendEmail({
     to: [{ email: params.email, name: params.firstName }],
-    subject: '👋 Welcome to AI TextSpeak - Your 500 Free Characters Await!',
+    subject: '👋 Welcome to AI TextSpeak - Your 5,000 Free Characters Await!',
     htmlContent: wrapEmailTemplate(content),
   });
 }
@@ -185,7 +185,7 @@ We noticed you haven't created your first audio project yet. Don't worry - it on
 </p>
 
 <div style="background:#0f172a;border-radius:12px;padding:25px;margin:25px 0;text-align:center;">
-<p style="margin:0 0 15px;color:#ffffff;font-size:18px;font-weight:600;">Your 500 free characters are waiting! 🎁</p>
+<p style="margin:0 0 15px;color:#ffffff;font-size:18px;font-weight:600;">Your 5,000 free characters are waiting! 🎁</p>
 <p style="margin:0;color:#94a3b8;font-size:14px;">Try converting this sample text:</p>
 <p style="margin:15px 0 0;color:#f59e0b;font-style:italic;font-size:14px;">"Welcome to AI TextSpeak. Transform your text into natural speech!"</p>
 </div>

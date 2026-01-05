@@ -82,7 +82,7 @@ function SignupModal({ isOpen, onClose }: SignupModalProps) {
           </h3>
           
           <p className="text-slate-300 mb-6">
-            Create a free account and get <span className="text-amber-400 font-semibold">500 characters</span> to start creating your own voiceovers!
+            Create a free account and get <span className="text-amber-400 font-semibold">5,000 characters</span> to start creating your own voiceovers!
           </p>
 
           <div className="space-y-3">

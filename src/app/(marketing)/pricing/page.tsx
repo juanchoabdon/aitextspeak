@@ -53,7 +53,7 @@ const plans: {
     period: '',
     features: [
       'Get it When You Sign Up',
-      '500 Character Limit',
+      '5,000 Character Limit',
       'Standard Voice and A.I Voices',
     ],
     planId: 'free',

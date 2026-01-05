@@ -35,7 +35,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'How many characters can I use?',
-    answer: 'Free users get 500 characters per month. Our paid plans offer 50,000 to unlimited characters depending on your subscription.',
+    answer: 'Free users get 5,000 characters per month. Our paid plans offer 50,000 to unlimited characters depending on your subscription.',
   },
   {
     question: 'Can I use the audio commercially?',

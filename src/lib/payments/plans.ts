@@ -33,12 +33,12 @@ export const PLANS: Record<AllPlanId, Plan> = {
     currency: 'USD',
     interval: null,
     features: [
-      '500 characters/month',
+      '5,000 characters/month',
       'English voices only',
       'MP3 downloads',
       'Email support',
     ],
-    charactersPerMonth: 500,
+    charactersPerMonth: 5000,
     stripePriceId: null,
     paypalPlanId: null,
     allowedLanguages: ['en-US', 'en-GB'], // Only English (US) and English (UK)

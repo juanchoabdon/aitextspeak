@@ -248,7 +248,7 @@ export async function runAutomations(dryRun = false): Promise<{
   for (const u of usageData || []) {
     // Find user role to determine limit
     const user = users.find(usr => usr.id === u.user_id);
-    const limit = user?.role === 'pro' ? 1000000 : 500; // Pro = 1M, Free = 500
+    const limit = user?.role === 'pro' ? 1000000 : 5000; // Pro = 1M, Free = 5000
     usageMap.set(u.user_id, {
       user_id: u.user_id,
       characters_used: u.characters_used || 0,
@@ -494,7 +494,7 @@ async function sendAutomationEmail(
       return sendCharacterLimitWarningEmail({
         ...baseParams,
         usedCharacters: usage?.characters_used || 0,
-        limitCharacters: usage?.characters_limit || 500,
+        limitCharacters: usage?.characters_limit || 5000,
       });
 
     case 'character_limit_reached':
@@ -575,7 +575,7 @@ export async function triggerAutomation(
     .single();
 
   // Calculate limit based on role
-  const characterLimit = user.role === 'pro' ? 1000000 : 500;
+  const characterLimit = user.role === 'pro' ? 1000000 : 5000;
   const usage = usageRaw ? {
     characters_used: usageRaw.characters_used || 0,
     characters_limit: characterLimit,
