@@ -72,7 +72,12 @@ export function trackServerEvent(
       }
     }
     
-    amplitude.track(eventName, cleanProperties, { user_id: userId });
+    // Use BaseEvent format which is more reliable
+    amplitude.track({
+      event_type: eventName,
+      user_id: userId,
+      event_properties: cleanProperties,
+    });
     console.log('[Amplitude Server] ✅ Event queued:', eventName, cleanProperties);
   } catch (error) {
     console.error('[Amplitude Server] ❌ Error tracking event:', eventName, error);
