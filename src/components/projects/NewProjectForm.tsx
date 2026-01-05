@@ -37,6 +37,7 @@ export function NewProjectForm() {
   const [title, setTitle] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('youtube');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -62,6 +63,31 @@ export function NewProjectForm() {
       trackError('project_creation', 'Unexpected error');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleSkip() {
+    setError(null);
+    setIsSkipping(true);
+
+    try {
+      const result = await createProject({
+        title: 'Untitled Project',
+        project_type: 'other',
+      });
+
+      if (result.success && result.projectId) {
+        trackProjectCreated(result.projectId, 'other');
+        router.push(`/dashboard/projects/${result.projectId}`);
+      } else {
+        setError(result.error || 'Failed to create project');
+        trackError('project_creation', result.error || 'Unknown error');
+      }
+    } catch {
+      setError('An unexpected error occurred');
+      trackError('project_creation', 'Unexpected error');
+    } finally {
+      setIsSkipping(false);
     }
   }
 
@@ -117,24 +143,45 @@ export function NewProjectForm() {
         </div>
       </div>
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={isLoading || !title.trim()}
-        className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 py-4 font-semibold text-white shadow-lg shadow-orange-500/25 hover:from-amber-400 hover:to-orange-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isLoading ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Creating...
-          </span>
-        ) : (
-          'Create Project'
-        )}
-      </button>
+      {/* Buttons */}
+      <div className="flex flex-col gap-3">
+        <button
+          type="submit"
+          disabled={isLoading || isSkipping || !title.trim()}
+          className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 py-4 font-semibold text-white shadow-lg shadow-orange-500/25 hover:from-amber-400 hover:to-orange-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Creating...
+            </span>
+          ) : (
+            'Create Project'
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSkip}
+          disabled={isLoading || isSkipping}
+          className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-4 font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSkipping ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Creating...
+            </span>
+          ) : (
+            'Skip — Create Untitled Project'
+          )}
+        </button>
+      </div>
     </form>
   );
 }

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 const userNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: 'home' as const },
-  { name: 'Create Project', href: '/dashboard/projects/new', icon: 'microphone' as const },
+  { name: 'Text to Speech', href: '/dashboard/projects/new', icon: 'microphone' as const },
   { name: 'My Projects', href: '/dashboard/projects', icon: 'audio' as const },
   { name: 'Billing', href: '/dashboard/billing', icon: 'billing' as const },
   { name: 'Support', href: '/dashboard/support', icon: 'support' as const },

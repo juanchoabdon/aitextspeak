@@ -9,7 +9,7 @@ import { PaymentSuccessHandler } from '@/components/dashboard/PaymentSuccessHand
 import { getUserProjects, getProjectTypeIcon, getProjectTypeLabel } from '@/lib/projects/db';
 
 export const metadata: Metadata = {
-  title: 'My Projects - AI TextSpeak',
+  title: 'Text to Speech Projects - AI TextSpeak',
   description: 'View and manage your text-to-speech projects.',
   robots: {
     index: false,
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 const userNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: 'home' as const },
-  { name: 'Create Project', href: '/dashboard/projects/new', icon: 'microphone' as const },
+  { name: 'Text to Speech', href: '/dashboard/projects/new', icon: 'microphone' as const },
   { name: 'My Projects', href: '/dashboard/projects', icon: 'audio' as const },
   { name: 'Billing', href: '/dashboard/billing', icon: 'billing' as const },
   { name: 'Support', href: '/dashboard/support', icon: 'support' as const },
@@ -50,7 +50,7 @@ export default async function ProjectsPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-white">My Projects</h1>
+              <h1 className="text-2xl font-bold text-white">Text to Speech Projects</h1>
               <p className="mt-1 text-slate-400">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
               </p>
@@ -62,7 +62,7 @@ export default async function ProjectsPage() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              New Project
+              New Text to Speech
             </Link>
           </div>
 
@@ -83,7 +83,7 @@ export default async function ProjectsPage() {
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Create Your First Project
+                Create Your First Text to Speech
               </Link>
             </div>
           ) : (

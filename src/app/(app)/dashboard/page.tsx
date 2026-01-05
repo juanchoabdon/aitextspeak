@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 const userNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: 'home' as const },
-  { name: 'Create Project', href: '/dashboard/projects/new', icon: 'microphone' as const },
+  { name: 'Text to Speech', href: '/dashboard/projects/new', icon: 'microphone' as const },
   { name: 'My Projects', href: '/dashboard/projects', icon: 'audio' as const },
   { name: 'Billing', href: '/dashboard/billing', icon: 'billing' as const },
   { name: 'Support', href: '/dashboard/support', icon: 'support' as const },
@@ -68,16 +68,16 @@ export default async function DashboardPage() {
 
           {/* Quick Actions */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-            {/* Create Project Card */}
+            {/* Text to Speech Card */}
             <Link href="/dashboard/projects/new" className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 hover:border-amber-500/50 transition-colors">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-600">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-white">New Project</h3>
+              <h3 className="mt-4 text-lg font-semibold text-white">Text to Speech</h3>
               <p className="mt-2 text-sm text-slate-400">
-                Create a new text-to-speech project
+                Generate AI voiceovers from text
               </p>
             </Link>
 
@@ -94,17 +94,16 @@ export default async function DashboardPage() {
               </p>
             </Link>
 
-            {/* Account Settings Card */}
-            <Link href="/dashboard/settings" className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 hover:border-amber-500/50 transition-colors">
+            {/* Support Card */}
+            <Link href="/dashboard/support" className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 hover:border-amber-500/50 transition-colors">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
                 <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-white">Settings</h3>
+              <h3 className="mt-4 text-lg font-semibold text-white">Support</h3>
               <p className="mt-2 text-sm text-slate-400">
-                Manage your account and preferences
+                Get help or send us feedback
               </p>
             </Link>
           </div>
