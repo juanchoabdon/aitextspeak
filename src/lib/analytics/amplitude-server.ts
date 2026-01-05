@@ -59,8 +59,21 @@ export function trackServerEvent(
   console.log('[Amplitude Server] 📊 Tracking event:', eventName, 'for user:', userId.substring(0, 8) + '...');
   
   try {
-    amplitude.track(eventName, eventProperties, { user_id: userId });
-    console.log('[Amplitude Server] ✅ Event queued:', eventName);
+    // Convert properties to simple types that Amplitude accepts
+    const cleanProperties: Record<string, string | number | boolean> = {};
+    if (eventProperties) {
+      for (const [key, value] of Object.entries(eventProperties)) {
+        if (value === undefined || value === null) continue;
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          cleanProperties[key] = value;
+        } else {
+          cleanProperties[key] = String(value);
+        }
+      }
+    }
+    
+    amplitude.track(eventName, cleanProperties, { user_id: userId });
+    console.log('[Amplitude Server] ✅ Event queued:', eventName, cleanProperties);
   } catch (error) {
     console.error('[Amplitude Server] ❌ Error tracking event:', eventName, error);
   }
