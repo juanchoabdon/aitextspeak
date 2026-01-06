@@ -36,28 +36,13 @@ export async function generateElevenLabsSpeech(request: TTSRequest): Promise<TTS
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: response.statusText }));
+      // Log technical details for debugging
       console.error('ElevenLabs TTS error:', response.status, error);
-      
-      // Properly extract error message (detail can be string or object)
-      let errorMessage = response.statusText;
-      if (error.detail) {
-        if (typeof error.detail === 'string') {
-          errorMessage = error.detail;
-        } else if (error.detail.message) {
-          errorMessage = error.detail.message;
-        } else if (error.detail.status) {
-          errorMessage = error.detail.status;
-        } else {
-          errorMessage = JSON.stringify(error.detail);
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
       
       return {
         success: false,
         characters_count: text.length,
-        error: `ElevenLabs TTS failed: ${errorMessage}`,
+        error: 'Voice generation failed. Please try again or select a different voice.',
       };
     }
 
@@ -73,7 +58,7 @@ export async function generateElevenLabsSpeech(request: TTSRequest): Promise<TTS
     return {
       success: false,
       characters_count: text.length,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Voice generation failed. Please try again.',
     };
   }
 }
