@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProjectAudio } from '@/lib/projects/actions';
 import { generatePreview } from '@/lib/tts/actions';
@@ -18,6 +18,9 @@ import {
   trackVoiceSelectorOpened,
   trackVoiceSelected,
   trackLanguageBlocked,
+  trackUsageLimitWarning,
+  trackUsageLimitReached,
+  trackTextExceedsLimit,
 } from '@/lib/analytics/events';
 
 interface AddAudioFormProps {
@@ -66,10 +69,56 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
   const isOverLimit = usage && !usage.isUnlimited && characterCount > usage.charactersRemaining;
   const isApproachingLimit = usage && !usage.isUnlimited && usage.percentUsed >= 80;
   
+  // Track if we've already fired events this session (to avoid duplicates)
+  const hasTrackedOverLimit = useRef(false);
+  const hasTrackedApproachingLimit = useRef(false);
+  const hasTrackedReachedLimit = useRef(false);
+  
   // Refetch usage when component mounts
   useEffect(() => {
     refetchUsage();
   }, [refetchUsage]);
+  
+  // Track when user types text that exceeds their remaining characters
+  useEffect(() => {
+    if (isOverLimit && !hasTrackedOverLimit.current && usage) {
+      hasTrackedOverLimit.current = true;
+      trackTextExceedsLimit({
+        currentPlan: usage.planName || 'Free',
+        textCharacters: characterCount,
+        charactersRemaining: usage.charactersRemaining,
+        charactersLimit: usage.charactersLimit,
+      });
+    }
+    // Reset tracking if they reduce text below limit
+    if (!isOverLimit && hasTrackedOverLimit.current) {
+      hasTrackedOverLimit.current = false;
+    }
+  }, [isOverLimit, usage, characterCount]);
+  
+  // Track when user sees the approaching limit warning (80%+)
+  useEffect(() => {
+    if (isApproachingLimit && !hasTrackedApproachingLimit.current && usage && !usage.hasReachedLimit) {
+      hasTrackedApproachingLimit.current = true;
+      trackUsageLimitWarning({
+        currentPlan: usage.planName || 'Free',
+        percentUsed: usage.percentUsed,
+        charactersRemaining: usage.charactersRemaining,
+      });
+    }
+  }, [isApproachingLimit, usage]);
+  
+  // Track when user has reached their limit (100%)
+  useEffect(() => {
+    if (usage?.hasReachedLimit && !hasTrackedReachedLimit.current) {
+      hasTrackedReachedLimit.current = true;
+      trackUsageLimitReached({
+        currentPlan: usage.planName || 'Free',
+        charactersUsed: usage.charactersUsed,
+        charactersLimit: usage.charactersLimit,
+      });
+    }
+  }, [usage]);
 
   // Handle voice selection from modal
   function handleVoiceSelect(voice: Voice) {

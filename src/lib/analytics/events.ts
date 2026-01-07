@@ -291,6 +291,20 @@ export function trackUsageLimitWarning(properties: {
   });
 }
 
+export function trackTextExceedsLimit(properties: {
+  currentPlan: string;
+  textCharacters: number;
+  charactersRemaining: number;
+  charactersLimit: number;
+}) {
+  trackEvent('Text Exceeds Limit', {
+    plan: properties.currentPlan,
+    text_characters: properties.textCharacters,
+    characters_remaining: properties.charactersRemaining,
+    characters_limit: properties.charactersLimit,
+  });
+}
+
 export function trackUpgradeModalShown(properties: {
   trigger: string;  // 'usage_limit' | 'language_locked' | 'approaching_limit' | 'manual'
   currentPlan: string;
