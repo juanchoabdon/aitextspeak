@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createProjectAudio } from '@/lib/projects/actions';
 import { generatePreview } from '@/lib/tts/actions';
 import type { Voice } from '@/lib/tts/types';
@@ -502,20 +501,6 @@ export function AddAudioForm({ projectId, voices, languages }: AddAudioFormProps
                 </div>
               </div>
             </div>
-
-            {/* Affiliate Program */}
-            <Link
-              href="/affiliates"
-              className="block rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-600/10 p-4 hover:border-amber-500/60 transition-colors"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white">Affiliate Program</p>
-                  <p className="mt-1 text-xs text-slate-300">Earn commission by sharing AI TextSpeak.</p>
-                </div>
-                <span className="text-sm font-semibold text-amber-400 whitespace-nowrap">Learn More →</span>
-              </div>
-            </Link>
 
             {/* Preview Button */}
             <button
