@@ -7,6 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { getUserActiveSubscription } from '@/lib/payments/subscription';
 import { PLANS, type AllPlanId } from '@/lib/payments/plans';
+import { trackServerEvent } from '@/lib/analytics/amplitude-server';
 
 export interface UsageInfo {
   charactersUsed: number;
@@ -105,6 +106,12 @@ export async function recordUsage(
 ): Promise<void> {
   const supabase = createAdminClient();
   
+  // Get user's subscription to know the limit
+  const subscription = await getUserActiveSubscription(userId);
+  const plan = PLANS[subscription.planId];
+  const isUnlimited = plan.charactersPerMonth === -1;
+  const charactersLimit = plan.charactersPerMonth;
+  
   // Get current period
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -120,11 +127,14 @@ export async function recordUsage(
     .eq('period_start', periodStartStr)
     .single();
   
+  const previousUsed = existing?.characters_used || 0;
+  const newUsed = previousUsed + characterCount;
+  
   if (existing) {
     await supabase
       .from('usage_tracking')
       .update({
-        characters_used: existing.characters_used + characterCount,
+        characters_used: newUsed,
       })
       .eq('id', existing.id);
   } else {
@@ -137,6 +147,34 @@ export async function recordUsage(
         characters_used: characterCount,
         audio_files_generated: 1,
       });
+  }
+  
+  // Track usage events (only for users with limits)
+  if (!isUnlimited && charactersLimit > 0) {
+    const previousPercent = (previousUsed / charactersLimit) * 100;
+    const newPercent = (newUsed / charactersLimit) * 100;
+    
+    // Track when crossing 80% threshold (warning)
+    if (previousPercent < 80 && newPercent >= 80 && newPercent < 100) {
+      trackServerEvent(userId, 'Usage Limit Warning', {
+        plan: subscription.planId,
+        percentage: Math.round(newPercent),
+        characters_used: newUsed,
+        characters_limit: charactersLimit,
+        characters_remaining: Math.max(0, charactersLimit - newUsed),
+      });
+      console.log(`[Usage] ⚠️ User ${userId.substring(0, 8)}... reached ${Math.round(newPercent)}% usage`);
+    }
+    
+    // Track when reaching 100% limit
+    if (previousPercent < 100 && newPercent >= 100) {
+      trackServerEvent(userId, 'Usage Limit Reached', {
+        plan: subscription.planId,
+        characters_used: newUsed,
+        characters_limit: charactersLimit,
+      });
+      console.log(`[Usage] 🚫 User ${userId.substring(0, 8)}... reached character limit`);
+    }
   }
 }
 
