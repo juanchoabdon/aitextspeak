@@ -96,7 +96,7 @@ const plans: {
     features: [
       'Pay once, Use lifetime',
       'Include All Standard Voices',
-      'Unlimited Characters',
+      '500,000 Characters/month',
       'Unlimited Storage',
       'Commercial Rights',
       '30 Day Money Back Guarantee',
@@ -173,7 +173,7 @@ export default async function PricingPage() {
             <div>
               <h3 className="text-lg font-semibold text-white">What&apos;s included in the Lifetime Package?</h3>
               <p className="mt-2 text-slate-400">
-                The Lifetime Package is a one-time payment that gives you unlimited access forever. It includes all standard voices, unlimited characters, and commercial rights.
+                The Lifetime Package is a one-time payment that gives you access forever. It includes all standard voices, 500,000 characters per month, and commercial rights.
               </p>
             </div>
             <div>
