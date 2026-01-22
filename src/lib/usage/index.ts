@@ -32,6 +32,26 @@ export async function getCurrentUsage(userId: string): Promise<UsageInfo> {
   const plan = PLANS[subscription.planId];
   const isUnlimited = plan.charactersPerMonth === -1;
   
+  // Check if user is suspicious (multiple free accounts from same device)
+  let isSuspiciousFreeUser = false;
+  if (subscription.planId === 'free') {
+    // Use raw query to access new columns that may not be in generated types yet
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    // Cast to access device fingerprint fields
+    const profileData = profile as { is_suspicious?: boolean; device_account_count?: number } | null;
+    
+    // If this device has created 2+ accounts, they get 0 free characters
+    if (profileData?.is_suspicious && (profileData?.device_account_count || 0) >= 2) {
+      isSuspiciousFreeUser = true;
+      console.log(`[Usage] Suspicious free user detected: ${userId}, device_account_count: ${profileData.device_account_count}`);
+    }
+  }
+  
   // Get current period start
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -46,10 +66,11 @@ export async function getCurrentUsage(userId: string): Promise<UsageInfo> {
     .single();
   
   const charactersUsed = usage?.characters_used || 0;
-  const charactersLimit = plan.charactersPerMonth;
+  // Suspicious free users get 0 characters
+  const charactersLimit = isSuspiciousFreeUser ? 0 : plan.charactersPerMonth;
   const charactersRemaining = isUnlimited ? -1 : Math.max(0, charactersLimit - charactersUsed);
-  const percentUsed = isUnlimited ? 0 : Math.min(100, (charactersUsed / charactersLimit) * 100);
-  const hasReachedLimit = !isUnlimited && charactersUsed >= charactersLimit;
+  const percentUsed = isUnlimited ? 0 : (charactersLimit > 0 ? Math.min(100, (charactersUsed / charactersLimit) * 100) : 100);
+  const hasReachedLimit = isSuspiciousFreeUser || (!isUnlimited && charactersUsed >= charactersLimit);
   
   return {
     charactersUsed,

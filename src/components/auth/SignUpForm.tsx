@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signUp } from '@/lib/auth/actions';
 import { trackSignupStarted, trackSignupCompleted, trackAuthError } from '@/lib/analytics/events';
+import { getDeviceId, trackAccountCreation } from '@/lib/device/fingerprint';
 
 function trackFirstPromoterReferral(uid: string) {
   try {
@@ -68,14 +69,20 @@ export function SignUpForm() {
     setIsLoading(true);
 
     try {
+      // Get device fingerprint for abuse detection
+      const deviceId = getDeviceId();
+      
       const result = await signUp({
         email,
         password,
         firstName: firstName || undefined,
         lastName: lastName || undefined,
+        deviceId: deviceId || undefined,
       });
 
       if (result.success && result.user) {
+        // Track account creation locally for this device
+        trackAccountCreation(result.user.id);
         trackFirstPromoterReferral(result.user.id);
 
         // Track signup completed

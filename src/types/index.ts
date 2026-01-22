@@ -31,6 +31,7 @@ export interface SignupData {
   password: string;
   firstName?: string;
   lastName?: string;
+  deviceId?: string;
 }
 
 // ===========================================

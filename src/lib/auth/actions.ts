@@ -105,7 +105,7 @@ export async function signIn(credentials: LoginCredentials): Promise<AuthResult>
  * Also creates a welcome project for new users
  */
 export async function signUp(data: SignupData): Promise<AuthResult> {
-  const { email, password, firstName, lastName } = data;
+  const { email, password, firstName, lastName, deviceId } = data;
   
   if (!email || !password) {
     return { success: false, error: 'Email and password are required' };
@@ -116,6 +116,7 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
   }
   
   const supabase = await createClient();
+  const adminClient = createAdminClient();
   
   // Check if user already exists in legacy system
   const legacyUser = await findLegacyUserByEmail(email);
@@ -124,6 +125,24 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
       success: false, 
       error: 'An account with this email already exists. Please sign in instead.' 
     };
+  }
+  
+  // Check if this device has already created accounts (abuse detection)
+  let isSuspicious = false;
+  let deviceAccountCount = 1;
+  
+  if (deviceId) {
+    const { data: existingDeviceAccounts, error: deviceError } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('device_id', deviceId);
+    
+    if (!deviceError && existingDeviceAccounts && existingDeviceAccounts.length > 0) {
+      // Device has already created account(s)
+      isSuspicious = true;
+      deviceAccountCount = existingDeviceAccounts.length + 1;
+      console.log(`[SignUp] Suspicious: Device ${deviceId} has ${existingDeviceAccounts.length} existing accounts`);
+    }
   }
   
   // Create new user
@@ -146,13 +165,31 @@ export async function signUp(data: SignupData): Promise<AuthResult> {
     return { success: false, error: 'Failed to create user' };
   }
   
-  // Update profile with additional data if provided
-  if (firstName || lastName) {
+  // Update profile with additional data including device fingerprint
+  const profileUpdate: Record<string, unknown> = {};
+  if (firstName) profileUpdate.first_name = firstName;
+  if (lastName) profileUpdate.last_name = lastName;
+  if (deviceId) {
+    profileUpdate.device_id = deviceId;
+    profileUpdate.is_suspicious = isSuspicious;
+    profileUpdate.device_account_count = deviceAccountCount;
+  }
+  
+  if (Object.keys(profileUpdate).length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('profiles').update({
-      first_name: firstName,
-      last_name: lastName,
-    }).eq('id', authData.user.id);
+    await (adminClient as any).from('profiles').update(profileUpdate).eq('id', authData.user.id);
+    
+    // Also update device_account_count for other accounts with same device
+    if (deviceId && isSuspicious) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (adminClient as any)
+        .from('profiles')
+        .update({ 
+          is_suspicious: true,
+          device_account_count: deviceAccountCount 
+        })
+        .eq('device_id', deviceId);
+    }
   }
   
   // Create a welcome project for the new user (using admin client to bypass RLS)

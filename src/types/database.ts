@@ -63,6 +63,9 @@ export interface Profile {
   is_legacy_user: boolean;
   legacy_user_id: number | null;
   role: 'user' | 'pro' | 'admin';
+  device_id: string | null;
+  is_suspicious: boolean;
+  device_account_count: number;
   created_at: string;
   updated_at: string;
 }
