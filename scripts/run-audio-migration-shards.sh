@@ -42,3 +42,5 @@ done
 echo "✅ All shards started. Logs in: $LOG_DIR" 
 
 
+
+

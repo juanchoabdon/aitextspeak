@@ -1021,7 +1021,7 @@ export async function handlePayPalWebhook(
                 userEmail: lifetimePayPalUserProfile.email,
                 planType: 'lifetime',
                 planName: 'Lifetime Pro',
-                characterLimit: 'unlimited',
+                characterLimit: 500000,
               }).catch(err => console.error('[PayPal Webhook] Failed to send lifetime welcome email:', err));
             }
 

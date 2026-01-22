@@ -71,3 +71,5 @@ COMMENT ON TABLE public.user_purchases IS 'Historical record of user plan purcha
 
 
 
+
+

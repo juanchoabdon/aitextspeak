@@ -95,12 +95,12 @@ export const PLANS: Record<AllPlanId, Plan> = {
     features: [
       'Pay once, Use lifetime',
       'All languages & voices',
-      'Unlimited characters',
+      '500,000 characters/month',
       'Unlimited Storage',
       'Commercial Rights',
       '30 Day Money Back Guarantee',
     ],
-    charactersPerMonth: -1, // Unlimited
+    charactersPerMonth: 500000, // 500k per month
     // Lifetime Package - one-time payment
     stripePriceId: process.env.STRIPE_PRICE_LIFETIME || 'price_1SZPRHH0TRmuwyMewRDFh67q',
     paypalPlanId: null, // PayPal doesn't support one-time subscriptions the same way

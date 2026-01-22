@@ -183,7 +183,8 @@ export async function hasProAccess(userId: string): Promise<boolean> {
 export async function getCharacterLimit(userId: string): Promise<number> {
   const FREE_LIMIT = 5000;
   const BASIC_LIMIT = 1000000; // 1M
-  const PRO_LIMIT = Infinity; // Unlimited
+  const LIFETIME_LIMIT = 500000; // 500k
+  const PRO_LIMIT = Infinity; // Unlimited (Monthly Pro only)
   
   const result = await checkSubscription(userId);
   
@@ -191,15 +192,19 @@ export async function getCharacterLimit(userId: string): Promise<number> {
     return FREE_LIMIT;
   }
 
-  if (result.reason === 'lifetime' || result.subscription?.planId === 'monthly_pro') {
+  if (result.subscription?.planId === 'monthly_pro') {
     return PRO_LIMIT;
+  }
+
+  if (result.reason === 'lifetime' || result.subscription?.planId === 'lifetime') {
+    return LIFETIME_LIMIT;
   }
 
   if (result.subscription?.planId === 'monthly') {
     return BASIC_LIMIT;
   }
 
-  return PRO_LIMIT; // Default for other paid plans
+  return BASIC_LIMIT; // Default for other paid plans
 }
 
 /**

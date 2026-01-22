@@ -477,7 +477,7 @@ export async function handleStripeWebhook(
               userEmail: lifetimeUserEmail,
               planType: 'lifetime',
               planName: 'Lifetime Pro',
-              characterLimit: 'unlimited',
+              characterLimit: 500000,
             }).catch(err => console.error('[Stripe Webhook] Failed to send lifetime welcome email:', err));
           }
 

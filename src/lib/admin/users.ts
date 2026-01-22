@@ -642,8 +642,10 @@ export async function getUserDetail(userId: string): Promise<UserDetailData | nu
   // Determine character limit based on plan
   if (subscription) {
     const planId = subscription.plan_id;
-    if (planId === 'lifetime' || planId === 'monthly_pro') {
-      charactersLimit = null; // Unlimited
+    if (planId === 'monthly_pro') {
+      charactersLimit = null; // Unlimited for Monthly Pro only
+    } else if (planId === 'lifetime') {
+      charactersLimit = 500000; // 500k for Lifetime
     } else if (planId === 'monthly') {
       charactersLimit = 1000000; // 1M characters
     } else {
